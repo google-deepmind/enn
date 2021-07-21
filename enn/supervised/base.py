@@ -17,7 +17,6 @@
 
 """Base classes for a 'standard' supervised experiment."""
 import abc
-
 import dataclasses
 from enn import base
 
@@ -33,9 +32,9 @@ class BaseExperiment(abc.ABC):
 
   @abc.abstractmethod
   def predict(
-      self, inputs: base.Array, seed: int) -> base.Array:
+      self, inputs: base.Array, key: base.RngKey) -> base.Array:
     """Evaluate the trained model at given inputs."""
 
   @abc.abstractmethod
-  def loss(self, batch: base.Batch, seed: int) -> base.Array:
+  def loss(self, batch: base.Batch, key: base.RngKey) -> base.Array:
     """Calculate the loss at a given batch."""

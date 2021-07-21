@@ -20,6 +20,8 @@ import chex
 from enn import base as enn_base
 from enn import supervised
 from enn import utils
+import haiku as hk
+import jax
 import numpy as np
 import pandas as pd
 import plotnine as gg
@@ -69,8 +71,9 @@ def make_plot_data(experiment: supervised.BaseExperiment,
   preds_x = np.vstack([np.linspace(-1, 2), np.ones((extra_input_dim, 50))]).T
 
   data = []
+  rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for k in range(num_sample):
-    net_out = experiment.predict(preds_x, seed=k)
+    net_out = experiment.predict(preds_x, key=next(rng))
     preds_y = utils.parse_net_output(net_out)
     data.append(pd.DataFrame({'x': preds_x[:, 0], 'y': preds_y[:, 0], 'k': k}))
   plot_df = pd.concat(data)

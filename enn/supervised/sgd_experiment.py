@@ -124,10 +124,10 @@ class Experiment(supervised_base.BaseExperiment):
           })
           self.logger.write(metrics)
 
-  def predict(self, inputs: base.Array, seed: int) -> base.Array:
+  def predict(self, inputs: base.Array, key: base.RngKey) -> base.Array:
     """Evaluate the trained model at given inputs."""
-    return self._forward(self.state.params, inputs, jax.random.PRNGKey(seed))
+    return self._forward(self.state.params, inputs, key)
 
-  def loss(self, batch: base.Batch, seed: int) -> base.Array:
+  def loss(self, batch: base.Batch, key: base.RngKey) -> base.Array:
     """Evaluate the loss for one batch of data."""
-    return self._loss(self.state.params, batch, jax.random.PRNGKey(seed))
+    return self._loss(self.state.params, batch, key)

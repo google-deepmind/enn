@@ -21,6 +21,7 @@ from typing import Optional, Tuple
 from enn import base as enn_base
 from enn import supervised
 from enn import utils
+import haiku as hk
 import jax
 import numpy as np
 import pandas as pd
@@ -66,8 +67,9 @@ def make_plot_data(experiment: supervised.BaseExperiment,
   preds_x = gen_2d_grid(plot_range=3)
 
   data = []
+  rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for k in range(num_sample):
-    net_out = experiment.predict(preds_x, seed=k)
+    net_out = experiment.predict(preds_x, key=next(rng))
     logits = utils.parse_net_output(net_out)
     preds_y = jax.nn.softmax(logits)
     data.append(pd.DataFrame({
