@@ -116,12 +116,12 @@ If you use `ENN` in your work, please cite the accompanying [paper]:
 ```bibtex
 @inproceedings{,
     title={Epistemic Neural Networks},
-    author={},
-    booktitle={Neural Information Processing Systems},
+    author={Ian Osband, Zheng Wen, Mohammad Asghari, Morteza Ibrahimi, Xiyuan Lu, Benjamin Van Roy},
+    booktitle={arxiv},
     year={2021},
-    url={https://arxiv.org/}
+    url={https://arxiv.org/abs/2107.08924}
 }
 ```
 
-[colab tutorial]: https://colab.research.google.com/github/deepmind/dm-enn/blob/master/demo.ipynb
-[paper]: https://arxiv.org/
+[colab tutorial]: https://colab.research.google.com/github/deepmind/enn/blob/master/supervised/demo.ipynb
+[paper]: https://arxiv.org/abs/2107.08924
