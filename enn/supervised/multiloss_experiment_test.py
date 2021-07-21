@@ -25,6 +25,7 @@ from enn import losses
 from enn import networks
 from enn import utils
 from enn.supervised import multiloss_experiment
+import jax
 import optax
 
 
@@ -65,9 +66,10 @@ class ExperimentTest(parameterized.TestCase):
         optimizer=optax.adam(1e-3),
         seed=seed,
     )
-    initial_loss = experiment.loss(next(train_dataset), seed + 1)
-    experiment.train(10)
-    final_loss = experiment.loss(next(train_dataset), seed + 2)
+    init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
+    initial_loss = experiment.loss(next(train_dataset), init_key)
+    experiment.train(50)
+    final_loss = experiment.loss(next(train_dataset), loss_key)
     self.assertGreater(
         initial_loss, final_loss,
         f'final loss {final_loss} is greater than initial loss {initial_loss}')

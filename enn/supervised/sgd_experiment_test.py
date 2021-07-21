@@ -25,6 +25,7 @@ from enn import losses
 from enn import networks
 from enn import utils
 from enn.supervised.sgd_experiment import Experiment
+import jax
 import optax
 
 
@@ -52,9 +53,10 @@ class ExperimentTest(parameterized.TestCase):
     loss_fn = losses.average_single_index_loss(single_loss,
                                                num_index_samples=10)
     experiment = Experiment(enn, loss_fn, optimizer, dataset, seed)
-    initial_loss = experiment.loss(next(dataset), seed+1)
-    experiment.train(10)
-    final_loss = experiment.loss(next(dataset), seed+2)
+    init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
+    initial_loss = experiment.loss(next(dataset), init_key)
+    experiment.train(50)
+    final_loss = experiment.loss(next(dataset), loss_key)
     self.assertGreater(
         initial_loss, final_loss,
         f'final loss {final_loss} is greater than initial loss {initial_loss}')
