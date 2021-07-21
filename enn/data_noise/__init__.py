@@ -15,27 +15,12 @@
 # limitations under the License.
 # ============================================================================
 
-"""Base classes for a 'standard' supervised experiment."""
-import abc
+"""Exposing the public methods of the losses."""
+# Base
+from enn.data_noise.base import DataNoise
 
-import dataclasses
-from enn import base
+# Boostrapping
+from enn.data_noise.bootstrapping import BootstrapNoise
 
-
-@dataclasses.dataclass
-class BaseExperiment(abc.ABC):
-  """Base interface for experiment classes."""
-  dataset: base.BatchIterator
-
-  @abc.abstractmethod
-  def train(self, num_batches: int):
-    """Train the ENN for num_batches."""
-
-  @abc.abstractmethod
-  def predict(
-      self, inputs: base.Array, seed: int) -> base.Array:
-    """Evaluate the trained model at given inputs."""
-
-  @abc.abstractmethod
-  def loss(self, batch: base.Batch, seed: int) -> base.Array:
-    """Calculate the loss at a given batch."""
+# Gaussian noise
+from enn.data_noise.gaussian import GaussianTargetNoise

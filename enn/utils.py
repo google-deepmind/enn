@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
-from typing import Callable, Dict, Optional
+from typing import Callable, Optional
 
 from absl import flags
 from enn import base
@@ -74,24 +74,19 @@ def make_batch_indexer(indexer: base.EpistemicIndexer,
   return batch_indexer
 
 
-def _clean_batch_data(data: base.Batch) -> Dict[str, base.Array]:
-  """Cleans base.Batch into standardized dictionary format."""
-  if not isinstance(data, dict):
-    data = data._asdict()
-  assert 'x' in data
-  assert 'y' in data
-
+def _clean_batch_data(data: base.Batch) -> base.Batch:
+  """Checks some of the common shape/index issues for dummy data.."""
   # Make sure that the data has a separate batch dimension
-  if data['y'].ndim == 1:
-    data['y'] = data['y'][:, None]
-
-  # Using the word label as a copy of 'y' for compatibility
-  if 'label' not in data:
-    data['label'] = data['y']
+  if data.y.ndim == 1:
+    data = data._replace(y=data.y[:, None])
 
   # Data index to identify each instance
-  if 'data_index' not in data:
-    data['data_index'] = np.arange(len(data['y']))[:, None]
+  if data.data_index is None:
+    data = data._replace(data_index=np.arange(len(data.y))[:, None])
+
+  # Weights to say how much each data.point is work
+  if data.weights is None:
+    data = data._replace(weights=np.ones(len(data.y))[:, None])
   return data
 
 
@@ -100,7 +95,7 @@ def make_batch_iterator(data: base.Batch,
                         seed: int = 0) -> base.BatchIterator:
   """Converts toy-like training data to batch_iterator for sgd training."""
   data = _clean_batch_data(data)
-  n_data = len(data['y'])
+  n_data = len(data.y)
   if not batch_size:
     batch_size = n_data
   ds = tf.data.Dataset.from_tensor_slices(data).cache().repeat()
@@ -113,4 +108,4 @@ def make_batch_iterator(data: base.Batch,
 def make_test_data(n_samples: int = 20) -> base.BatchIterator:
   """Generate a simple dataset suitable for classification or regression."""
   x, y = datasets.make_moons(n_samples, noise=0.1, random_state=0)
-  return make_batch_iterator({'x': x, 'y': y})
+  return make_batch_iterator(base.Batch(x, y))

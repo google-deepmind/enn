@@ -24,11 +24,31 @@ from typing import Callable, Optional, Sequence
 
 from absl import logging
 import chex
+import dataclasses
 from enn import base
 from enn import networks
+from enn.data_noise import base as data_noise_base
 import jax
 import jax.numpy as jnp
 import typing_extensions
+
+
+@dataclasses.dataclass
+class BootstrapNoise(data_noise_base.DataNoise):
+  """Apply bootstrap reweighting to a batch of data."""
+  enn: base.EpistemicNetwork
+  distribution: str
+  seed: int = 0
+
+  def __call__(self, data: base.Batch, index: base.Index) -> base.Batch:
+    """Apply bootstrap reweighting to a batch of data."""
+    boot_fn = make_boot_fn(self.enn, self.distribution, self.seed)
+    boot_weights = boot_fn(data.data_index, index)
+    return data._replace(weights=boot_weights)
+
+
+################################################################################
+# BootstrapFn reweights data based on epistemic index
 
 BatchWeights = base.Array  # Bootstrap weights for each datapoint
 BootstrapFn = Callable[[base.DataIndex, base.Index], BatchWeights]
@@ -37,7 +57,6 @@ BootstrapFn = Callable[[base.DataIndex, base.Index], BatchWeights]
 # but it might be more elegant to rework the vmap and instead define for one
 # example at a time.
 # batch_weights = boot_fn(data_index, index)  # (batch_size, 1) shape
-
 # TODO(author2): Refactor batch_weights to be just (batch_size,) shape.
 
 
@@ -73,21 +92,23 @@ def null_bootstrap(
 def make_boot_fn(enn: base.EpistemicNetwork,
                  distribution: str,
                  seed: int = 0) -> BootstrapFn:
-  """Factory method to create bootstrap for ensemble = integer indices."""
+  """Factory method to create bootstrap for given ENN and distribution."""
+  indexer = data_noise_base.get_indexer(enn.indexer)
+
   # None works as a special case for no function
   if distribution == 'none' or distribution is None:
     return null_bootstrap
 
   # Bootstrapping for ensemble/discrete options
-  if isinstance(enn.indexer, networks.EnsembleIndexer):
+  if isinstance(indexer, networks.EnsembleIndexer):
     if distribution not in DISTRIBUTIONS:
       raise ValueError(f'dist={distribution} not implemented for ensemble.')
     weight_fn = DISTRIBUTIONS[distribution]
     return _make_ensemble_bootstrap_fn(weight_fn, seed)
 
   # Bootstrapping for Gaussian with unit index
-  elif isinstance(enn.indexer, networks.GaussianWithUnitIndexer):
-    index_dim = enn.indexer.index_dim
+  elif isinstance(indexer, networks.GaussianWithUnitIndexer):
+    index_dim = indexer.index_dim
     logging.warning(
         'WARNING: indexer is in development, bootstrap may not be correct.')
     if distribution == 'bernoulli':
@@ -97,8 +118,8 @@ def make_boot_fn(enn: base.EpistemicNetwork,
           f'dist={distribution} not implemented for GaussianIndexer.')
 
   # Bootstrapping for Scaled Gaussian index
-  elif isinstance(enn.indexer, networks.ScaledGaussianIndexer):
-    index_dim = enn.indexer.index_dim
+  elif isinstance(indexer, networks.ScaledGaussianIndexer):
+    index_dim = indexer.index_dim
     if distribution == 'bernoulli':
       return _make_gaussian_index_bernoulli_bootstrap(index_dim, seed)
     elif distribution == 'exponential':
@@ -108,7 +129,7 @@ def make_boot_fn(enn: base.EpistemicNetwork,
           f'dist={distribution} not implemented for GaussianIndexer.')
 
   # Bootstrapping for PRNG index
-  elif isinstance(enn.indexer, networks.PrngIndexer):
+  elif isinstance(indexer, networks.PrngIndexer):
     if distribution not in DISTRIBUTIONS:
       raise ValueError(f'dist={distribution} not implemented for gauss_enn.')
     weight_fn = DISTRIBUTIONS[distribution]
@@ -116,7 +137,7 @@ def make_boot_fn(enn: base.EpistemicNetwork,
 
   else:
     raise ValueError(
-        f'Bootstrapping for EpistemicIndexer={enn.indexer} not implemented.')
+        f'Bootstrapping for EpistemicIndexer={indexer} not implemented.')
 
 
 def _make_prng_bootstrap_fn(weight_fn: WeightFn) -> BootstrapFn:
@@ -124,7 +145,8 @@ def _make_prng_bootstrap_fn(weight_fn: WeightFn) -> BootstrapFn:
   def boot_fn(data_index: base.DataIndex, index: base.Index):
     chex.assert_shape(data_index, (None, 1))
     boot_weights = weight_fn(index, data_index.shape)
-    return boot_weights[:, None]
+    chex.assert_shape(boot_weights, (None, 1))
+    return boot_weights
   return boot_fn
 
 

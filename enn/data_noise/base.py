@@ -14,28 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Base classes for data noise process."""
 
-"""Base classes for a 'standard' supervised experiment."""
-import abc
-
-import dataclasses
 from enn import base
+import typing_extensions
 
 
-@dataclasses.dataclass
-class BaseExperiment(abc.ABC):
-  """Base interface for experiment classes."""
-  dataset: base.BatchIterator
+class DataNoise(typing_extensions.Protocol):
 
-  @abc.abstractmethod
-  def train(self, num_batches: int):
-    """Train the ENN for num_batches."""
+  def __call__(self, data: base.Batch, index: base.Index) -> base.Batch:
+    """Apply some noise process to a batch of data based on epistemic index."""
 
-  @abc.abstractmethod
-  def predict(
-      self, inputs: base.Array, seed: int) -> base.Array:
-    """Evaluate the trained model at given inputs."""
 
-  @abc.abstractmethod
-  def loss(self, batch: base.Batch, seed: int) -> base.Array:
-    """Calculate the loss at a given batch."""
+def get_indexer(indexer: base.EpistemicIndexer):
+  while hasattr(indexer, 'indexer'):
+    indexer = indexer.indexer
+  return indexer

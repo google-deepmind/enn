@@ -19,8 +19,8 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import base
-from enn import bootstrapping
 from enn import networks
+from enn.data_noise import bootstrapping
 import jax
 import numpy as np
 

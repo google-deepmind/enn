@@ -20,7 +20,6 @@
 These might take the form of weight regularization, or sampling "fake data".
 These prior_losses are used in e.g. supervised/prior_experiment.py.
 """
-from typing import Tuple
 
 from absl import logging
 import dataclasses
@@ -40,24 +39,26 @@ class FakeInputGenerator(typing_extensions.Protocol):
 
 @dataclasses.dataclass
 class MatchingGaussianData(FakeInputGenerator):
+  """Generates a fake batch of input=x for use in prior regularization."""
+
   scale: float = 1.
 
   def __call__(self, batch: base.Batch, key: base.RngKey) -> base.Array:
     """Generates a fake batch of input=x for use in prior regularization."""
-    return jax.random.normal(key, batch['x'].shape) * self.scale
+    return jax.random.normal(key, batch.x.shape) * self.scale
 
 
-@dataclasses.dataclass
-class SpecialRegressionData(FakeInputGenerator):
-  num_data: int = 20
-
-  def __call__(self, batch: base.Batch, key: base.RngKey) -> base.Array:
-    """One-off regressor useful for the regression_data dataset."""
-    del batch
-    return jnp.hstack([
-        jnp.ones([self.num_data, 1]),
-        jax.random.normal(key, [self.num_data, 1]),
-    ])
+def make_gaussian_dataset(batch_size: int,
+                          input_dim: int,
+                          seed: int = 0) -> base.BatchIterator:
+  """Returns a batch iterator over random Gaussian data."""
+  sample_fn = jax.jit(lambda x: jax.random.normal(x, [batch_size, input_dim]))
+  def batch_iterator():
+    rng = hk.PRNGSequence(seed)
+    while True:
+      x = sample_fn(next(rng))
+      yield base.Batch(x, y=jnp.ones([x.shape[0], 1]))
+  return batch_iterator()
 
 
 def variance_kl(var: base.Array, pred_log_var: base.Array) -> base.Array:
@@ -67,26 +68,23 @@ def variance_kl(var: base.Array, pred_log_var: base.Array) -> base.Array:
   return 0.5 * (pred_log_var - log_var + var / pred_var - 1)
 
 
-def _generate_batched_forward_at_fake_data(
+def generate_batched_forward_at_data(
     num_index_sample: int,
-    fake_input_generator: FakeInputGenerator,
+    x: base.Array,
     enn: base.EpistemicNetwork,
     params: hk.Params,
-    batch: base.Batch,
-    key: base.RngKey) -> Tuple[base.Array, base.Output]:
-  """Generate a batch of fake data with multiple indices based on random key."""
-  index_key, data_key = jax.random.split(key)
+    key: base.RngKey) -> base.Output:
+  """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, 0])
-  fake_x = fake_input_generator(batch, data_key)
-  batched_out = batched_forward(params, fake_x, batched_indexer(index_key))
-  return fake_x, batched_out
+  batched_out = batched_forward(params, x, batched_indexer(key))
+  return batched_out
 
 
 def l2_training_penalty(batched_out: base.Output):
   """Penalize the L2 magnitude of the training network."""
   if isinstance(batched_out, base.OutputWithPrior):
-    return jnp.mean(jnp.square(batched_out.train))
+    return 0.5 * jnp.mean(jnp.square(batched_out.train))
   else:
     logging.warning('L2 weight penalty only works for OutputWithPrior.')
     return 0.
@@ -134,17 +132,21 @@ class RegressionPriorLoss(base.LossFn):
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
+  distill_index: bool = False
 
   def __call__(self, enn: base.EpistemicNetwork, params: hk.Params,
                batch: base.Batch, key: base.RngKey) -> base.Array:
-    fake_x, batched_out = _generate_batched_forward_at_fake_data(
-        self.num_index_sample, self.input_generator, enn, params, batch, key)
+    index_key, data_key = jax.random.split(key)
+    fake_x = self.input_generator(batch, data_key)
+    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
+    batched_out = generate_batched_forward_at_data(
+        self.num_index_sample, fake_x, enn, params, index_key)
 
     # Regularize towards prior output
     loss = self.scale * l2_training_penalty(batched_out)
 
     # Distill aggregate stats to the "mean_index"
-    if hasattr(enn.indexer, 'mean_index'):
+    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
       loss += distill_mean_regression(batched_out, distill_out)
       loss += distill_var_regression(batched_out, distill_out)
@@ -157,17 +159,22 @@ class ClassificationPriorLoss(base.LossFn):
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
+  distill_index: bool = False
 
   def __call__(self, enn: base.EpistemicNetwork, params: hk.Params,
                batch: base.Batch, key: base.RngKey) -> base.Array:
-    fake_x, batched_out = _generate_batched_forward_at_fake_data(
-        self.num_index_sample, self.input_generator, enn, params, batch, key)
+
+    index_key, data_key = jax.random.split(key)
+    fake_x = self.input_generator(batch, data_key)
+    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
+    batched_out = generate_batched_forward_at_data(
+        self.num_index_sample, fake_x, enn, params, index_key)
 
     # Regularize towards prior output
     loss = self.scale * l2_training_penalty(batched_out)
 
     # Distill aggregate stats to the "mean_index"
-    if hasattr(enn.indexer, 'mean_index'):
+    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
       loss += distill_mean_classification(batched_out, distill_out)
       loss += distill_var_classification(batched_out, distill_out)

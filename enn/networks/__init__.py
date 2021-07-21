@@ -16,11 +16,21 @@
 # ============================================================================
 
 """Exposing the public methods of the networks."""
+# BBB
+from enn.networks.bbb import DiagonalLinearHypermodel
+from enn.networks.bbb import make_bbb_enn
 # Categorical regression ensemble
 from enn.networks.categorical_ensembles import CategoricalRegressionMLP
 from enn.networks.categorical_ensembles import CatMLPEnsembleGpPrior
 from enn.networks.categorical_ensembles import CatMLPEnsembleMlpPrior
 from enn.networks.categorical_ensembles import CatOutputWithPrior
+# Dropout
+from enn.networks.dropout import MLPDropoutENN
+# Einsum MLP
+from enn.networks.einsum_mlp import EnsembleMLP
+from enn.networks.einsum_mlp import make_einsum_ensemble_mlp_enn
+from enn.networks.einsum_mlp import make_ensemble_mlp_with_prior_enn
+# Ensemble
 from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleArbitraryPrior
@@ -28,33 +38,30 @@ from enn.networks.ensembles import MLPEnsembleEnn
 from enn.networks.ensembles import MLPEnsembleGpPrior
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
 from enn.networks.ensembles import wrap_sequence_as_prior
+# Gaussian ENN
 from enn.networks.gaussian_enn import GaussianNoiseEnn
 from enn.networks.gaussian_enn import GaussianNoiseMLP
+# Hypermodels
 from enn.networks.hypermodels import hypermodel_module
 from enn.networks.hypermodels import MLPHypermodel
+from enn.networks.hypermodels import MLPHypermodelPriorIndependentLayers
 from enn.networks.hypermodels import MLPHypermodelWithHypermodelPrior
+from enn.networks.hypermodels import PriorMLPIndependentLayers
+# Index MLP
 from enn.networks.index_mlp import ConcatIndexMLP
 from enn.networks.index_mlp import IndexMLPEnn
 from enn.networks.index_mlp import IndexMLPWithGpPrior
+# Indexers
 from enn.networks.indexers import DirichletIndexer
 from enn.networks.indexers import EnsembleIndexer
 from enn.networks.indexers import GaussianWithUnitIndexer
 from enn.networks.indexers import PrngIndexer
 from enn.networks.indexers import ScaledGaussianIndexer
+# Priors
+from enn.networks.priors import convert_enn_to_prior_fn
 from enn.networks.priors import EnnWithAdditivePrior
 from enn.networks.priors import get_random_mlp_with_index
 from enn.networks.priors import make_null_prior
 from enn.networks.priors import make_random_feat_gp
 from enn.networks.priors import NetworkWithAdditivePrior
-
-# Ensemble
-
-# Gaussian ENN
-
-# Hypermodels
-
-# Index MLP
-
-# Indexers
-
-# Priors
+from enn.networks.priors import PriorFn

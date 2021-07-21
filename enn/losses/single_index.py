@@ -16,27 +16,26 @@
 # ============================================================================
 
 """Collection of simple losses applied to one single index."""
-import abc
 from typing import Callable, Tuple
 
 import chex
 import dataclasses
 from enn import base
-from enn import bootstrapping
+from enn import data_noise
 from enn import utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import typing_extensions
 
 
-class SingleIndexLossFn(abc.ABC):
+class SingleIndexLossFn(typing_extensions.Protocol):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFn out of the
   SingleIndexLossFn.
   """
 
-  @abc.abstractmethod
   def __call__(self,
                apply: base.ApplyFn,
                params: hk.Params,
@@ -66,51 +65,46 @@ def average_single_index_loss(single_loss: SingleIndexLossFn,
   return loss_fn
 
 
-_LossType = Callable[[base.ApplyFn, hk.Params, base.Batch, base.Index],
-                     Tuple[base.Array, base.LossMetrics]]
+def add_data_noise(single_loss: SingleIndexLossFn,
+                   noise_fn: data_noise.DataNoise) -> SingleIndexLossFn:
+  """Applies a DataNoise function to each batch of data."""
+
+  def noisy_loss(apply: base.ApplyFn,
+                 params: hk.Params,
+                 batch: base.Batch,
+                 index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+    noisy_batch = noise_fn(batch, index)
+    return single_loss(apply, params, noisy_batch, index)
+  return noisy_loss
 
 
 @dataclasses.dataclass
-class FunctionalSingleIndexLoss(SingleIndexLossFn):
-  """Wrapper for a functional definition of a SingleIndexLoss.
-
-  Only necessary so that we can check for inheritance from
-  """
-  loss_fn: _LossType
+class L2Loss(SingleIndexLossFn):
+  """L2 regression applied to a single epistemic index."""
 
   def __call__(self,
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
-    return self.loss_fn(apply, params, batch, index)
+    """L2 regression applied to a single epistemic index."""
+    chex.assert_shape(batch.y, (None, 1))
+    chex.assert_shape(batch.data_index, (None, 1))
+    net_out = utils.parse_net_output(apply(params, batch.x, index))
+    chex.assert_equal_shape([net_out, batch.y])
+    sq_loss = jnp.square(utils.parse_net_output(net_out) - batch.y)
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.data_index)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, sq_loss])
+    return jnp.mean(batch_weights * sq_loss), {}
 
 
 @dataclasses.dataclass
-class L2LossWithBootstrap(SingleIndexLossFn):
-  """L2 regression with bootstrap weighting."""
-  boot_fn: bootstrapping.BootstrapFn = bootstrapping.null_bootstrap
-
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
-    chex.assert_shape(batch['y'], (None, 1))
-    chex.assert_shape(batch['data_index'], (None, 1))
-    net_out = utils.parse_net_output(apply(params, batch['x'], index))
-    chex.assert_equal_shape([net_out, batch['y']])
-    sq_loss = jnp.square(utils.parse_net_output(net_out) - batch['y'])
-    boot_weights = self.boot_fn(batch['data_index'], index)
-    chex.assert_equal_shape([boot_weights, sq_loss])
-    return jnp.mean(boot_weights * sq_loss), {}
-
-
-@dataclasses.dataclass
-class XentLossWithBootstrap(SingleIndexLossFn):
-  """Cross-entropy classification with bootstrap weighting."""
+class XentLoss(SingleIndexLossFn):
+  """Cross-entropy classification single index loss."""
   num_classes: int
-  boot_fn: bootstrapping.BootstrapFn = bootstrapping.null_bootstrap
 
   def __post_init__(self):
     chex.assert_scalar_non_negative(self.num_classes - 2.0)
@@ -120,17 +114,20 @@ class XentLossWithBootstrap(SingleIndexLossFn):
                params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
-    chex.assert_shape(batch['label'], (None, 1))
-    chex.assert_shape(batch['data_index'], (None, 1))
-    net_out = apply(params, batch['x'], index)
+    chex.assert_shape(batch.y, (None, 1))
+    chex.assert_shape(batch.data_index, (None, 1))
+    net_out = apply(params, batch.x, index)
     logits = utils.parse_net_output(net_out)
-    labels = jax.nn.one_hot(batch['label'][:, 0], self.num_classes)
+    labels = jax.nn.one_hot(batch.y[:, 0], self.num_classes)
 
     softmax_xent = -jnp.sum(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
-    boot_weights = self.boot_fn(batch['data_index'], index)
-    chex.assert_equal_shape([boot_weights, softmax_xent])
-    return jnp.mean(boot_weights * softmax_xent), {}
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.data_index)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, softmax_xent])
+    return jnp.mean(batch_weights * softmax_xent), {}
 
 
 @dataclasses.dataclass
@@ -143,11 +140,11 @@ class AccuracyErrorLoss(SingleIndexLossFn):
                params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
-    chex.assert_shape(batch['label'], (None, 1))
-    net_out = apply(params, batch['x'], index)
+    chex.assert_shape(batch.y, (None, 1))
+    net_out = apply(params, batch.x, index)
     logits = utils.parse_net_output(net_out)
     preds = jnp.argmax(logits, axis=1)
-    correct = (preds == batch['label'][:, 0])
+    correct = (preds == batch.y[:, 0])
     accuracy = jnp.mean(correct)
     return 1 - accuracy, {'accuracy': accuracy}
 
@@ -173,7 +170,7 @@ class ElboLoss(SingleIndexLossFn):
                batch: base.Batch,
                index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
     """This function returns a one-sample MC estimate of the ELBO."""
-    out = apply(params, batch['x'], index)
+    out = apply(params, batch.x, index)
     log_likelihood = self.log_likelihood_fn(out, batch)
     model_prior_kl = self.model_prior_kl_fn(out, params, index)
     chex.assert_equal_shape([log_likelihood, model_prior_kl])

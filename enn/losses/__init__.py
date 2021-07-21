@@ -17,25 +17,38 @@
 
 """Exposing the public methods of the losses."""
 # Categorical regression
-from enn.losses.categorical_regression import Cat2HotRegressionWithBootstrap
+from enn.losses.categorical_regression import Cat2HotRegression
 from enn.losses.categorical_regression import transform_to_2hot
 
 # Prior losses
 from enn.losses.prior_losses import ClassificationPriorLoss
+from enn.losses.prior_losses import generate_batched_forward_at_data
+from enn.losses.prior_losses import make_gaussian_dataset
 from enn.losses.prior_losses import MatchingGaussianData
 from enn.losses.prior_losses import RegressionPriorLoss
-from enn.losses.prior_losses import SpecialRegressionData
 
 # Single Index
 from enn.losses.single_index import AccuracyErrorLoss
+from enn.losses.single_index import add_data_noise
 from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
-from enn.losses.single_index import L2LossWithBootstrap
+from enn.losses.single_index import L2Loss
 from enn.losses.single_index import SingleIndexLossFn
-from enn.losses.single_index import XentLossWithBootstrap
+from enn.losses.single_index import XentLoss
 
 # Utils
 from enn.losses.utils import add_l2_weight_decay
+from enn.losses.utils import combine_losses
 from enn.losses.utils import combine_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
-from enn.losses.utils import l2_weights_excluding_name
+from enn.losses.utils import CombineLossConfig
+from enn.losses.utils import l2_weights_with_predicate
+
+# VI losses
+from enn.losses.vi_losses import get_awgn_loglike_fn
+from enn.losses.vi_losses import get_categorical_loglike_fn
+from enn.losses.vi_losses import get_diagonal_linear_hypermodel_elbo_fn
+from enn.losses.vi_losses import get_hyperflow_elbo_fn
+from enn.losses.vi_losses import get_lhm_log_model_prob_fn
+from enn.losses.vi_losses import get_linear_hypermodel_elbo_fn
+from enn.losses.vi_losses import get_nn_params_log_prior_prob_fn

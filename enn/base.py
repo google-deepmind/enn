@@ -18,7 +18,7 @@
 """Base classes for Epistemic Neural Network design in JAX / Haiku."""
 
 import abc
-from typing import Callable, Dict, Iterator, NamedTuple, Union, Tuple
+from typing import Dict, Iterator, NamedTuple, Optional, Tuple, Union
 
 import dataclasses
 import haiku as hk
@@ -53,8 +53,19 @@ class EpistemicModule(abc.ABC, hk.Module):
   def __call__(self, inputs: Array, index: Index) -> Output:
     """Forwards the epsitemic network y = f(x,z)."""
 
-ApplyFn = Callable[[hk.Params, Array, Index], Output]  # Forward params on (x,z)
-InitFn = Callable[[RngKey, Array, Index], hk.Params]  # Initialize module params
+
+class ApplyFn(typing_extensions.Protocol):
+  """Applies the ENN at given parameters, inputs, index."""
+
+  def __call__(self, params: hk.Params, inputs: Array, index: Index) -> Output:
+    """Applies the ENN at given parameters, inputs, index."""
+
+
+class InitFn(typing_extensions.Protocol):
+  """Initializes the ENN at given rng_key, inputs, index."""
+
+  def __call__(self, rng_key: RngKey, inputs: Array, index: Index) -> hk.Params:
+    """Initializes the ENN at given rng_key, inputs, index."""
 
 
 class EpistemicIndexer(typing_extensions.Protocol):
@@ -72,7 +83,13 @@ class EpistemicNetwork:
   indexer: EpistemicIndexer
 
 
-Batch = Union[Dict[str, np.ndarray], NamedTuple]  # Batch of data to train on
+class Batch(NamedTuple):
+  x: Array  # Inputs
+  y: Array  # Targets
+  data_index: Optional[DataIndex] = None  # Integer identifiers for data
+  weights: Optional[Array] = None  # None should default to weights = jnp.ones
+  extra: Dict[str, Array] = {}  # You can put other optional stuff here
+
 BatchIterator = Iterator[Batch]  # Equivalent to the dataset we loop through
 LossMetrics = Dict[str, Array]
 

@@ -20,7 +20,6 @@
 import chex
 import dataclasses
 from enn import base
-from enn import bootstrapping
 from enn import networks
 from enn.losses import single_index
 import haiku as hk
@@ -46,28 +45,29 @@ def transform_to_2hot(target: base.Array, support: base.Array) -> base.Array:
 
 
 @dataclasses.dataclass
-class Cat2HotRegressionWithBootstrap(single_index.SingleIndexLossFn):
+class Cat2HotRegression(single_index.SingleIndexLossFn):
   """Apply categorical loss to 2-hot regression target."""
-  boot_fn: bootstrapping.BootstrapFn = bootstrapping.null_bootstrap
 
   def __call__(self, apply: base.ApplyFn, params: hk.Params,
                batch: base.Batch, index: base.Index) -> base.Array:
-    chex.assert_shape(batch['y'], (None, 1))
-    chex.assert_shape(batch['data_index'], (None, 1))
+    chex.assert_shape(batch.y, (None, 1))
+    chex.assert_shape(batch.data_index, (None, 1))
 
     # Forward network and check type
-    net_out = apply(params, batch['x'], index)
+    net_out = apply(params, batch.x, index)
     assert isinstance(net_out, networks.CatOutputWithPrior)
 
     # Form the target values in real space
-    target_val = batch['y'] - net_out.prior
+    target_val = batch.y - net_out.prior
 
     # Convert values to 2-hot target probabilities
     probs = jax.vmap(transform_to_2hot, in_axes=[0, None])(
         jnp.squeeze(target_val), net_out.extra['atoms'])
     probs = jnp.expand_dims(probs, 1)
     xent_loss = -jnp.sum(probs * jax.nn.log_softmax(net_out.train), axis=-1)
-    boot_weights = self.boot_fn(batch['data_index'], index)
-
-    chex.assert_equal_shape([boot_weights, xent_loss])
-    return jnp.mean(boot_weights * xent_loss), {}
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.data_index)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, xent_loss])
+    return jnp.mean(batch_weights * xent_loss), {}

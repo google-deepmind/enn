@@ -124,5 +124,4 @@ class IndexMLPEnn(base.EpistemicNetwork):
         enn_ctor=lambda: ConcatIndexMLP(output_sizes, index_dim, variance_dim),
         indexer=indexers.GaussianWithUnitIndexer(index_dim),
     )
-    apply = lambda p, x, z: enn.apply(p, x, z).train
-    super().__init__(apply, enn.init, enn.indexer)
+    super().__init__(enn.apply, enn.init, enn.indexer)

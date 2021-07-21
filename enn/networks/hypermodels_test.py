@@ -87,6 +87,37 @@ class MLPHypermodelTest(parameterized.TestCase):
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
+  @parameterized.parameters([
+      ([], [], [2], 0.0, 4, True),
+      ([3], [], [2, 2], 1.0, 1, True),
+      ([3], [], [2, 2], 1.0, 3, True),
+      ([3], [], [2, 2], 1.0, 5, True),
+      ([], [], [2], 0.0, 4, False),
+      ([3], [], [2, 2], 1.0, 1, False),
+      ([3], [], [2, 2], 1.0, 3, False),
+      ([3], [], [2, 2], 1.0, 5, False),
+  ])
+  def test_hyper_prior_independent_layers(self, model_hiddens: List[int],
+                                          hyper_hiddens: List[int],
+                                          prior_hiddens: List[int],
+                                          prior_scale: float, index_dim: int,
+                                          regression: bool):
+    """Simple test to run just 10 batches."""
+    test_experiment = supervised.make_test_experiment(regression)
+    indexer = indexers.ScaledGaussianIndexer(index_dim, index_scale=1.0)
+
+    enn = hypermodels.MLPHypermodelPriorIndependentLayers(
+        base_output_sizes=model_hiddens + [test_experiment.num_outputs],
+        prior_scale=prior_scale,
+        dummy_input=test_experiment.dummy_input,
+        indexer=indexer,
+        prior_base_output_sizes=prior_hiddens +
+        [test_experiment.num_outputs],
+        hyper_hidden_sizes=hyper_hiddens,)
+
+    experiment = test_experiment.experiment_ctor(enn)
+    experiment.train(10)
+
 
 if __name__ == '__main__':
   absltest.main()

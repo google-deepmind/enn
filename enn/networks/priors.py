@@ -27,16 +27,20 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 
+PriorFn = Callable[[base.Array, base.Index], base.Array]
+
 
 class EnnWithAdditivePrior(base.EpistemicNetwork):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
                enn: base.EpistemicNetwork,
-               prior_fn: Callable[[base.Array, base.Index], base.Array],
+               prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
-    def apply_fn(params: hk.Params, inputs: base.Array, index: base.Index):
+    def apply_fn(params: hk.Params,
+                 inputs: base.Array,
+                 index: base.Index) -> base.OutputWithPrior:
       net_out = enn.apply(params, inputs, index)
       prior = prior_scale * prior_fn(inputs, index)
       if isinstance(net_out, base.OutputWithPrior):
@@ -49,6 +53,17 @@ class EnnWithAdditivePrior(base.EpistemicNetwork):
         init=enn.init,
         indexer=enn.indexer,
     )
+
+
+def convert_enn_to_prior_fn(enn: base.EpistemicNetwork,
+                            dummy_input: base.Array,
+                            key: base.RngKey) -> PriorFn:
+  index_key, init_key, _ = jax.random.split(key, 3)
+  index = enn.indexer(index_key)
+  prior_params = enn.init(init_key, dummy_input, index)
+  def prior_fn(x: base.Array, z: base.Index) -> base.Output:
+    return enn.apply(prior_params, x, z)
+  return prior_fn
 
 
 def make_null_prior(output_dim: int) -> Callable[[base.Array], base.Array]:
@@ -121,7 +136,7 @@ def get_random_mlp_with_index(
     prior_output_sizes: Optional[Iterable[int]] = None,
     prior_weight_std: float = 3,
     prior_bias_std: float = 0.1
-    ) -> Callable[[base.Array, base.Array], base.Array]:
+) -> PriorFn:
   """Construct a prior func f(x, z) based on a random MLP.
 
   The returned function assumes the data input, x, to include a batch dimension

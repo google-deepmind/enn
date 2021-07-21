@@ -20,6 +20,10 @@
 # Base
 from enn.supervised.base import BaseExperiment
 
+# Multiloss
+from enn.supervised.multiloss_experiment import MultilossExperiment
+from enn.supervised.multiloss_experiment import MultilossTrainer
+
 # Experiments
 from enn.supervised.sgd_experiment import Experiment
 

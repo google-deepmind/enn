@@ -15,12 +15,13 @@
 # limitations under the License.
 # ============================================================================
 
-"""An standard experiment operating by SGD."""
+"""An SGD experiment with facility for multiple losses."""
 
 import functools
-from typing import Dict, NamedTuple, Optional, Tuple
+from typing import Callable, Dict, NamedTuple, Optional, Sequence, Tuple
 
 from acme.utils import loggers
+import dataclasses
 from enn import base
 from enn.supervised import base as supervised_base
 import haiku as hk
@@ -33,8 +34,33 @@ class TrainingState(NamedTuple):
   opt_state: optax.OptState
 
 
-class Experiment(supervised_base.BaseExperiment):
-  """Class to handle supervised training.
+@dataclasses.dataclass
+class MultilossTrainer:
+  """Specify the training schedule for a given loss/dataset.
+
+  For step=1,2,...:
+    If should_train(step):
+      Apply one step of loss_fn on a batch = next(dataset).
+  """
+  loss_fn: base.LossFn  # Loss function
+  dataset: base.BatchIterator  # Dataset to pull batch from
+  should_train: Callable[[int], bool] = lambda _: True  # Which steps to train
+  name: str = 'loss'  # Name used for logging
+
+
+# Type definition for loss function after internalizing the ENN
+PureLoss = Callable[[hk.Params, base.Batch, base.RngKey], base.Array]
+
+
+class MultilossExperiment(supervised_base.BaseExperiment):
+  """Class to handle supervised training with multiple losses.
+
+  At each step=1,2,...:
+    For t in trainers:
+      If t.should_train(step):
+        Apply one step of t.loss_fn on batch = next(t.dataset)
+
+  This can be useful for settings like "prior_loss" or transfer learning.
 
   Optional eval_datasets which is a collection of datasets to *evaluate*
   the loss on every eval_log_freq steps.
@@ -42,20 +68,16 @@ class Experiment(supervised_base.BaseExperiment):
 
   def __init__(self,
                enn: base.EpistemicNetwork,
-               loss_fn: base.LossFn,
+               trainers: Sequence[MultilossTrainer],
                optimizer: optax.GradientTransformation,
-               dataset: base.BatchIterator,
                seed: int = 0,
                logger: Optional[loggers.Logger] = None,
                train_log_freq: int = 1,
                eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
                eval_log_freq: int = 1):
     self.enn = enn
-    self.dataset = dataset
+    self.pure_trainers = _purify_trainers(trainers, enn)
     self.rng = hk.PRNGSequence(seed)
-
-    # Internalize the loss_fn
-    self._loss = jax.jit(functools.partial(loss_fn, self.enn))
 
     # Internalize the eval datasets
     self._eval_datasets = eval_datasets
@@ -70,12 +92,13 @@ class Experiment(supervised_base.BaseExperiment):
 
     # Define the SGD step on the loss
     def sgd_step(
+        pure_loss: PureLoss,
         state: TrainingState,
         batch: base.Batch,
         key: base.RngKey,
     ) -> Tuple[TrainingState, base.LossMetrics]:
       # Calculate the loss, metrics and gradients
-      (loss, metrics), grads = jax.value_and_grad(self._loss, has_aux=True)(
+      (loss, metrics), grads = jax.value_and_grad(pure_loss, has_aux=True)(
           state.params, batch, key)
       metrics.update({'loss': loss})
       updates, new_opt_state = optimizer.update(grads, state.opt_state)
@@ -85,10 +108,10 @@ class Experiment(supervised_base.BaseExperiment):
           opt_state=new_opt_state,
       )
       return new_state, metrics
-    self._sgd_step = jax.jit(sgd_step)
+    self._sgd_step = jax.jit(sgd_step, static_argnums=0)
 
     # Initialize networks
-    batch = next(self.dataset)
+    batch = next(self.pure_trainers[0].dataset)
     index = self.enn.indexer(next(self.rng))
     params = self.enn.init(next(self.rng), batch.x, index)
     opt_state = optimizer.init(params)
@@ -102,32 +125,65 @@ class Experiment(supervised_base.BaseExperiment):
     """Train the ENN for num_batches."""
     for _ in range(num_batches):
       self.step += 1
-      self.state, loss_metrics = self._sgd_step(
-          self.state, next(self.dataset), next(self.rng))
+      for t in self.pure_trainers:
+        if t.should_train(self.step):
+          self.state, loss_metrics = self._sgd_step(
+              t.pure_loss, self.state, next(t.dataset), next(self.rng))
 
-      # Periodically log this performance as dataset=train.
-      if self.step % self._train_log_freq == 0:
-        loss_metrics.update(
-            {'dataset': 'train', 'step': self.step, 'sgd': True})
-        self.logger.write(loss_metrics)
+          # Periodically log this performance as dataset=train.
+          if self.step % self._train_log_freq == 0:
+            loss_metrics.update({
+                'dataset': 'train',
+                'step': self.step,
+                'sgd': True,
+                'trainer': t.name,
+            })
+            self.logger.write(loss_metrics)
 
       # Periodically evaluate the other datasets.
       if self._eval_datasets and self.step % self._eval_log_freq == 0:
         for name, dataset in self._eval_datasets.items():
-          loss, metrics = self._loss(
-              self.state.params, next(dataset), next(self.rng))
-          metrics.update({
-              'dataset': name,
-              'step': self.step,
-              'sgd': False,
-              'loss': loss,
-          })
-          self.logger.write(metrics)
+          for t in self.pure_trainers:
+            loss, metrics = t.pure_loss(
+                self.state.params, next(dataset), next(self.rng))
+            metrics.update({
+                'dataset': name,
+                'step': self.step,
+                'sgd': False,
+                'loss': loss,
+                'trainer': t.name,
+            })
+            self.logger.write(metrics)
 
   def predict(self, inputs: base.Array, seed: int) -> base.Array:
     """Evaluate the trained model at given inputs."""
     return self._forward(self.state.params, inputs, jax.random.PRNGKey(seed))
 
   def loss(self, batch: base.Batch, seed: int) -> base.Array:
-    """Evaluate the loss for one batch of data."""
-    return self._loss(self.state.params, batch, jax.random.PRNGKey(seed))
+    """Evaluate the first loss for one batch of data."""
+    pure_loss = self.pure_trainers[0].pure_loss
+    return pure_loss(self.state.params, batch, jax.random.PRNGKey(seed))
+
+
+@dataclasses.dataclass
+class _PureTrainer:
+  """An intermediate representation of MultilossTrainer with pure loss."""
+  pure_loss: PureLoss  # Pure loss function after internalizing enn
+  dataset: base.BatchIterator  # Dataset to pull batch from
+  should_train: Callable[[int], bool]  # Whether should train on step
+  name: str = 'loss'  # Name used for logging
+
+
+def _purify_trainers(trainers: Sequence[MultilossTrainer],
+                     enn: base.EpistemicNetwork) -> Sequence[_PureTrainer]:
+  """Converts MultilossTrainer to have *pure* loss function including enn."""
+  pure_trainers = []
+  for t in trainers:
+    pure_trainer = _PureTrainer(
+        pure_loss=jax.jit(functools.partial(t.loss_fn, enn)),
+        dataset=t.dataset,
+        should_train=t.should_train,
+        name=t.name,
+    )
+    pure_trainers.append(pure_trainer)
+  return tuple(pure_trainers)
