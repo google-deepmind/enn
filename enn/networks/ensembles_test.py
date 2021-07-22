@@ -24,6 +24,7 @@ from enn import supervised
 from enn import utils
 from enn.networks import ensembles
 import haiku as hk
+import jax
 import numpy as np
 
 
@@ -96,7 +97,7 @@ class EnsemblesTest(parameterized.TestCase):
     # Since the bias and weights are initilaized to zero, we expect the output
     # before training to be equal to the prior
     sample_net_out = utils.parse_net_output(
-        experiment.predict(test_experiment.dummy_input, 0))
+        experiment.predict(test_experiment.dummy_input, jax.random.PRNGKey(0)))
     expected_net_out = prior_constant * np.ones_like(sample_net_out)
     np.testing.assert_array_equal(sample_net_out, expected_net_out)
 
