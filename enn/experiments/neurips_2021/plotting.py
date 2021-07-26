@@ -20,6 +20,7 @@
 import chex
 from enn.experiments.neurips_2021 import base as testbed_base
 from enn.experiments.neurips_2021 import testbed
+import haiku as hk
 import numpy as np
 import pandas as pd
 import plotnine as gg
@@ -45,8 +46,9 @@ def _gen_samples(enn_sampler: testbed_base.EpistemicSampler,
                  num_samples: int) -> pd.DataFrame:
   """Generate posterior samples at x (not implemented for all posterior)."""
   data = []
+  rng = hk.PRNGSequence(0)
   for seed in range(num_samples):
-    net_out = enn_sampler(x, seed)
+    net_out = enn_sampler(x, next(rng))
     y = net_out[:, 0]
     data.append(pd.DataFrame({'x': x[:, 0], 'y': y, 'seed': seed}))
   return pd.concat(data)

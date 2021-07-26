@@ -15,11 +15,10 @@
 # limitations under the License.
 # ============================================================================
 """Collecting factory methods for the best ENN agent configs."""
-
+import dataclasses
 from typing import Any, Callable, Dict, List, Sequence
 
 from acme.utils import loggers
-import dataclasses
 from enn import base as enn_base
 from enn import networks
 from enn.experiments.neurips_2021 import agents
