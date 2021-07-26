@@ -16,9 +16,9 @@
 # ============================================================================
 """Library for helper functions developing distillation ENN."""
 
+import dataclasses
 from typing import Dict, Sequence, Tuple
 
-import dataclasses
 from enn import base as enn_base
 from enn import losses
 from enn import utils

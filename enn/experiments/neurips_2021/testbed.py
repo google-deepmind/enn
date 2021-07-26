@@ -19,9 +19,8 @@
 Uses the neural_tangent library to compute the posterior mean and covariance
 for regression problem in closed form.
 """
-
-import chex
 import dataclasses
+import chex
 from enn.experiments.neurips_2021 import base as testbed_base
 import haiku as hk
 import jax
@@ -37,9 +36,9 @@ class GPRegression:
                kernel_fn: nt_types.KernelFn,
                x_train: chex.Array,
                x_test: chex.Array,
+               key: chex.PRNGKey,
                tau: int = 1,
                noise_std: float = 1,
-               seed: int = 1,
                kernel_ridge: float = 1e-6):
 
     # Checking the dimensionality of our data coming in.
@@ -47,7 +46,7 @@ class GPRegression:
     num_test_x_cache, input_dim_test = x_test.shape
     assert input_dim == input_dim_test
 
-    rng = hk.PRNGSequence(seed)
+    rng = hk.PRNGSequence(key)
     self._tau = tau
     self._input_dim = input_dim
     self._x_train = jnp.array(x_train)
@@ -98,6 +97,7 @@ class TestbedGPRegression(testbed_base.TestbedProblem):
   """Wraps GPRegression sampler for testbed with exact posterior inference."""
   data_sampler: GPRegression
   prior: testbed_base.PriorKnowledge
+  key: chex.PRNGKey
   num_enn_samples: int = 100
   std_ridge: float = 1e-3
 
@@ -122,7 +122,8 @@ class TestbedGPRegression(testbed_base.TestbedProblem):
 
     # Compute the mean and std of ENN posterior
     batched_sampler = jax.jit(jax.vmap(enn_sampler, in_axes=[None, 0]))
-    enn_samples = batched_sampler(x_test, jnp.arange(self.num_enn_samples))
+    enn_keys = jax.random.split(self.key, self.num_enn_samples)
+    enn_samples = batched_sampler(x_test, enn_keys)
     enn_samples = enn_samples[:, :, 0]
     chex.assert_shape(enn_samples, [self.num_enn_samples, num_test])
     enn_mean = jnp.mean(enn_samples, axis=0)

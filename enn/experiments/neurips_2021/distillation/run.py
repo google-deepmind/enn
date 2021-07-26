@@ -19,6 +19,7 @@
 from absl import app
 from absl import flags
 from acme.utils import loggers
+import chex
 from enn import base as enn_base
 from enn import data_noise
 from enn import losses
@@ -74,12 +75,13 @@ def make_loss(prior: testbed_base.PriorKnowledge,
 def extract_enn_sampler(
     agent: agents.VanillaEnnAgent) -> testbed_base.EpistemicSampler:
   """Extracts ENN sampler form the distillation component."""
-  def enn_sampler(x: enn_base.Array, seed: int = 0) -> enn_base.Array:
+  def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
     """Generate a random sample from posterior distribution at x."""
-    net_out = agent.experiment.predict(x, seed)
+    net_key, noise_key = jax.random.split(key)
+    net_out = agent.experiment.predict(x, net_key)
     mean = net_out.extra['mean']
     std = jnp.sqrt(jnp.exp(net_out.extra['log_var']))
-    noise = jax.random.normal(jax.random.PRNGKey(seed))
+    noise = jax.random.normal(noise_key)
     return mean + noise * std
   return jax.jit(enn_sampler)
 

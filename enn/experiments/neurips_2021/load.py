@@ -15,13 +15,13 @@
 # limitations under the License.
 # ============================================================================
 """Loading a GP regression instance for the testbed."""
-
+import dataclasses
 from typing import Tuple
 
 import chex
-import dataclasses
 from enn.experiments.neurips_2021 import base as testbed_base
 from enn.experiments.neurips_2021 import testbed
+import haiku as hk
 import jax
 import jax.config
 from neural_tangents import stax
@@ -70,12 +70,12 @@ def make_benchmark_kernel(input_dim: int = 1) -> nt_types.KernelFn:
   return kernel_ctor(input_dim)
 
 
-def gaussian_data(seed: int,
+def gaussian_data(key: chex.PRNGKey,
                   num_train: int,
                   input_dim: int,
                   num_test: int) -> Tuple[chex.Array, chex.Array]:
   """Generate Gaussian training and test data."""
-  train_key, test_key = jax.random.split(jax.random.PRNGKey(seed))
+  train_key, test_key = jax.random.split(key)
   x_train = jax.random.normal(train_key, [num_train, input_dim])
   x_test = jax.random.normal(test_key, [num_test, input_dim])
   return x_train, x_test
@@ -99,8 +99,9 @@ class RegressionTestbedConfig:
 def regression_load_from_config(
     config: RegressionTestbedConfig) -> testbed_base.TestbedProblem:
   """Loads regression problem from config."""
+  rng = hk.PRNGSequence(config.seed)
   x_train, x_test = gaussian_data(
-      seed=config.seed,
+      key=next(rng),
       num_train=config.num_train,
       input_dim=config.input_dim,
       num_test=config.num_test_cache,
@@ -111,7 +112,7 @@ def regression_load_from_config(
       x_test=x_test,
       tau=config.tau,
       noise_std=config.noise_std,
-      seed=config.seed,
+      key=next(rng),
   )
   prior_knowledge = testbed_base.PriorKnowledge(
       input_dim=config.input_dim,
@@ -122,7 +123,10 @@ def regression_load_from_config(
   )
   assert config.tau == 1, 'Only works for tau=1'
   return testbed.TestbedGPRegression(
-      data_sampler, prior_knowledge, num_enn_samples=config.num_enn_samples)
+      data_sampler,
+      prior_knowledge,
+      key=next(rng),
+      num_enn_samples=config.num_enn_samples)
 
 
 def regression_load(input_dim: int,

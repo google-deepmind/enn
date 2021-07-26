@@ -15,11 +15,10 @@
 # limitations under the License.
 # ============================================================================
 """A minimalist wrapper around ENN experiment for testbed submission."""
-
+import dataclasses
 from typing import Dict, Optional
 
 from acme.utils import loggers
-import dataclasses
 from enn import base as enn_base
 from enn import supervised
 from enn import utils
