@@ -123,5 +123,5 @@ If you use `ENN` in your work, please cite the accompanying [paper]:
 }
 ```
 
-[colab tutorial]: https://colab.research.google.com/github/deepmind/enn/blob/master/supervised/demo.ipynb
+[colab tutorial]: https://colab.research.google.com/github/deepmind/enn/blob/master/enn/supervised/demo.ipynb
 [paper]: https://arxiv.org/abs/2107.08924
