@@ -55,6 +55,7 @@ class ThompsonEnnBandit:
         input_dim=input_dim,
         num_train=1000,
         num_classes=1,
+        tau=1,
         layers=1,
         noise_std=noise_std,
     )
