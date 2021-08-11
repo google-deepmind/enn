@@ -39,6 +39,15 @@ class EnsembleIndexer(base.EpistemicIndexer):
 
 
 @dataclasses.dataclass
+class GaussianIndexer(base.EpistemicIndexer):
+  """A Gaussian indexer ~ N(0, I)."""
+  index_dim: int
+
+  def __call__(self, key: base.RngKey) -> base.Index:
+    return jax.random.normal(key, shape=[self.index_dim])
+
+
+@dataclasses.dataclass
 class ScaledGaussianIndexer(base.EpistemicIndexer):
   """A scaled Gaussian indexer."""
   index_dim: int
