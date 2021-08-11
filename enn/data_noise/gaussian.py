@@ -17,10 +17,10 @@
 
 """Utilities for perturbing data with Gaussian noise."""
 
+import dataclasses
 from typing import Callable
 
 import chex
-import dataclasses
 from enn import base
 from enn import networks
 from enn.data_noise import base as data_noise_base
@@ -55,12 +55,17 @@ def make_noise_fn(enn: base.EpistemicNetwork,
   if isinstance(indexer, networks.EnsembleIndexer):
     return _make_ensemble_gaussian_noise(noise_std, seed)
 
-  elif isinstance(indexer, networks.ScaledGaussianIndexer):
+  elif isinstance(indexer, networks.GaussianIndexer):
     return _make_gaussian_index_noise(indexer.index_dim, noise_std, seed)
 
+  elif isinstance(indexer, networks.ScaledGaussianIndexer):
+    return _make_scaled_gaussian_index_noise(indexer.index_dim, noise_std, seed)
+
   elif isinstance(indexer, networks.GaussianWithUnitIndexer):
-    index_dim = indexer.index_dim
-    raw_noise = _make_gaussian_index_noise(index_dim - 1, noise_std, seed)
+    # Ignore the first component which is always 1 and not Gaussian.
+    effective_index_dim = indexer.index_dim - 1
+    raw_noise = _make_scaled_gaussian_index_noise(
+        effective_index_dim, noise_std, seed)
     noise_fn = lambda d, z: raw_noise(d, z[1:])  # Don't include unit component.
     return noise_fn
 
@@ -93,7 +98,7 @@ def _make_ensemble_gaussian_noise(noise_std: float, seed: int) -> NoiseFn:
   return noise_fn
 
 
-def _make_gaussian_index_noise(
+def _make_scaled_gaussian_index_noise(
     index_dim: int,
     noise_std: float,
     seed: int) -> NoiseFn:
@@ -117,3 +122,30 @@ def _make_gaussian_index_noise(
 
   return noise_fn
 
+
+def _make_gaussian_index_noise(
+    index_dim: int,
+    noise_std: float,
+    seed: int,
+) -> NoiseFn:
+  """Factory method for Gaussian indexer."""
+  def sample_sphere(key: chex.PRNGKey) -> chex.Array:
+    x = jax.random.normal(key, shape=[index_dim])
+    return x / jnp.sqrt(jnp.sum(x ** 2))
+  batch_sample_sphere = jax.vmap(sample_sphere)
+
+  def noise_fn(data_index: base.DataIndex, index: base.Index) -> base.Array:
+    """Assumes scaled Gaussian index with reserved first component."""
+    chex.assert_shape(data_index, (None, 1))
+    b_keys = _make_key(data_index, seed)
+    b = batch_sample_sphere(b_keys)
+
+    # Expanding the index to match the batch
+    batch_size = data_index.shape[0]
+    z = jnp.repeat(jnp.expand_dims(index, 0), batch_size, axis=0)
+    chex.assert_shape(z, [batch_size, index_dim])
+    noise = jnp.sum(b * z, axis=1, keepdims=True) * noise_std
+    chex.assert_equal_shape([noise, data_index])
+    return noise
+
+  return noise_fn

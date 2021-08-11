@@ -20,11 +20,11 @@
 Note that we *may* want to pull this into a separate library from the ENN.
 """
 
+import dataclasses
 from typing import Callable, Optional, Sequence
 
 from absl import logging
 import chex
-import dataclasses
 from enn import base
 from enn import networks
 from enn.data_noise import base as data_noise_base
@@ -111,6 +111,15 @@ def make_boot_fn(enn: base.EpistemicNetwork,
     index_dim = indexer.index_dim
     logging.warning(
         'WARNING: indexer is in development, bootstrap may not be correct.')
+    if distribution == 'bernoulli':
+      return _make_gaussian_index_bernoulli_bootstrap(index_dim, seed)
+    else:
+      raise ValueError(
+          f'dist={distribution} not implemented for GaussianWithUnitIndexer.')
+
+  # Bootstrapping for Gaussian index
+  elif isinstance(indexer, networks.GaussianIndexer):
+    index_dim = indexer.index_dim
     if distribution == 'bernoulli':
       return _make_gaussian_index_bernoulli_bootstrap(index_dim, seed)
     else:
