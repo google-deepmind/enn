@@ -18,9 +18,9 @@
 """Base classes for Epistemic Neural Network design in JAX / Haiku."""
 
 import abc
+import dataclasses
 from typing import Dict, Iterator, NamedTuple, Optional, Tuple, Union
 
-import dataclasses
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -28,7 +28,7 @@ import numpy as np
 import typing_extensions
 
 Array = Union[np.ndarray, jnp.DeviceArray]
-DataIndex = Array  # Always integer
+DataIndex = Array  # Always integer elements
 Index = Array  # Epistemic index, paired with network
 RngKey = jnp.DeviceArray  # Integer pairs, see jax.random
 
