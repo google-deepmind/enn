@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """Efficient ensemble implementations for JAX/Haiku via einsum."""
-from typing import Optional, Sequence
+from typing import Sequence
 
 import chex
 from enn import base
@@ -117,24 +117,26 @@ class EnsembleBranch(hk.Module):
   def __init__(self,
                num_ensemble: int,
                output_size: int,
-               b_init: Optional[hk.initializers.Initializer] = None,
+               nonzero_bias: bool,
                name: str = 'ensemble_branch'):
     super().__init__(name=name)
     self.num_ensemble = num_ensemble
     self.output_size = output_size
-    if b_init:
-      self._b_init = b_init
-    else:
-      self._b_init = jnp.zeros
+    self.nonzero_bias = nonzero_bias
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:  # [B, H] -> [B, D, K]
     assert inputs.ndim == 2
     unused_batch, input_size = inputs.shape
+    if self.nonzero_bias:
+      b_init = hk.initializers.TruncatedNormal(
+          stddev=(1. / jnp.sqrt(input_size)))
+    else:
+      b_init = jnp.zeros
     w_init = hk.initializers.TruncatedNormal(stddev=(1. / jnp.sqrt(input_size)))
     w = hk.get_parameter(
         'w', [input_size, self.output_size, self.num_ensemble], init=w_init)
     b = hk.get_parameter(
-        'b', [self.output_size, self.num_ensemble], init=self._b_init)
+        'b', [self.output_size, self.num_ensemble], init=b_init)
     return jnp.einsum('bi,ijk->bjk', inputs, w) + b
 
 
@@ -174,11 +176,7 @@ class EnsembleMLP(hk.Module):
     layers = []
     for index, output_size in enumerate(output_sizes):
       if index == 0:
-        if nonzero_bias:
-          b_init = hk.initializers.TruncatedNormal(stddev=1)
-        else:
-          b_init = jnp.zeros
-        layers.append(EnsembleBranch(num_ensemble, output_size, b_init))
+        layers.append(EnsembleBranch(num_ensemble, output_size, nonzero_bias))
       else:
         layers.append(EnsembleLinear(output_size))
     self.layers = tuple(layers)
