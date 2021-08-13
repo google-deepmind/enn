@@ -118,7 +118,6 @@ def regression_load_from_config(
       input_dim=config.input_dim,
       num_train=config.num_train,
       num_classes=1,
-      tau=1,
       layers=config.num_layers,
       noise_std=config.noise_std,
   )
