@@ -20,6 +20,8 @@ from typing import Optional, Sequence
 from enn import base
 from enn.networks import indexers
 import haiku as hk
+import jax
+import jax.numpy as jnp
 
 
 class MLPDropoutENN(base.EpistemicNetwork):
@@ -31,28 +33,42 @@ class MLPDropoutENN(base.EpistemicNetwork):
       dropout_rate: float = 0.05,
       dropout_input: bool = True,
       seed: int = 0,
+      nonzero_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None
   ):
     """MLP with dropout as an ENN."""
 
     def enn_fn(inputs: base.Array,
-               index: base.Index) -> base.Output:
+               z: base.Index) -> base.Output:
       x = hk.Flatten()(inputs)
 
-      # Note that we consider a dropout layer after the input to be consistent
-      # with the paper "Dropout as a Bayesian Approximation: Representing Model
-      # Uncertainty in Deep Learning" (2015),
-      # https://github.com/yaringal/DropoutUncertaintyExps/blob/master/net/net.py
-      if dropout_input:
-        # We use index as rng for the dropout layer.
-        x = hk.dropout(index, dropout_rate, x)
-      net = hk.nets.MLP(output_sizes, w_init=w_init, b_init=b_init)
-
-      # We use index as rng for the dropout layer.
-      return net(x, dropout_rate=dropout_rate, rng=index)
+      assert inputs.ndim == 2
+      unused_batch, input_size = inputs.shape
+      for layer_index, output_size in enumerate(output_sizes):
+        if layer_index == 0:
+          if nonzero_bias:
+            b_init_0 = hk.initializers.TruncatedNormal(
+                stddev=(1. / jnp.sqrt(input_size)))
+          else:
+            b_init_0 = b_init
+          x = hk.Linear(output_size, w_init=w_init, b_init=b_init_0)(x)
+          # Note that we consider a dropout layer after the input to be
+          # consistent with the paper "Dropout as a Bayesian Approximation:
+          # Representing Model Uncertainty in Deep Learning" (2015),
+          # https://github.com/yaringal/DropoutUncertaintyExps/blob/master/net/net.py
+          if dropout_input:
+            # We use index z as rng key for the dropout layer.
+            x = hk.dropout(z, dropout_rate, x)
+        else:
+          x = hk.Linear(output_size, w_init=w_init, b_init=b_init)(x)
+          # We use index z as rng key for the dropout layer.
+          x = hk.dropout(z, dropout_rate, x)
+        if layer_index < len(output_sizes) - 1:
+          x = jax.nn.relu(x)
+      return x
     # Note that although our enn_fn is stochastic because of the dropout layer,
-    # since we pass an index as rng directly, we can strill wrap transformed
+    # since we pass an index as rng directly, we can still wrap transformed
     # function with hk.without_apply_rng.
     transformed = hk.without_apply_rng(hk.transform(enn_fn))
 
