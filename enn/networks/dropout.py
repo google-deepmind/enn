@@ -40,11 +40,15 @@ class MLPDropoutENN(base.EpistemicNetwork):
     """MLP with dropout as an ENN."""
 
     def enn_fn(inputs: base.Array,
-               z: base.Index) -> base.Output:
+               index: base.Index) -> base.Output:
       x = hk.Flatten()(inputs)
 
       assert inputs.ndim == 2
       unused_batch, input_size = inputs.shape
+      num_layers = len(output_sizes)
+      # We split index based on the number layers to generate an rng key for
+      # each dropout layer.
+      indices = jax.random.split(index, num_layers)
       for layer_index, output_size in enumerate(output_sizes):
         if layer_index == 0:
           if nonzero_bias:
@@ -58,12 +62,10 @@ class MLPDropoutENN(base.EpistemicNetwork):
           # Representing Model Uncertainty in Deep Learning" (2015),
           # https://github.com/yaringal/DropoutUncertaintyExps/blob/master/net/net.py
           if dropout_input:
-            # We use index z as rng key for the dropout layer.
-            x = hk.dropout(z, dropout_rate, x)
+            x = hk.dropout(indices[layer_index], dropout_rate, x)
         else:
           x = hk.Linear(output_size, w_init=w_init, b_init=b_init)(x)
-          # We use index z as rng key for the dropout layer.
-          x = hk.dropout(z, dropout_rate, x)
+          x = hk.dropout(indices[layer_index], dropout_rate, x)
         if layer_index < len(output_sizes) - 1:
           x = jax.nn.relu(x)
       return x
