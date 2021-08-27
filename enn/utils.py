@@ -98,9 +98,10 @@ def make_batch_iterator(data: base.Batch,
   n_data = len(data.y)
   if not batch_size:
     batch_size = n_data
-  ds = tf.data.Dataset.from_tensor_slices(data).cache().repeat()
-  ds = ds.shuffle(50 * batch_size, seed=seed)
-  ds = ds.batch(batch_size)
+
+  ds = tf.data.Dataset.from_tensor_slices(data).cache()
+  ds = ds.shuffle(min(n_data, 50 * batch_size), seed=seed)
+  ds = ds.repeat().batch(batch_size)
 
   return iter(tfds.as_numpy(ds))
 
