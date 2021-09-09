@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """Efficient ensemble implementations for JAX/Haiku via einsum."""
-from typing import Sequence
+from typing import Callable, Sequence
 
 import chex
 from enn import base
@@ -29,6 +29,7 @@ def make_einsum_ensemble_mlp_enn(
     output_sizes: Sequence[int],
     num_ensemble: int,
     nonzero_bias: bool = True,
+    activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
 ) -> base.EpistemicNetwork:
   """Factory method to create fast einsum MLP ensemble ENN.
 
@@ -38,12 +39,13 @@ def make_einsum_ensemble_mlp_enn(
     output_sizes: Sequence of integer sizes for the MLPs.
     num_ensemble: Integer number of elements in the ensemble.
     nonzero_bias: Whether to make the initial layer bias nonzero.
+    activation: Jax callable defining activation per layer.
   Returns:
     EpistemicNetwork as an ensemble of MLP.
   """
   def ensemble_forward(x: base.Array) -> base.OutputWithPrior:
     """Forwards the entire ensemble at given input x."""
-    model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias)
+    model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias, activation)
     return model(x)
 
   transformed = hk.without_apply_rng(hk.transform(ensemble_forward))
@@ -170,9 +172,11 @@ class EnsembleMLP(hk.Module):
                output_sizes: Sequence[int],
                num_ensemble: int,
                nonzero_bias: bool = True,
+               activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
                name: str = 'ensemble_mlp'):
     super().__init__(name=name)
     self.num_ensemble = num_ensemble
+    self.activation = activation
     layers = []
     for index, output_size in enumerate(output_sizes):
       if index == 0:
@@ -187,5 +191,5 @@ class EnsembleMLP(hk.Module):
     for i, layer in enumerate(self.layers):
       out = layer(out)
       if i < num_layers - 1:
-        out = jax.nn.relu(out)
+        out = self.activation(out)
     return out
