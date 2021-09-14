@@ -40,9 +40,8 @@ class LossesTest(parameterized.TestCase):
     nelbo_fn = vi_losses.get_diagonal_linear_hypermodel_elbo_fn(
         log_likelihood_fn, sigma_0=sigma_0, num_samples=1)
 
-    w_scale = np.log(np.exp(sigma) - 1)  # sigma = log(1 + exp(w))
     params = {'layer': {
-        'w': w_scale * np.ones(num_params,),
+        'w': sigma * np.ones(num_params,),
         'b': mu * np.ones(num_params,)}}
     kl = 0.5 * num_params * (sigma**2 + mu**2 / sigma_0 - 1 - 2 * np.log(sigma))
     batch = enn_base.Batch(x=np.zeros((2, 1)), y=np.zeros((2, 1)))

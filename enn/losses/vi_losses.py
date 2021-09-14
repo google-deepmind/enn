@@ -175,13 +175,12 @@ def get_diagonal_linear_hypermodel_elbo_fn(
     biases = jnp.concatenate(biases, axis=0)
     weights, _ = jax.tree_flatten(weights)
     weights = jnp.concatenate(weights, axis=0)
-    scales = jnp.log(1 + jnp.exp(weights))
-    chex.assert_equal_shape([scales, biases])
+    chex.assert_equal_shape([weights, biases])
     return 0.5  / num_samples * (
-        jnp.sum(jnp.square(scales))
+        jnp.sum(jnp.square(weights))
         + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
         - len(biases)
-        - 2 * jnp.sum(jnp.log(scales))
+        - 2 * jnp.sum(jnp.log(weights))
         )
 
   return single_index.ElboLoss(
