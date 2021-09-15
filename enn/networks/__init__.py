@@ -17,7 +17,6 @@
 
 """Exposing the public methods of the networks."""
 # BBB
-from enn.networks.bbb import DiagonalLinearHypermodel
 from enn.networks.bbb import make_bbb_enn
 # Categorical regression ensemble
 from enn.networks.categorical_ensembles import CategoricalRegressionMLP

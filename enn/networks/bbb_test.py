@@ -22,59 +22,29 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
 from enn.networks import bbb
-from enn.networks import indexers
-import haiku as hk
 
 
-class DiagonalLinearTest(parameterized.TestCase):
-
+class BBBTest(parameterized.TestCase):
   @parameterized.parameters([
-      ([], True),
-      ([3], True),
-      ([3, 7], True),
-      ([], False),
-      ([3], False),
-      ([3, 7], False),
+      ([3, 7], True, 1),
+      ([3, 7], False, 1),
+      ([3, 7], True, 1000),
+      ([3, 7], False, 1000),
+      ([3, 7], True, 1),
+      ([3, 7], False, 1),
+      ([3, 7], True, 1000),
+      ([3, 7], False, 1000),
   ])
-  def test_ten_batches(self, model_hiddens: List[int], regression: bool):
-    """Simple test to run just 10 batches."""
-    test_experiment = supervised.make_test_experiment(regression)
 
-    def base_net(x):
-      return hk.nets.MLP(model_hiddens + [test_experiment.num_outputs])(x)
-
-    transformed_base = hk.without_apply_rng(hk.transform(base_net))
-    indexer_ctor = lambda index_dim: indexers.ScaledGaussianIndexer(  # pylint: disable=[g-long-lambda]
-        index_dim, index_scale=1.0)
-
-    enn = bbb.DiagonalLinearHypermodel(
-        transformed_base=transformed_base,
-        dummy_input=test_experiment.dummy_input,
-        indexer_ctor=indexer_ctor,
-    )
-    experiment = test_experiment.experiment_ctor(enn)
-    experiment.train(10)
-
-  @parameterized.parameters([
-      ([3, 7], True, 1, True),
-      ([3, 7], False, 1, True),
-      ([3, 7], True, 1000, True),
-      ([3, 7], False, 1000, True),
-      ([3, 7], True, 1, False),
-      ([3, 7], False, 1, False),
-      ([3, 7], True, 1000, False),
-      ([3, 7], False, 1000, False),
-  ])
-  def test_bbb(self, model_hiddens: List[int], regression: bool,
-               sigma_0: float, scale: bool):
+  def test_bbb(
+      self, model_hiddens: List[int], regression: bool, sigma_0: float):
     """Simple test to run just 10 batches."""
     test_experiment = supervised.make_test_experiment(regression)
 
     enn = bbb.make_bbb_enn(
         base_output_sizes=model_hiddens + [test_experiment.num_outputs],
         dummy_input=test_experiment.dummy_input,
-        sigma_0=sigma_0,
-        scale=scale)
+        sigma_0=sigma_0)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
