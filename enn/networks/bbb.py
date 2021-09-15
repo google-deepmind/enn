@@ -37,8 +37,7 @@ import numpy as np
 
 def make_bbb_enn(base_output_sizes: Sequence[int],
                  dummy_input: chex.Array,
-                 sigma_0: float,
-                 scale: bool = True):
+                 sigma_0: float):
   """Makes a Bayes-by-backprop (BBB) aganet."""
 
   def make_transformed_base(output_sizes: Sequence[int]) -> hk.Transformed:
@@ -60,7 +59,7 @@ def make_bbb_enn(base_output_sizes: Sequence[int],
       dummy_input=dummy_input,
       indexer_ctor=indexer_ctor,
       return_generated_params=True,
-      scale=scale,
+      scale=False,
   )
 
   return enn
@@ -75,7 +74,7 @@ class DiagonalLinearHypermodel(base.EpistemicNetwork):
       dummy_input: base.Array,
       indexer_ctor: Callable[[int], base.EpistemicIndexer],
       return_generated_params: bool = False,
-      scale: bool = True,
+      scale: bool = False,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       ):
