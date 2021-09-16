@@ -165,7 +165,8 @@ def hypermodel_module(
           train=transformed_base.apply(generated_params_scaled, inputs),
           extra={
               'hyper_net_out': generated_params,
-              'base_net_params': generated_params_scaled
+              'base_net_params': generated_params_scaled,
+              'hyper_index': hyper_index
           })
     return out
 
@@ -423,7 +424,7 @@ class DiagonalLinear(hk.Module):
     Args:
       with_bias: Whether to add a bias to the output.
       w_init: Optional initializer for weights. By default, uses random values
-        from truncated normal, with stddev ``1 / sqrt(fan_in)``.
+        from truncated normal, with stddev 1.
       b_init: Optional initializer for bias. By default, zero.
       name: Name of the module.
     """
@@ -443,8 +444,7 @@ class DiagonalLinear(hk.Module):
 
     w_init = self.w_init
     if w_init is None:
-      stddev = 1. / np.sqrt(self.input_size)
-      w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+      w_init = hk.initializers.TruncatedNormal(stddev=1.)
     w = hk.get_parameter('w', [self.input_size], dtype, init=w_init)
 
     out = inputs * jnp.log(1 + jnp.exp(w))
