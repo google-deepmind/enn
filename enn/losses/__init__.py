@@ -45,10 +45,9 @@ from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import l2_weights_with_predicate
 
 # VI losses
+from enn.losses.vi_losses import get_analytical_diagonal_linear_model_prior_kl_fn
+from enn.losses.vi_losses import get_analytical_hyperflow_model_prior_kl_fn
+from enn.losses.vi_losses import get_analytical_linear_model_prior_kl_fn
 from enn.losses.vi_losses import get_awgn_loglike_fn
 from enn.losses.vi_losses import get_categorical_loglike_fn
-from enn.losses.vi_losses import get_diagonal_linear_hypermodel_elbo_fn
-from enn.losses.vi_losses import get_hyperflow_elbo_fn
-from enn.losses.vi_losses import get_lhm_log_model_prob_fn
-from enn.losses.vi_losses import get_linear_hypermodel_elbo_fn
-from enn.losses.vi_losses import get_nn_params_log_prior_prob_fn
+from enn.losses.vi_losses import get_sample_based_model_prior_kl_fn
