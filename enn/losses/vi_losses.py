@@ -21,10 +21,11 @@ from typing import Callable
 import chex
 from enn import base
 from enn import utils
-from enn.losses import single_index
 import haiku as hk
 import jax
 import jax.numpy as jnp
+from tensorflow_probability.substrates import jax as tfp
+tfd = tfp.distributions
 
 
 def get_awgn_loglike_fn(sigma_w: float
@@ -38,9 +39,7 @@ def get_awgn_loglike_fn(sigma_w: float
 
   Returns:
     A function that computes the log likelihood given data and output.
-
   """
-
   def log_likelihood_fn(out: base.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
     err_sq = jnp.mean(jnp.square(utils.parse_net_output(out) - batch.y))
@@ -60,9 +59,7 @@ def get_categorical_loglike_fn(num_classes: int
 
   Returns:
     A function that computes the log likelihood given data and prediction.
-
   """
-
   def log_likelihood_fn(out: base.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
     logits = utils.parse_net_output(out)
@@ -71,6 +68,41 @@ def get_categorical_loglike_fn(num_classes: int
         jnp.sum(labels * jax.nn.log_softmax(logits), axis=1))
 
   return log_likelihood_fn
+
+
+def log_normal_prob(x: float, mu: float = 0, sigma: float = 1):
+  """Compute log probability of x w.r.t a 1D Gaussian density."""
+  gauss = tfd.Normal(loc=mu, scale=sigma)
+  return gauss.log_prob(x)
+
+
+def sum_log_scale_mixture_normal(x: base.Array,
+                                 sigma_1: float,
+                                 sigma_2: float,
+                                 mu_1: float = 0.,
+                                 mu_2: float = 0.,
+                                 pi: float = 1.,) -> float:
+  """Compute sum log probs of x w.r.t. a scale mixture of two 1D Gaussians.
+
+  Args:
+    x: an array for which we want to find probabilities.
+    sigma_1: Standard deviation of the first Gaussian denisty.
+    sigma_2: Standard deviation of the second Gaussian.
+    mu_1: Mean of the first Gaussian denisty.
+    mu_2: Mean of the second Gaussian denisty.
+    pi: Scale for mixture of two Gaussian densities. The two Gaussian
+      densities are mixed as
+      pi * Normal(mu_1, sigma_1) + (1 - pi) * Normal(mu_2, sigma_2)
+  Returns:
+    Sum of log probabilities.
+  """
+  bimix_gauss = tfd.MixtureSameFamily(
+      mixture_distribution=tfd.Categorical(probs=[pi, 1.-pi]),
+      components_distribution=tfd.Normal(
+          loc=[mu_1, mu_2],  # One for each component.
+          scale=[sigma_1, sigma_2]))
+  log_probs = bimix_gauss.log_prob(x)
+  return jnp.sum(log_probs)
 
 
 def normal_log_prob(latent: base.Array, sigma: float = 1, mu: float = 0):
@@ -84,124 +116,64 @@ def normal_log_prob(latent: base.Array, sigma: float = 1, mu: float = 0):
                  + latent_l2_sq / sigma**2)
 
 
-def get_nn_params_log_prior_prob_fn(
-    sigma_0: float) -> Callable[[jnp.array], float]:
-  """Returns a function that computes params prior log likelihood from output.
-
-  It assumes that the network output's extra field has an element with the key
-  `generated_params` that represents the latent variable.
-  It also assumes that index is Gaussian.
+def get_sample_based_model_prior_kl_fn(
+    num_samples: float, sigma_1: float, sigma_2: float = 1., scale: float = 1.,
+) -> Callable[[base.Output, hk.Params, base.Index], float]:
+  """Returns a function for computing the KL distance between model and prior.
 
   Args:
-    sigma_0: standard deviation of the index.
-  """
-
-  def log_prob_fn(out: base.Output):
-    latent = out.extra['hyper_net_out']
-    # weights and biases are assumed to be normalized such that they have the
-    # same variance.
-    return normal_log_prob(latent, sigma=sigma_0)
-
-  return log_prob_fn
-
-
-def get_lhm_log_model_prob_fn(
-    sigma_z: float) -> Callable[[base.Output, hk.Params, base.Index], float]:
-  """Returns a function for log probability of latent under the model.
-
-  It assumes index to be Gaussian with standard deviation sigma_z.
-  Args:
-    sigma_z: index standard deviation.
-  """
-
-  def log_prob_fn(out: base.Output, params: hk.Params, index: base.Index):
-    del out  # Here we compute the log prob from params and index directly.
-    predicate = lambda module_name, name, value: name == 'w'
-    weight_matrices = hk.data_structures.filter(predicate, params)
-    weight_matrices, _ = jax.tree_flatten(weight_matrices)
-    weight_matrix = jnp.concatenate(weight_matrices, axis=1)
-    weight_matrix_sq = jnp.matmul(weight_matrix, weight_matrix.T)
-    _, log_det_w_sq = jnp.linalg.slogdet(weight_matrix_sq + 1e-6 *
-                                         jnp.eye(weight_matrix_sq.shape[0]))
-    log_det_w = 0.5 * log_det_w_sq
-    index_l2_sq = jnp.sum(jnp.square(index))
-    return -0.5 * index_l2_sq / sigma_z**2 - log_det_w
-
-  return log_prob_fn
-
-
-def get_diagonal_linear_hypermodel_elbo_fn(
-    log_likelihood_fn: Callable[[base.Output, base.Batch], float],
-    sigma_0: float,
-    num_samples: float) -> single_index.ElboLoss:
-  """Returns the negative ELBO for diagonal linear hypermodels.
-
-  Args:
-    log_likelihood_fn: log likelihood function.
-    sigma_0: Standard deviation of the Gaussian latent (params) prior.
     num_samples: effective number of samples.
-  Returns:
-    Negative ELBO value.
+    sigma_1: Standard deviation of the Gaussian denisty as the prior.
+    sigma_2: Standard deviation of the second Gaussian if scale mixture of two
+      Gaussian densities is used as the prior.
+    scale: Scale for mixture of two Gaussian densities. The two Gaussian
+      densities are mixed as
+      scale * Normal(0, sigma_1) + (1 - scale) * Normal(0, sigma_2)
   """
 
-  def model_prior_kl_fn(
-      out: base.Output,
-      params: hk.Params,
-      index: base.Index) -> float:
-    """Compute the KL distance between model and prior densities in a linear HM.
+  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+                        index: base.Index) -> float:
+    """Compute the KL distance between model and prior densities using samples."""
+    del index
+    latent = out.extra['hyper_index']
 
-    weights `w` and biases `b` are assumed included in `params`. The latent
-    variables (which are the parameters of the base network) are generated as u
-    = z @ w + b where z is the index variable. The index is assumed Gaussian
-    *with variance equal to the prior variance* of the latent variables.
+    # Calculate prior
+    log_priors_sum = sum_log_scale_mixture_normal(latent, sigma_1,
+                                                  sigma_2, pi=scale)
 
-    This function also  assumes a Gaussian prior distribution for the latent,
-    i.e., parameters of the base network.
-
-    Args:
-      out: final output of the hypermodel, i.e., y = f_theta(x, z)
-      params: parameters of the hypermodel (Note that this is the parameters of
-        the hyper network since base network params are set by the hyper net.)
-      index: index z
-
-    Returns:
-      KL distance.
-    """
-
-    del out, index  # Here we compute the log prob from params directly.
+    # Calculate variational posterior
     predicate = lambda module_name, name, value: name == 'w'
-    weights, biases = hk.data_structures.partition(predicate, params)
-    biases, _ = jax.tree_flatten(biases)
-    biases = jnp.concatenate(biases, axis=0)
-    weights, _ = jax.tree_flatten(weights)
-    weights = jnp.concatenate(weights, axis=0)
-    chex.assert_equal_shape([weights, biases])
-    return 0.5  / num_samples * (
-        jnp.sum(jnp.square(weights))
-        + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
-        - len(biases)
-        - 2 * jnp.sum(jnp.log(weights))
-        )
+    # We have used 'w' in params as rho (used with softplus to calculate sigma)
+    # and 'b' in params as mu for the Gaussian density.
+    rhos, mus = hk.data_structures.partition(predicate, params)
+    mus, _ = jax.tree_flatten(mus)
+    mus = jnp.concatenate(mus, axis=0)
+    rhos, _ = jax.tree_flatten(rhos)
+    rhos = jnp.concatenate(rhos, axis=0)
+    chex.assert_equal_shape([rhos, mus])
+    # We use softplus to convert rho to sigma.
+    sigmas = jnp.log(1 + jnp.exp(rhos))
+    chex.assert_equal_shape([sigmas, mus, latent])
+    log_normal_prob_vectorized = jnp.vectorize(log_normal_prob)
+    log_var_posteriors = log_normal_prob_vectorized(latent, mus, sigmas)
+    log_var_posteriors_sum = jnp.sum(log_var_posteriors)
 
-  return single_index.ElboLoss(
-      log_likelihood_fn=log_likelihood_fn,
-      model_prior_kl_fn=model_prior_kl_fn)
+    return (log_var_posteriors_sum - log_priors_sum) / num_samples
+
+  return model_prior_kl_fn
 
 
-def get_linear_hypermodel_elbo_fn(
-    log_likelihood_fn: Callable[[base.Output, base.Batch], float],
-    sigma_0: float,
-    num_samples: float) -> single_index.ElboLoss:
-  """Returns a loss function that computes the ELBO for linear hypermodels.
+def get_analytical_diagonal_linear_model_prior_kl_fn(
+    num_samples: float, sigma_0: float
+) -> Callable[[base.Output, hk.Params, base.Index], float]:
+  """Returns a function for computing the KL distance between model and prior.
+
+  It assumes index to be Gaussian with standard deviation sigma_0.
 
   Args:
-    log_likelihood_fn: log likelihood function.
-    sigma_0: Standard deviation of the Gaussian latent (params) prior.
     num_samples: effective number of samples.
-  Returns:
-    Negative ELBO value.
+    sigma_0: Standard deviation of the Gaussian latent (params) prior.
   """
-
   def model_prior_kl_fn(
       out: base.Output,
       params: hk.Params,
@@ -226,7 +198,59 @@ def get_linear_hypermodel_elbo_fn(
     Returns:
       KL distance.
     """
+    del out, index  # Here we compute the log prob from params directly.
+    predicate = lambda module_name, name, value: name == 'w'
+    weights, biases = hk.data_structures.partition(predicate, params)
+    biases, _ = jax.tree_flatten(biases)
+    biases = jnp.concatenate(biases, axis=0)
+    weights, _ = jax.tree_flatten(weights)
+    weights = jnp.concatenate(weights, axis=0)
+    chex.assert_equal_shape([weights, biases])
+    return 0.5  / num_samples * (
+        jnp.sum(jnp.square(weights))
+        + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
+        - len(biases)
+        - 2 * jnp.sum(jnp.log(weights))
+        )
 
+  return model_prior_kl_fn
+
+
+def get_analytical_linear_model_prior_kl_fn(
+    num_samples: float, sigma_0: float
+) -> Callable[[base.Output, hk.Params, base.Index], float]:
+  """Returns a function for computing the KL distance between model and prior.
+
+  It assumes index to be Gaussian with standard deviation sigma_0.
+
+  Args:
+    num_samples: effective number of samples.
+    sigma_0: Standard deviation of the Gaussian latent (params) prior.
+  """
+  def model_prior_kl_fn(
+      out: base.Output,
+      params: hk.Params,
+      index: base.Index) -> float:
+    """Compute the KL distance between model and prior densities in a linear HM.
+
+    weights `w` and biases `b` are assumed included in `params`. The latent
+    variables (which are the parameters of the base network) are generated as u
+    = z @ w + b where z is the index variable. The index is assumed Gaussian
+    *with variance equal to the prior variance* of the latent variables.
+
+    This function also  assumes a Gaussian prior distribution for the latent,
+    i.e., parameters of the base network, and assumes the index to be Gaussian
+    *with variance equal to the prior variance* of the latent variables.
+
+    Args:
+      out: final output of the hypermodel, i.e., y = f_theta(x, z)
+      params: parameters of the hypermodel (Note that this is the parameters of
+        the hyper network since base network params are set by the hyper net.)
+      index: index z
+
+    Returns:
+      KL distance.
+    """
     del out, index  # Here we compute the log prob from params directly.
     predicate = lambda module_name, name, value: name == 'w'
     weights, biases = hk.data_structures.partition(predicate, params)
@@ -252,32 +276,23 @@ def get_linear_hypermodel_elbo_fn(
     return 0.5  / num_samples * (sigma_u_trace - index_dim - sigma_u_log_det
                                  + proj_biases_norm / sigma_0**2)
 
-  return single_index.ElboLoss(
-      log_likelihood_fn=log_likelihood_fn,
-      model_prior_kl_fn=model_prior_kl_fn)
+  return model_prior_kl_fn
 
 
-def get_hyperflow_elbo_fn(
-    log_likelihood_fn: Callable[[base.Output, base.Batch], float],
-    sigma_0: float,
-    num_samples: float) -> single_index.ElboLoss:
-  """Returns a loss function that computes the ELBO for hyperflows.
+def get_analytical_hyperflow_model_prior_kl_fn(
+    num_samples: float, sigma_0: float
+) -> Callable[[base.Output, hk.Params, base.Index], float]:
+  """Returns a function for computing the KL distance between model and prior.
+
+  It assumes index to be Gaussian with standard deviation sigma_0.
 
   Args:
-    log_likelihood_fn: log likelihood function.
-    sigma_0: Standard deviation of the Gaussian latent (params) prior.
     num_samples: effective number of samples.
-  Returns:
-    loss function computing negative ELBO.
+    sigma_0: Standard deviation of the Gaussian latent (params) prior.
   """
-
   def model_prior_kl_fn(out, params, index):
     del params, index
     return (jnp.squeeze(out.extra['log_prob'])
             - normal_log_prob(out.extra['latent'], sigma_0)) / num_samples
 
-  loss_fn = single_index.ElboLoss(
-      log_likelihood_fn=log_likelihood_fn,
-      model_prior_kl_fn=model_prior_kl_fn)
-
-  return loss_fn
+  return model_prior_kl_fn

@@ -63,7 +63,7 @@ def make_bbb_enn(base_output_sizes: Sequence[int],
           dummy_input,
           hyper_torso=lambda x: x,
           diagonal_linear_hyper=True,
-          return_generated_params=False,
+          return_generated_params=True,
           scale=False),
       indexer=indexer,
   )
