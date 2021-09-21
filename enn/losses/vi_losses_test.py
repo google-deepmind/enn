@@ -18,7 +18,6 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base as enn_base
 from enn.losses import vi_losses
 import numpy as np
 
@@ -31,25 +30,25 @@ class LossesTest(parameterized.TestCase):
       [10., 1., 1.0],
       [10., 10., 1.0],
   ])
-  def test_diagonal_linear_hypermodel_elbo_fn(
+  def test_analytical_diagonal_linear_model_prior_kl_fn(
       self, sigma: float, mu: float, sigma_0: float):
     """Tests the elbo function for the case of simple weights and biases."""
 
     num_params = 10
-    log_likelihood_fn = lambda *args: np.array(0.0)
-    nelbo_fn = vi_losses.get_diagonal_linear_hypermodel_elbo_fn(
-        log_likelihood_fn, sigma_0=sigma_0, num_samples=1)
+    kl_fn = vi_losses.get_analytical_diagonal_linear_model_prior_kl_fn(
+        num_samples=1, sigma_0=sigma_0)
 
+    w_scale = np.log(np.exp(sigma) - 1)  # sigma = log(1 + exp(w))
     params = {'layer': {
-        'w': sigma * np.ones(num_params,),
-        'b': mu * np.ones(num_params,)}}
+        'w': w_scale * np.ones((num_params,)),
+        'b': mu * np.ones((num_params,))}}
     kl = 0.5 * num_params * (sigma**2 + mu**2 / sigma_0 - 1 - 2 * np.log(sigma))
-    batch = enn_base.Batch(x=np.zeros((2, 1)), y=np.zeros((2, 1)))
-    nelbo, _ = nelbo_fn(apply=lambda *args: np.zeros((2,)),
+
+    kl_estimate = kl_fn(out=np.zeros((1, 2)),
                         params=params,
-                        batch=batch,
-                        index=np.zeros((2,)))
-    self.assertEqual(kl, nelbo, f'negetive elbos is {nelbo}, expected: {kl}')
+                        index=np.zeros((1, 2)))
+    self.assertEqual(kl, kl_estimate,
+                     f'prior KL estimate is {kl_estimate}, expected: {kl}')
 
 
 if __name__ == '__main__':

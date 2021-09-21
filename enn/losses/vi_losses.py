@@ -205,12 +205,13 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     biases = jnp.concatenate(biases, axis=0)
     weights, _ = jax.tree_flatten(weights)
     weights = jnp.concatenate(weights, axis=0)
-    chex.assert_equal_shape([weights, biases])
+    scales = jnp.log(1 + jnp.exp(weights))
+    chex.assert_equal_shape([scales, biases])
     return 0.5  / num_samples * (
-        jnp.sum(jnp.square(weights))
+        jnp.sum(jnp.square(scales))
         + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
         - len(biases)
-        - 2 * jnp.sum(jnp.log(weights))
+        - 2 * jnp.sum(jnp.log(scales))
         )
 
   return model_prior_kl_fn
