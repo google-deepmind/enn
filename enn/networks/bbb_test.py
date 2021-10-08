@@ -26,25 +26,18 @@ from enn.networks import bbb
 
 class BBBTest(parameterized.TestCase):
   @parameterized.parameters([
-      ([3, 7], True, 1),
-      ([3, 7], False, 1),
-      ([3, 7], True, 1000),
-      ([3, 7], False, 1000),
-      ([3, 7], True, 1),
-      ([3, 7], False, 1),
-      ([3, 7], True, 1000),
-      ([3, 7], False, 1000),
+      ([3, 7], True),
+      ([3, 7], False),
   ])
 
   def test_bbb(
-      self, model_hiddens: List[int], regression: bool, sigma_0: float):
+      self, model_hiddens: List[int], regression: bool):
     """Simple test to run just 10 batches."""
     test_experiment = supervised.make_test_experiment(regression)
 
     enn = bbb.make_bbb_enn(
         base_output_sizes=model_hiddens + [test_experiment.num_outputs],
-        dummy_input=test_experiment.dummy_input,
-        sigma_0=sigma_0)
+        dummy_input=test_experiment.dummy_input)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

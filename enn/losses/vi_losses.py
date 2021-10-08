@@ -117,7 +117,7 @@ def normal_log_prob(latent: base.Array, sigma: float = 1, mu: float = 0):
 
 
 def get_sample_based_model_prior_kl_fn(
-    num_samples: float, sigma_1: float, sigma_2: float = 1., scale: float = 1.,
+    num_samples: float, sigma_1: float, sigma_2: float = 1., scale: float = 1.
 ) -> Callable[[base.Output, hk.Params, base.Index], float]:
   """Returns a function for computing the KL distance between model and prior.
 
@@ -168,12 +168,15 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
 ) -> Callable[[base.Output, hk.Params, base.Index], float]:
   """Returns a function for computing the KL distance between model and prior.
 
-  It assumes index to be Gaussian with standard deviation sigma_0.
+  It assumes index to be standard Gaussian.
 
   Args:
     num_samples: effective number of samples.
     sigma_0: Standard deviation of the Gaussian latent (params) prior.
+  Returns:
+    model_prior_kl_fn
   """
+
   def model_prior_kl_fn(
       out: base.Output,
       params: hk.Params,
@@ -182,12 +185,11 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
 
     weights `w` and biases `b` are assumed included in `params`. The latent
     variables (which are the parameters of the base network) are generated as u
-    = z @ w + b where z is the index variable. The index is assumed Gaussian
-    *with variance equal to the prior variance* of the latent variables.
+    = z @ log(1 + exp(w)) + b where z is the index variable. The index is
+    assumed to be a standard Gaussian.
 
     This function also  assumes a Gaussian prior distribution for the latent,
-    i.e., parameters of the base network, and assumes the index to be Gaussian
-    *with variance equal to the prior variance* of the latent variables.
+    i.e., parameters of the base network, with variance sigma^2.
 
     Args:
       out: final output of the hypermodel, i.e., y = f_theta(x, z)
@@ -208,10 +210,11 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     scales = jnp.log(1 + jnp.exp(weights))
     chex.assert_equal_shape([scales, biases])
     return 0.5  / num_samples * (
-        jnp.sum(jnp.square(scales))
+        jnp.sum(jnp.square(scales)) / (sigma_0 ** 2)
         + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
         - len(biases)
         - 2 * jnp.sum(jnp.log(scales))
+        + 2 * len(biases) * jnp.log(sigma_0)
         )
 
   return model_prior_kl_fn

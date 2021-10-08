@@ -16,10 +16,10 @@
 # ============================================================================
 
 """Collection of simple losses applied to one single index."""
-from typing import Callable, Tuple
+import dataclasses
+from typing import Callable, Tuple, Optional
 
 import chex
-import dataclasses
 from enn import base
 from enn import data_noise
 from enn import utils
@@ -163,6 +163,8 @@ class ElboLoss(SingleIndexLossFn):
 
   log_likelihood_fn: Callable[[base.Output, base.Batch], float]
   model_prior_kl_fn: Callable[[base.Output, hk.Params, base.Index], float]
+  temperature: Optional[float] = None
+  input_dim: Optional[int] = None
 
   def __call__(self,
                apply: base.ApplyFn,
@@ -174,4 +176,6 @@ class ElboLoss(SingleIndexLossFn):
     log_likelihood = self.log_likelihood_fn(out, batch)
     model_prior_kl = self.model_prior_kl_fn(out, params, index)
     chex.assert_equal_shape([log_likelihood, model_prior_kl])
+    if self.temperature and self.input_dim:
+      model_prior_kl *= jnp.sqrt(self.temperature) * self.input_dim
     return model_prior_kl - log_likelihood, {}

@@ -28,6 +28,7 @@ class LossesTest(parameterized.TestCase):
       [1., 0., 1.0],
       [1., 0., 10.0],
       [10., 1., 1.0],
+      [10., 1., 10.0],
       [10., 10., 1.0],
   ])
   def test_analytical_diagonal_linear_model_prior_kl_fn(
@@ -42,13 +43,18 @@ class LossesTest(parameterized.TestCase):
     params = {'layer': {
         'w': w_scale * np.ones((num_params,)),
         'b': mu * np.ones((num_params,))}}
-    kl = 0.5 * num_params * (sigma**2 + mu**2 / sigma_0 - 1 - 2 * np.log(sigma))
+    kl = 0.5 * num_params * (
+        (sigma / sigma_0)**2
+        + (mu / sigma_0)**2 - 1
+        - 2 * np.log(sigma / sigma_0))
 
     kl_estimate = kl_fn(out=np.zeros((1, 2)),
                         params=params,
                         index=np.zeros((1, 2)))
-    self.assertEqual(kl, kl_estimate,
-                     f'prior KL estimate is {kl_estimate}, expected: {kl}')
+    kl = float(np.round(kl, 2))
+    kl_estimate = float(np.round(kl_estimate, 2))
+    self.assertBetween((kl_estimate - kl) / (kl + 1e-9), -1e-3, 1e-3,
+                       f'prior KL estimate is {kl_estimate}, expected: {kl}')
 
 
 if __name__ == '__main__':
