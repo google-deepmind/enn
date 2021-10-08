@@ -15,19 +15,19 @@
 # limitations under the License.
 # ============================================================================
 
-"""Exposing the public methods of the supervised experiments."""
+"""Exposing the public methods."""
+# Kmeans
+from enn.extra.kmeans import KMeansCluster
+from enn.extra.kmeans import KMeansOutput
 
-# Base
-from enn.supervised.base import BaseExperiment
+# VAE
+from enn.extra.vae import VaeNet
+from enn.extra.vae import VaeTrainer
 
-# Multiloss
-from enn.supervised.multiloss_experiment import MultilossExperiment
-from enn.supervised.multiloss_experiment import MultilossTrainer
-from enn.supervised.multiloss_experiment import TrainingState
-
-# Experiments
-from enn.supervised.sgd_experiment import Experiment
-
-# Testing
-from enn.supervised.testing import make_test_experiment
-from enn.supervised.testing import TestExperiment
+# VAE losses
+from enn.extra.vae_losses import binary_log_likelihood
+from enn.extra.vae_losses import gaussian_log_likelihood
+from enn.extra.vae_losses import latent_kl_divergence
+from enn.extra.vae_losses import VaeApplyFn
+from enn.extra.vae_losses import VaeLoss
+from enn.extra.vae_losses import VaeOutput
