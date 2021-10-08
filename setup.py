@@ -28,7 +28,7 @@ testing_require = [
 ]
 
 setuptools.setup(
-    name='dm-enn',
+    name='enn',
     description=('Epistemic neural networks. '
                  'A library for probabilistic inference via neural networks.'),
     long_description=open('README.md').read(),
@@ -49,7 +49,6 @@ setuptools.setup(
         'jax',
         'jaxlib',
         'matplotlib',
-        'neural-tangents',
         'numpy',
         'optax',
         'pandas',

@@ -36,13 +36,14 @@ import jax.numpy as jnp
 
 def make_bbb_enn(base_output_sizes: Sequence[int],
                  dummy_input: chex.Array,
-                 sigma_0: float):
+                 temperature: float = 1.):
   """Makes a Bayes-by-backprop (BBB) aganet."""
 
   def make_transformed_base(output_sizes: Sequence[int]) -> hk.Transformed:
     """Factory method for creating base net function."""
     def net_fn(x):
-      return hk.Sequential([hk.Flatten(), hk.nets.MLP(output_sizes)])(x)
+      net_out = hk.Sequential([hk.Flatten(), hk.nets.MLP(output_sizes)])(x)
+      return net_out / temperature
 
     transformed = hk.without_apply_rng(hk.transform(net_fn))
     return transformed
@@ -54,8 +55,7 @@ def make_bbb_enn(base_output_sizes: Sequence[int],
 
   # VI loss computed by vi_losses.get_linear_hypermodel_elbo_fn assumes the
   # index to be Gaussian with the same variance as the latent prior variance.
-  indexer = indexers.ScaledGaussianIndexer(index_dim=num_base_params,
-                                           index_scale=sigma_0)
+  indexer = indexers.GaussianIndexer(index_dim=num_base_params)
 
   enn = utils.epistemic_network_from_module(
       enn_ctor=hypermodels.hypermodel_module(

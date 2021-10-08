@@ -107,8 +107,11 @@ def hypermodel_module(
   """
   base_params = transformed_base.init(jax.random.PRNGKey(0), dummy_input)
   base_params_flat = jax.tree_map(jnp.ravel, base_params)
-  base_shapes = jax.tree_map(lambda x: jnp.array(jnp.shape(x)), base_params)
+  base_shapes = jax.tree_map(lambda x: np.array(jnp.shape(x)), base_params)
   base_shapes_flat = jax.tree_map(len, base_params_flat)
+
+  # base params as 1D array. It can be used to initialize the hyper network
+  base_params_array = jnp.concatenate(jax.tree_flatten(base_params_flat)[0])
 
   def scale_fn(module_name, name, value):
     """Scales weight by 1/sqrt(fan_in) and leaves biases unchanged.
@@ -131,8 +134,7 @@ def hypermodel_module(
     if diagonal_linear_hyper:
       # index must be the same size as the total number of base params.
       chex.assert_shape(index, (np.sum(jax.tree_leaves(base_shapes_flat)),))
-
-      hyper_index = DiagonalLinear()(index)
+      hyper_index = DiagonalLinear(b_init_value=base_params_array)(index)
       flat_output = jnp.split(
           hyper_index, np.cumsum(jax.tree_leaves(base_shapes_flat))[:-1])
       flat_output = jax.tree_unflatten(jax.tree_structure(base_shapes),
@@ -416,7 +418,7 @@ class DiagonalLinear(hk.Module):
       self,
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      b_init_value: Optional[chex.Array] = None,
       name: Optional[str] = None,
   ):
     """Constructs the diagonal linear module.
@@ -425,14 +427,15 @@ class DiagonalLinear(hk.Module):
       with_bias: Whether to add a bias to the output.
       w_init: Optional initializer for weights. By default, uses random values
         from truncated normal, with stddev 1.
-      b_init: Optional initializer for bias. By default, zero.
+      b_init_value: Initial values for the bias. If None, biases are initiliazed
+        from normal with stddev 0.1.
       name: Name of the module.
     """
     super().__init__(name=name)
     self.input_size = None
     self.with_bias = with_bias
     self.w_init = w_init
-    self.b_init = b_init or jnp.zeros
+    self.b_init_value = b_init_value
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
     """Computes a linear transform of the input."""
@@ -443,14 +446,19 @@ class DiagonalLinear(hk.Module):
     dtype = inputs.dtype
 
     w_init = self.w_init
+    inv_soft_plus_fn = lambda x: jnp.log(jnp.exp(x) - 1)
     if w_init is None:
-      w_init = hk.initializers.TruncatedNormal(stddev=1.)
+      w_init = hk.initializers.Constant(inv_soft_plus_fn(0.01))
     w = hk.get_parameter('w', [self.input_size], dtype, init=w_init)
 
     out = inputs * jnp.log(1 + jnp.exp(w))
 
     if self.with_bias:
-      b = hk.get_parameter('b', [self.input_size], dtype, init=self.b_init)
+      if self.b_init_value is not None:
+        b_init = lambda x, y: jnp.array(self.b_init_value)
+      else:
+        b_init = hk.initializers.RandomNormal(stddev=0.1)
+      b = hk.get_parameter('b', [self.input_size], dtype, init=b_init)
       out = out + b
 
     return out
