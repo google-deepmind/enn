@@ -89,6 +89,7 @@ def null_bootstrap(
   return jnp.ones_like(data_index)
 
 
+# TODO(vikranthd): Add some tests to these functions
 def make_boot_fn(enn: base.EpistemicNetwork,
                  distribution: str,
                  seed: int = 0) -> BootstrapFn:
@@ -122,6 +123,9 @@ def make_boot_fn(enn: base.EpistemicNetwork,
     index_dim = indexer.index_dim
     if distribution == 'bernoulli':
       return _make_gaussian_index_bernoulli_bootstrap(index_dim, seed)
+    elif distribution == 'exponential':
+      return _make_gaussian_index_exponential_bootstrap(
+          index_dim, seed, 1/jnp.sqrt(index_dim))
     else:
       raise ValueError(
           f'dist={distribution} not implemented for GaussianIndexer.')
