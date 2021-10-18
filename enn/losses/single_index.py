@@ -179,3 +179,20 @@ class ElboLoss(SingleIndexLossFn):
     if self.temperature and self.input_dim:
       model_prior_kl *= jnp.sqrt(self.temperature) * self.input_dim
     return model_prior_kl - log_likelihood, {}
+
+
+@dataclasses.dataclass
+class VaeLoss(SingleIndexLossFn):
+  """VAE loss."""
+  log_likelihood_fn: Callable[[base.OutputWithPrior, base.Batch], float]
+  latent_kl_fn: Callable[[base.OutputWithPrior], float]
+
+  def __call__(self,
+               apply: base.ApplyFn,
+               params: hk.Params,
+               batch: base.Batch,
+               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+    net_out = apply(params, batch.x, index)
+    kl_term = self.latent_kl_fn(net_out)
+    log_likelihood = self.log_likelihood_fn(net_out, batch)
+    return -(kl_term + log_likelihood), {}

@@ -34,6 +34,7 @@ from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
 from enn.losses.single_index import L2Loss
 from enn.losses.single_index import SingleIndexLossFn
+from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
 # Utils
@@ -43,6 +44,13 @@ from enn.losses.utils import combine_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import l2_weights_with_predicate
+
+# VAE losses
+from enn.losses.vae_losses import binary_log_likelihood
+from enn.losses.vae_losses import gaussian_log_likelihood
+from enn.losses.vae_losses import get_latent_kl_fn
+from enn.losses.vae_losses import get_log_likelihood_fn
+from enn.losses.vae_losses import latent_kl_divergence
 
 # VI losses
 from enn.losses.vi_losses import get_analytical_diagonal_linear_model_prior_kl_fn

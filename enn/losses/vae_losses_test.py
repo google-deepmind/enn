@@ -18,7 +18,7 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn.extra import vae_losses
+from enn.losses import vae_losses
 import numpy as np
 
 
@@ -31,8 +31,9 @@ class LossesTest(parameterized.TestCase):
 
     x = np.zeros((batch_size, input_size))
     output = np.zeros_like(x)
+    extra = np.zeros_like(output)
 
-    log_likelihood = vae_losses.binary_log_likelihood(x, output)
+    log_likelihood = vae_losses.binary_log_likelihood(x, output, extra)
 
     result = -1 * input_size * np.log(2) * np.ones((batch_size,))
     np.testing.assert_almost_equal(

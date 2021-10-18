@@ -21,13 +21,4 @@ from enn.extra.kmeans import KMeansCluster
 from enn.extra.kmeans import KMeansOutput
 
 # VAE
-from enn.extra.vae import VaeNet
-from enn.extra.vae import VaeTrainer
-
-# VAE losses
-from enn.extra.vae_losses import binary_log_likelihood
-from enn.extra.vae_losses import gaussian_log_likelihood
-from enn.extra.vae_losses import latent_kl_divergence
-from enn.extra.vae_losses import VaeApplyFn
-from enn.extra.vae_losses import VaeLoss
-from enn.extra.vae_losses import VaeOutput
+from enn.extra.vae import MLPVae
