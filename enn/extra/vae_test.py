@@ -21,9 +21,12 @@ import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from enn import losses
+from enn import supervised
 from enn import utils
 from enn.extra import vae
 import jax
+import optax
 
 
 class VaeTest(parameterized.TestCase):
@@ -34,18 +37,22 @@ class VaeTest(parameterized.TestCase):
     """Train a VAE on a test dataset and make sure loss decreases."""
     dataset = utils.make_test_data(100)
     data = next(dataset)
+    input_size = data.x.shape[-1]
+    enn = vae.MLPVae(input_size)
 
-    vae_trainer = vae.VaeTrainer(
-        data,
-        hidden_sizes=(8, 4),
-        latent_size=2,
-        bernoulli_decoder=bernoulli_decoder,
-        batch_size=100,
-        seed=seed)
+    log_likelihood_fn = losses.get_log_likelihood_fn(bernoulli_decoder)
+    latent_kl_fn = losses.get_latent_kl_fn()
+    single_loss = losses.VaeLoss(log_likelihood_fn, latent_kl_fn)
+    loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
+
+    optimizer = optax.adam(1e-3)
+
+    experiment = supervised.Experiment(enn, loss_fn, optimizer, dataset)
+
     init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
-    initial_loss = vae_trainer.loss(data.x, init_key)
-    vae_trainer.train(num_batches=50)
-    final_loss = vae_trainer.loss(data.x, loss_key)
+    initial_loss = experiment.loss(data, init_key)
+    experiment.train(num_batches=50)
+    final_loss = experiment.loss(data, loss_key)
     self.assertGreater(
         initial_loss, final_loss,
         f'final loss {final_loss} is greater than initial loss {initial_loss}')

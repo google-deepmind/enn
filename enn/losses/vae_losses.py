@@ -14,25 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Tools for computing VI loss."""
-import dataclasses
-from typing import Callable, Tuple
+"""Tools for computing VAE loss."""
+from typing import Callable
 
 import chex
 from enn import base
-import haiku as hk
 import jax.numpy as jnp
 from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
 
-# TODO(smaghari): Migrate this stuff to the base/LossFn format
-VaeOutput = Tuple[base.Array, base.Array, base.Array, base.Array]
-VaeApplyFn = Callable[[hk.Params, base.Array, base.RngKey], VaeOutput]
-
-
-def binary_log_likelihood(x: base.Array,
-                          output: base.Array) -> base.Array:
+def binary_log_likelihood(x: base.Array, output: base.Array) -> float:
   """Computes the binary log likelihood loss.
 
   Computes the reconstruction error for Bernoulli decoder based on Appendix C
@@ -43,7 +35,7 @@ def binary_log_likelihood(x: base.Array,
     output: A batch of output logits of the network.
 
   Returns:
-    A batch of binary log likelihood losses.
+    Binary log likelihood loss.
   """
   assert x.ndim == 2
   chex.assert_equal_shape([x, output])
@@ -52,11 +44,11 @@ def binary_log_likelihood(x: base.Array,
       x * output - jnp.logaddexp(0.0, output), axis=-1)
 
   chex.assert_shape(log_likelihood, (x.shape[0],))
-  return log_likelihood
+  return jnp.mean(log_likelihood)
 
 
 def gaussian_log_likelihood(x: base.Array, mean: base.Array,
-                            log_variance: base.Array) -> base.Array:
+                            log_variance: base.Array) -> float:
   """Computes the gaussian log likelihood loss.
 
   Computes the reconstruction error for Gaussian decoder based on Appendix C
@@ -68,7 +60,7 @@ def gaussian_log_likelihood(x: base.Array, mean: base.Array,
     log_variance: A batch of log of the variance of the output variable.
 
   Returns:
-    A batch of gaussian log likelihood losses.
+    Gaussian log likelihood loss.
   """
   assert x.ndim == 2
   chex.assert_equal_shape([x, mean, log_variance])
@@ -84,11 +76,11 @@ def gaussian_log_likelihood(x: base.Array, mean: base.Array,
   log_likelihood = jnp.sum(log_likelihoods, axis=-1)
 
   chex.assert_shape(log_likelihood, (x.shape[0],))
-  return log_likelihood
+  return jnp.mean(log_likelihood)
 
 
 def latent_kl_divergence(mean: base.Array,
-                         log_variance: base.Array) -> base.Array:
+                         log_variance: base.Array) -> float:
   """Computes the KL divergence of latent distribution w.r.t. Normal(0, I).
 
   Computes KL divergence of the latent distribution based on Appendix B of
@@ -99,7 +91,7 @@ def latent_kl_divergence(mean: base.Array,
     log_variance: A batch of log of the variance of the latent variable.
 
   Returns:
-    A batch of KL divergences.
+    KL divergence.
   """
   assert mean.ndim == 2
   chex.assert_equal_shape([mean, log_variance])
@@ -107,30 +99,42 @@ def latent_kl_divergence(mean: base.Array,
   kl = 0.5 * jnp.sum(
       1. + log_variance - jnp.square(mean) - jnp.exp(log_variance), axis=-1)
   chex.assert_shape(kl, (mean.shape[0],))
-  return kl
+  return jnp.mean(kl)
 
 
-@dataclasses.dataclass
-class VaeLoss:
-  """Evaluates the accuracy error of a greedy logit predictor."""
-  bernoulli_decoder: bool
+def get_log_likelihood_fn(
+    bernoulli_decoder: bool
+) -> Callable[[base.OutputWithPrior, base.Batch], float]:
+  """Returns a function for calculating KL divergence of latent distribution.
 
-  def __call__(self,
-               apply: VaeApplyFn,
-               params: hk.Params,
-               x: base.Array,
-               key: base.RngKey) -> Tuple[base.Array, base.LossMetrics]:
-    output_mean, output_log_variance, latent_mean, latent_log_variance = apply(
-        params, key, x)
-    kl_term = latent_kl_divergence(latent_mean, latent_log_variance)
-    if self.bernoulli_decoder:
-      log_likelihood = binary_log_likelihood(x, output_mean)
+  Args:
+    bernoulli_decoder: A boolean specifying whether the decoder is Bernoulli.
+        If it is False, the the decoder is considered to be Gaussian.
+  Returns:
+    log_likelihood_fn
+  """
+
+  def log_likelihood_fn(net_out: base.OutputWithPrior,
+                        batch: base.Batch) -> float:
+    extra = net_out.extra
+    assert 'out_mean' in extra
+    assert 'out_log_variance' in extra
+    if bernoulli_decoder:
+      return binary_log_likelihood(batch.x, extra['out_mean'])
     else:
-      log_likelihood = gaussian_log_likelihood(x, output_mean,
-                                               output_log_variance)
+      return gaussian_log_likelihood(batch.x, extra['out_mean'],
+                                     extra['out_log_variance'])
 
-    chex.assert_equal_shape([kl_term, log_likelihood])
-    elbo = kl_term + log_likelihood
-    chex.assert_shape(elbo, (x.shape[0],))
+  return log_likelihood_fn
 
-    return -jnp.mean(elbo), {}
+
+def get_latent_kl_fn() -> Callable[[base.OutputWithPrior], float]:
+  """Returns a function for calculating KL divergence of latent distribution."""
+  def latent_kl_fn(net_out: base.OutputWithPrior) -> float:
+    extra = net_out.extra
+    assert 'latent_mean' in extra
+    assert 'latent_log_variance' in extra
+    return latent_kl_divergence(extra['latent_mean'],
+                                extra['latent_log_variance'])
+
+  return latent_kl_fn
