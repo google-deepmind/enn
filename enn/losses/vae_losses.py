@@ -32,7 +32,7 @@ def binary_log_likelihood(x: base.Array, output: base.Array) -> float:
 
   Args:
     x: A batch of 1D binary inputs.
-    output: A batch of output logits of the network.
+    output: A batch of output logits (for class 1) of the network.
 
   Returns:
     Binary log likelihood loss.
@@ -96,7 +96,7 @@ def latent_kl_divergence(mean: base.Array,
   assert mean.ndim == 2
   chex.assert_equal_shape([mean, log_variance])
 
-  kl = 0.5 * jnp.sum(
+  kl = - 0.5 * jnp.sum(
       1. + log_variance - jnp.square(mean) - jnp.exp(log_variance), axis=-1)
   chex.assert_shape(kl, (mean.shape[0],))
   return jnp.mean(kl)

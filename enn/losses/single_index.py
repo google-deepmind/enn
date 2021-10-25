@@ -195,4 +195,4 @@ class VaeLoss(SingleIndexLossFn):
     net_out = apply(params, batch.x, index)
     kl_term = self.latent_kl_fn(net_out)
     log_likelihood = self.log_likelihood_fn(net_out, batch)
-    return -(kl_term + log_likelihood), {}
+    return kl_term - log_likelihood, {}
