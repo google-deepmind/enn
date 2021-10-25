@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Dict, Iterator, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, NamedTuple, Optional, Tuple, Union
 
 import haiku as hk
 import jax
@@ -29,7 +29,7 @@ import typing_extensions
 
 Array = Union[np.ndarray, jnp.DeviceArray]
 DataIndex = Array  # Always integer elements
-Index = Array  # Epistemic index, paired with network
+Index = Any  # Epistemic index, paired with network
 RngKey = jnp.DeviceArray  # Integer pairs, see jax.random
 
 

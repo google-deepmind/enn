@@ -80,3 +80,14 @@ class DirichletIndexer(base.EpistemicIndexer):
 
   def __call__(self, key: base.RngKey) -> base.Index:
     return jax.random.dirichlet(key, self.alpha)
+
+
+@dataclasses.dataclass
+class BatchNormIndexer(base.EpistemicIndexer):
+  """Returns a tuple (indexer(key), is_training) for use in batchnorm nets."""
+  indexer: base.EpistemicIndexer
+  is_training: bool
+
+  def __call__(self, key: base.RngKey) -> base.Index:
+    """Returns a tuple (indexer(key), is_training) for use in batchnorm nets."""
+    return (self.indexer(key), self.is_training)

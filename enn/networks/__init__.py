@@ -51,6 +51,7 @@ from enn.networks.index_mlp import ConcatIndexMLP
 from enn.networks.index_mlp import IndexMLPEnn
 from enn.networks.index_mlp import IndexMLPWithGpPrior
 # Indexers
+from enn.networks.indexers import BatchNormIndexer
 from enn.networks.indexers import DirichletIndexer
 from enn.networks.indexers import EnsembleIndexer
 from enn.networks.indexers import GaussianIndexer
