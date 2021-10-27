@@ -102,9 +102,10 @@ def latent_kl_divergence(mean: base.Array,
   return jnp.mean(kl)
 
 
-def get_log_likelihood_fn(
-    bernoulli_decoder: bool
-) -> Callable[[base.OutputWithPrior, base.Batch], float]:
+LogLikelihoodFn = Callable[[base.OutputWithPrior, base.Batch], float]
+
+
+def get_log_likelihood_fn(bernoulli_decoder: bool) -> LogLikelihoodFn:
   """Returns a function for calculating KL divergence of latent distribution.
 
   Args:
