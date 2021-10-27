@@ -21,4 +21,7 @@ from enn.extra.kmeans import KMeansCluster
 from enn.extra.kmeans import KMeansOutput
 
 # VAE
-from enn.extra.vae import MLPVae
+from enn.extra.vae import get_mlp_vae_encoder_decoder
+from enn.extra.vae import MeanLogVariance
+from enn.extra.vae import MLPVAEConfig
+
