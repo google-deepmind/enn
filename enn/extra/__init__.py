@@ -24,4 +24,5 @@ from enn.extra.kmeans import KMeansOutput
 from enn.extra.vae import get_mlp_vae_encoder_decoder
 from enn.extra.vae import MeanLogVariance
 from enn.extra.vae import MLPVAEConfig
+from enn.extra.vae import TrainedVAE
 

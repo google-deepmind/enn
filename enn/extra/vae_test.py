@@ -30,31 +30,27 @@ class VaeTest(parameterized.TestCase):
 
   @parameterized.parameters(
       itertools.product([True, False], [1, 2, 3]))
-  def test_vae_outputs(self, bernoulli_decoder: bool, latent_size: int):
+  def test_vae_outputs(self, bernoulli_decoder: bool, latent_dim: int):
     """Train a VAE on a test dataset and test encoder decoder functions."""
-    dataset = utils.make_test_data(100)
+    dataset = utils.make_test_data(10)
     data = next(dataset)
-    input_size = data.x.shape[-1]
+    num_train, input_dim = data.x.shape
 
-    config = vae.MLPVAEConfig(input_size=input_size,
-                              hidden_sizes=[5, 2],
-                              latent_size=latent_size,
+    config = vae.MLPVAEConfig(hidden_sizes=[5, 2],
+                              latent_dim=latent_dim,
                               bernoulli_decoder=bernoulli_decoder,
-                              num_batches=25,
-                              batch_size=10,
-                              train_log_freq=5)
-    encoder_fn, decoder_fn = vae.get_mlp_vae_encoder_decoder(
-        config=config, data_x=data.x)
+                              num_batches=100,
+                              batch_size=10)
+    trained_vae = vae.get_mlp_vae_encoder_decoder(
+        data_x=data.x, config=config)
 
-    encoded_data = encoder_fn(data.x)
-    chex.assert_shape(encoded_data.mean, (data.x.shape[0], config.latent_size))
-    chex.assert_shape(encoded_data.log_variance, encoded_data.mean.shape)
+    encoded_data = trained_vae.encoder(data.x)
+    chex.assert_shape([encoded_data.mean, encoded_data.log_var],
+                      (num_train, config.latent_dim))
 
-    reconstructed_data = decoder_fn(encoded_data.mean)
-    chex.assert_shape(reconstructed_data.mean, (data.x.shape[0], input_size))
-    chex.assert_shape(reconstructed_data.log_variance,
-                      reconstructed_data.mean.shape)
-
+    reconstructed_data = trained_vae.decoder(encoded_data.mean)
+    chex.assert_shape([reconstructed_data.mean, reconstructed_data.log_var],
+                      (num_train, input_dim))
 
 if __name__ == '__main__':
   absltest.main()
