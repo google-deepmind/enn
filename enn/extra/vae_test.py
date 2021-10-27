@@ -21,41 +21,39 @@ import itertools
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import losses
-from enn import supervised
+import chex
 from enn import utils
 from enn.extra import vae
-import jax
-import optax
 
 
 class VaeTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      itertools.product([True, False], [0, 100]))
-  def test_train_decreases_loss(self, bernoulli_decoder: bool, seed: int):
-    """Train a VAE on a test dataset and make sure loss decreases."""
+      itertools.product([True, False], [1, 2, 3]))
+  def test_vae_outputs(self, bernoulli_decoder: bool, latent_size: int):
+    """Train a VAE on a test dataset and test encoder decoder functions."""
     dataset = utils.make_test_data(100)
     data = next(dataset)
     input_size = data.x.shape[-1]
-    enn = vae.MLPVae(input_size)
 
-    log_likelihood_fn = losses.get_log_likelihood_fn(bernoulli_decoder)
-    latent_kl_fn = losses.get_latent_kl_fn()
-    single_loss = losses.VaeLoss(log_likelihood_fn, latent_kl_fn)
-    loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
+    config = vae.MLPVAEConfig(input_size=input_size,
+                              hidden_sizes=[5, 2],
+                              latent_size=latent_size,
+                              bernoulli_decoder=bernoulli_decoder,
+                              num_batches=25,
+                              batch_size=10,
+                              train_log_freq=5)
+    encoder_fn, decoder_fn = vae.get_mlp_vae_encoder_decoder(
+        config=config, data_x=data.x)
 
-    optimizer = optax.adam(1e-3)
+    encoded_data = encoder_fn(data.x)
+    chex.assert_shape(encoded_data.mean, (data.x.shape[0], config.latent_size))
+    chex.assert_shape(encoded_data.log_variance, encoded_data.mean.shape)
 
-    experiment = supervised.Experiment(enn, loss_fn, optimizer, dataset)
-
-    init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
-    initial_loss = experiment.loss(data, init_key)
-    experiment.train(num_batches=50)
-    final_loss = experiment.loss(data, loss_key)
-    self.assertGreater(
-        initial_loss, final_loss,
-        f'final loss {final_loss} is greater than initial loss {initial_loss}')
+    reconstructed_data = decoder_fn(encoded_data.mean)
+    chex.assert_shape(reconstructed_data.mean, (data.x.shape[0], input_size))
+    chex.assert_shape(reconstructed_data.log_variance,
+                      reconstructed_data.mean.shape)
 
 
 if __name__ == '__main__':
