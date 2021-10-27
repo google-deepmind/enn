@@ -47,7 +47,7 @@ class TrainedVAE(NamedTuple):
 @dataclasses.dataclass
 class MLPVAEConfig:
   """Configures training for an MLP VAE."""
-  hidden_sizes: Sequence[int] = (64, 32)
+  hidden_sizes: Sequence[int] = (256, 64)
   latent_dim: int = 2
   activation: Callable[[chex.Array], chex.Array] = jax.nn.tanh
   bernoulli_decoder: bool = True
@@ -84,7 +84,7 @@ def get_mlp_vae_encoder_decoder(
     if config.bernoulli_decoder:
       log_var = jnp.zeros_like(mean)
     else:
-      log_var = hk.Linear(input_dim, name='decoder_log_var')
+      log_var = hk.Linear(input_dim, name='decoder_log_var')(x)
     return MeanLogVariance(mean, log_var)
 
   # Train the VAE
@@ -116,8 +116,11 @@ def make_vae_enn(encoder: PreTransformFn,
 
     # Decoder
     out_mean, out_log_var = decoder(latent)
-    vae_outputs = {'latent_mean': latent_mean, 'latent_log_var': latent_log_var,
-                   'out_mean': out_mean, 'out_log_var': out_log_var}
+    vae_outputs = {'latent_mean': latent_mean,
+                   'latent_log_variance': latent_log_var,
+                   'out_mean': out_mean,
+                   'out_log_variance': out_log_var}
+
     return base.OutputWithPrior(train=out_mean, extra=vae_outputs)
 
   transformed = hk.without_apply_rng(hk.transform(net_fn))
@@ -170,4 +173,3 @@ def train_vae(encoder: PreTransformFn,
     return reconstruction
 
   return TrainedVAE(jax.jit(encoder_fn), jax.jit(decoder_fn))
-
