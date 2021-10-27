@@ -17,8 +17,6 @@
 
 """Tests for VAE."""
 
-import itertools
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import chex
@@ -28,8 +26,7 @@ from enn.extra import vae
 
 class VaeTest(parameterized.TestCase):
 
-  @parameterized.parameters(
-      itertools.product([True, False], [1, 2, 3]))
+  @parameterized.product(bernoulli_decoder=[True, False], latent_dim=[1, 3])
   def test_vae_outputs(self, bernoulli_decoder: bool, latent_dim: int):
     """Train a VAE on a test dataset and test encoder decoder functions."""
     dataset = utils.make_test_data(10)
@@ -44,12 +41,12 @@ class VaeTest(parameterized.TestCase):
     trained_vae = vae.get_mlp_vae_encoder_decoder(
         data_x=data.x, config=config)
 
-    encoded_data = trained_vae.encoder(data.x)
-    chex.assert_shape([encoded_data.mean, encoded_data.log_var],
+    latents = trained_vae.encoder(data.x)
+    chex.assert_shape([latents.mean, latents.log_var],
                       (num_train, config.latent_dim))
 
-    reconstructed_data = trained_vae.decoder(encoded_data.mean)
-    chex.assert_shape([reconstructed_data.mean, reconstructed_data.log_var],
+    reconstructions = trained_vae.decoder(latents.mean)
+    chex.assert_shape([reconstructions.mean, reconstructions.log_var],
                       (num_train, input_dim))
 
 if __name__ == '__main__':

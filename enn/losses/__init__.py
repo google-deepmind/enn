@@ -48,9 +48,9 @@ from enn.losses.utils import l2_weights_with_predicate
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood
 from enn.losses.vae_losses import gaussian_log_likelihood
-from enn.losses.vae_losses import get_latent_kl_fn
 from enn.losses.vae_losses import get_log_likelihood_fn
 from enn.losses.vae_losses import latent_kl_divergence
+from enn.losses.vae_losses import latent_kl_fn
 from enn.losses.vae_losses import LogLikelihoodFn
 
 # VI losses

@@ -24,16 +24,13 @@ import numpy as np
 
 class LossesTest(parameterized.TestCase):
 
-  @parameterized.product(input_size=[1, 10, 100],
-                         batch_size=[10])
+  @parameterized.product(input_size=[1, 10, 100], batch_size=[1, 10])
   def test_binary_log_likelihood(self, input_size: int, batch_size: int):
     """Tests the binary log likelihood."""
 
     x = np.zeros((batch_size, input_size))
     output = np.zeros_like(x)
-    extra = np.zeros_like(output)
-
-    log_likelihood = vae_losses.binary_log_likelihood(x, output, extra)
+    log_likelihood = vae_losses.binary_log_likelihood(x, output)
 
     result = -1 * input_size * np.log(2) * np.ones((batch_size,))
     np.testing.assert_almost_equal(
@@ -42,15 +39,14 @@ class LossesTest(parameterized.TestCase):
         decimal=3,
         err_msg=f'log_likelihood is {log_likelihood}, expected: {result}')
 
-  @parameterized.product(input_size=[1, 10, 100], batch_size=[10])
+  @parameterized.product(input_size=[1, 10, 100], batch_size=[1, 10])
   def test_gaussian_log_likelihood(self, input_size: int, batch_size: int):
     """Tests the binary log likelihood."""
 
     x = np.zeros((batch_size, input_size))
     mean = np.zeros_like(x)
-    log_variance = np.zeros_like(x)
-
-    log_likelihood = vae_losses.gaussian_log_likelihood(x, mean, log_variance)
+    log_var = np.zeros_like(x)
+    log_likelihood = vae_losses.gaussian_log_likelihood(x, mean, log_var)
 
     result = -0.5 * input_size * np.log(2 * np.pi) * np.ones((batch_size,))
     np.testing.assert_almost_equal(
@@ -59,14 +55,13 @@ class LossesTest(parameterized.TestCase):
         decimal=3,
         err_msg=f'log_likelihood is {log_likelihood}, expected: {result}')
 
-  @parameterized.product(input_size=[1, 10, 100], batch_size=[10])
+  @parameterized.product(input_size=[1, 10, 100], batch_size=[1, 10])
   def test_latent_kl(self, input_size: int, batch_size: int):
     """Tests the binary log likelihood."""
 
     mean = np.zeros((batch_size, input_size))
-    log_variance = np.zeros_like(mean)
-
-    log_likelihood = vae_losses.latent_kl_divergence(mean, log_variance)
+    log_var = np.zeros_like(mean)
+    log_likelihood = vae_losses.latent_kl_divergence(mean, log_var)
 
     result = 0 * np.ones((batch_size,))
     np.testing.assert_almost_equal(
