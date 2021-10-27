@@ -116,16 +116,12 @@ def make_vae_enn(encoder: PreTransformFn,
 
     # Decoder
     out_mean, out_log_var = decoder(latent)
-    vae_outputs = {'latent_mean': latent_mean,
-                   'latent_log_variance': latent_log_var,
-                   'out_mean': out_mean,
-                   'out_log_variance': out_log_var}
-
+    vae_outputs = {'latent_mean': latent_mean, 'latent_log_var': latent_log_var,
+                   'out_mean': out_mean, 'out_log_var': out_log_var}
     return base.OutputWithPrior(train=out_mean, extra=vae_outputs)
 
   transformed = hk.without_apply_rng(hk.transform(net_fn))
   indexer = networks.GaussianIndexer(latent_dim)
-
   return base.EpistemicNetwork(transformed.apply, transformed.init, indexer)
 
 
@@ -143,7 +139,7 @@ def train_vae(encoder: PreTransformFn,
   dataset = utils.make_batch_iterator(base.Batch(data_x, dummy_y), batch_size)
 
   # Create loss function
-  single_loss = losses.VaeLoss(log_likelihood_fn, losses.get_latent_kl_fn())
+  single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)
   loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
 
   # Train VAE by gradient descent for num_batches and extract parameters.
