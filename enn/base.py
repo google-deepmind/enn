@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Any, Dict, Iterator, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, NamedTuple, Optional, Tuple, Union
 
 import haiku as hk
 import jax
@@ -80,6 +80,19 @@ class EpistemicNetwork:
   """Convenient pairing of Haiku transformed function and index sampler."""
   apply: ApplyFn
   init: InitFn
+  indexer: EpistemicIndexer
+
+
+# Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
+ApplyFnWithState = Callable[[hk.Params, hk.State, Array, Index], Output]
+InitFnWithState = Callable[[RngKey, Array, Index], Tuple[Output, hk.State]]
+
+
+@dataclasses.dataclass
+class EpistemicNetworkWithState:
+  """Convenient pairing of Haiku transformed function and index sampler."""
+  apply: ApplyFnWithState
+  init: InitFnWithState
   indexer: EpistemicIndexer
 
 

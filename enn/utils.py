@@ -53,6 +53,17 @@ def wrap_transformed_as_enn(
   )
 
 
+def wrap_enn_as_enn_with_state(
+    enn: base.EpistemicNetwork) -> base.EpistemicNetworkWithState:
+  """Wraps a standard ENN as an ENN with a dummy network state."""
+  dummy_state = {'dummy_state': {'w': jnp.zeros(1)}}
+  return base.EpistemicNetworkWithState(
+      apply=lambda params, unused_state, x, z: enn.apply(params, x, z),
+      init=lambda key, x, z: (enn.init(key, x, z), dummy_state),
+      indexer=enn.indexer,
+  )
+
+
 def parse_net_output(net_out: base.Output) -> base.Array:
   """Convert potential dict of network outputs to scalar prediction value."""
   if isinstance(net_out, base.OutputWithPrior):
