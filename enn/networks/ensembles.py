@@ -18,12 +18,14 @@
 """Implementing some types of ENN ensembles in JAX."""
 from typing import Callable, Optional, Sequence
 
+import chex
 from enn import base
 from enn import utils
 from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
 import jax
+import jax.numpy as jnp
 
 
 class Ensemble(base.EpistemicModule):
@@ -43,6 +45,35 @@ class Ensemble(base.EpistemicModule):
     # TODO(author2): during init ensure all module parameters are created.
     _ = [model(inputs) for model in self.ensemble]  # pytype:disable=not-callable
     return hk.switch(index, self.ensemble, inputs)
+
+
+class EinsumEnsembleEnn(base.EpistemicNetwork):
+  """Ensemble ENN that uses a dot product in param space.
+
+  Repeats parameters by an additional *ensemble* dimension in axis=0.
+  Applying the parameters selects one single component of parameters per index.
+  """
+
+  def __init__(self,
+               model: hk.Transformed,
+               num_ensemble: int):
+    self.model = model
+    self.num_ensemble = num_ensemble
+
+    def init_fn(key: chex.PRNGKey, inputs: chex.Array, index: int):
+      del index  # Unused
+      batched_init = jax.vmap(model.init, in_axes=[0, None], out_axes=0)
+      return batched_init(jax.random.split(key, num_ensemble), inputs)
+
+    def apply_fn(params: hk.Params, inputs: chex.Array, index: int):
+      one_hot_index = jax.nn.one_hot(index, num_ensemble)
+      param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
+      sub_params = jax.tree_map(param_selector, params)
+      return model.apply(sub_params, inputs)
+
+    indexer = indexers.EnsembleIndexer(num_ensemble)
+
+    super().__init__(apply_fn, init_fn, indexer)
 
 
 class MLPEnsembleEnn(base.EpistemicNetwork):
