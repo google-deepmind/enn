@@ -22,9 +22,7 @@ Next step is to integrate more with the rest of the ENN code.
 from typing import Sequence
 
 from enn import base
-from enn import utils
 from enn.networks import ensembles
-from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
 import jax
@@ -68,12 +66,10 @@ class CatMLPEnsemble(base.EpistemicNetwork):
                atoms: base.Array,
                num_ensemble: int):
     """An ensemble of categorical MLP for regression."""
-    net_ctor = lambda: CategoricalRegressionMLP(output_sizes, atoms)
-    enn = utils.epistemic_network_from_module(
-        enn_ctor=lambda: ensembles.Ensemble(  # pylint: disable=g-long-lambda
-            [net_ctor() for _ in range(num_ensemble)]),
-        indexer=indexers.EnsembleIndexer(num_ensemble),
-    )
+    def net_fn(x: base.Array) -> base.Array:
+      return CategoricalRegressionMLP(output_sizes, atoms)(x)
+    transformed = hk.without_apply_rng(hk.transform(net_fn))
+    enn = ensembles.EinsumEnsembleEnn(transformed, num_ensemble)
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
