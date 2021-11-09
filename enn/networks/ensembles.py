@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class EinsumEnsembleEnn(base.EpistemicNetwork):
+class Ensemble(base.EpistemicNetwork):
   """Ensemble ENN that uses a dot product in param space.
 
   Repeats parameters by an additional *ensemble* dimension in axis=0.
@@ -127,7 +127,7 @@ class MLPEnsembleMatchedPrior(base.EpistemicNetwork):
       return hk.nets.MLP(output_sizes, w_init, b_init)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
 
-    ensemble = EinsumEnsembleEnn(transformed, num_ensemble)
+    ensemble = Ensemble(transformed, num_ensemble)
     enn = priors.EnnWithAdditivePrior(
         enn=ensemble,
         prior_fn=wrap_sequence_as_prior(mlp_priors),

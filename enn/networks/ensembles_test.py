@@ -47,7 +47,7 @@ class EinsumEnsemblesENNTest(parameterized.TestCase):
     def model(inputs):
       return hk.nets.MLP([output_dim])(inputs)
     model = hk.without_apply_rng(hk.transform(model))
-    enn = ensembles.EinsumEnsembleEnn(model, num_ensemble)
+    enn = ensembles.Ensemble(model, num_ensemble)
     params = enn.init(next(rng), np.zeros((input_dim,)), 0)
     self.assertEqual(params['mlp/~/linear_0']['b'].shape,
                      (num_ensemble, output_dim))

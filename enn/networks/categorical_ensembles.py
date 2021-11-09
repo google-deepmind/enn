@@ -69,7 +69,7 @@ class CatMLPEnsemble(base.EpistemicNetwork):
     def net_fn(x: base.Array) -> base.Array:
       return CategoricalRegressionMLP(output_sizes, atoms)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = ensembles.EinsumEnsembleEnn(transformed, num_ensemble)
+    enn = ensembles.Ensemble(transformed, num_ensemble)
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
