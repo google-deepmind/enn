@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Implementing some types of ENN ensembles in JAX."""
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, Tuple
 
 import chex
 from enn import base
@@ -40,20 +40,51 @@ class Ensemble(base.EpistemicNetwork):
     self.model = model
     self.num_ensemble = num_ensemble
 
-    def init_fn(key: chex.PRNGKey, inputs: chex.Array, index: int):
+    def init(key: chex.PRNGKey, inputs: chex.Array, index: int) -> hk.Params:
       del index  # Unused
       batched_init = jax.vmap(model.init, in_axes=[0, None], out_axes=0)
       return batched_init(jax.random.split(key, num_ensemble), inputs)
 
-    def apply_fn(params: hk.Params, inputs: chex.Array, index: int):
+    def apply(params: hk.Params, inputs: chex.Array, index: int) -> base.Output:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(param_selector, params)
       return model.apply(sub_params, inputs)
 
     indexer = indexers.EnsembleIndexer(num_ensemble)
+    super().__init__(apply, init, indexer)
 
-    super().__init__(apply_fn, init_fn, indexer)
+
+class EnsembleWithState(base.EpistemicNetworkWithState):
+  """Ensemble ENN that uses a dot product in param space.
+
+  Per Ensemble but with added state variable.
+  """
+
+  def __init__(self,
+               model: hk.TransformedWithState,
+               num_ensemble: int):
+    self.model = model
+    self.num_ensemble = num_ensemble
+
+    def init(key: chex.PRNGKey,
+             inputs: chex.Array,
+             index: int) -> Tuple[hk.Params, hk.State]:
+      del index  # Unused
+      batched_init = jax.vmap(model.init, in_axes=[0, None], out_axes=0)
+      return batched_init(jax.random.split(key, num_ensemble), inputs)
+
+    def apply(params: hk.Params,
+              state: hk.State,
+              inputs: chex.Array,
+              index: int) -> base.Output:
+      one_hot_index = jax.nn.one_hot(index, num_ensemble)
+      param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
+      sub_params = jax.tree_map(param_selector, params)
+      return model.apply(sub_params, state, inputs)
+
+    indexer = indexers.EnsembleIndexer(num_ensemble)
+    super().__init__(apply, init, indexer)
 
 
 def make_mlp_ensemble_prior_fns(

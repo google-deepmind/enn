@@ -85,7 +85,7 @@ class EpistemicNetwork:
 
 # Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
 ApplyFnWithState = Callable[[hk.Params, hk.State, Array, Index], Output]
-InitFnWithState = Callable[[RngKey, Array, Index], Tuple[Output, hk.State]]
+InitFnWithState = Callable[[RngKey, Array, Index], Tuple[hk.Params, hk.State]]
 
 
 @dataclasses.dataclass
