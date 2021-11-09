@@ -35,10 +35,7 @@ class ExperimentTest(parameterized.TestCase):
   def test_train_decreases_loss(self, num_classes: int, seed: int):
     """Train an ensemble ENN on a test dataset and make sure loss decreases."""
     # Creat ENN and loss functions
-    enn = networks.MLPEnsembleEnn(
-        output_sizes=[20, 20, num_classes],
-        num_ensemble=2,
-    )
+
     if num_classes == 1:
       single_loss = losses.L2Loss()
     else:
@@ -58,6 +55,12 @@ class ExperimentTest(parameterized.TestCase):
         dataset=prior_dataset,
         should_train=lambda step: step % 2 == 0,
         name='prior'
+    )
+
+    enn = networks.MLPEnsembleMatchedPrior(
+        output_sizes=[20, 20, num_classes],
+        num_ensemble=2,
+        dummy_input=next(train_dataset).x,
     )
 
     experiment = multiloss_experiment.MultilossExperiment(

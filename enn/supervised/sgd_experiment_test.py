@@ -37,12 +37,14 @@ class ExperimentTest(parameterized.TestCase):
 
     num_ensemble = 5
     output_sizes = [8, 8, num_outputs]
-    enn = networks.MLPEnsembleEnn(
+    dataset = utils.make_test_data(100)
+
+    enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=output_sizes,
         num_ensemble=num_ensemble,
+        dummy_input=next(dataset).x,
     )
 
-    dataset = utils.make_test_data(100)
     optimizer = optax.adam(1e-3)
     if num_outputs == 1:
       single_loss = losses.L2Loss()
