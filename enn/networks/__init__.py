@@ -30,7 +30,7 @@ from enn.networks.einsum_mlp import EnsembleMLP
 from enn.networks.einsum_mlp import make_einsum_ensemble_mlp_enn
 from enn.networks.einsum_mlp import make_ensemble_mlp_with_prior_enn
 # Ensemble
-from enn.networks.ensembles import EinsumEnsembleEnn
+from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
 from enn.networks.ensembles import wrap_sequence_as_prior
