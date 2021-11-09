@@ -55,11 +55,6 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     """Average of single loss fn should have same mean and smaller variance ."""
 
     num_ensemble = 10
-    enn = networks.MLPEnsembleEnn(
-        output_sizes=[1],
-        num_ensemble=num_ensemble,
-    )
-
     dummy_metrics = {'a': 0, 'b': 1}
     # A dummy loss fn that returns the normalized index as loss and two constant
     # metrics. Index is random but normalized such that its mean is 1.
@@ -68,6 +63,12 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     num_index_samples = 100
     loss_fn = average_single_index_loss(single_loss_fn, num_index_samples)
     dummy_batch = base.Batch(np.ones([1, 1]), np.ones([1, 1]))
+    enn = networks.MLPEnsembleMatchedPrior(
+        output_sizes=[1],
+        num_ensemble=num_ensemble,
+        dummy_input=dummy_batch.x,
+    )
+
     loss, metrics = loss_fn(
         enn=enn, params=dict(), batch=dummy_batch, key=jax.random.PRNGKey(0))
 
