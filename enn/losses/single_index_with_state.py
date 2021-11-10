@@ -81,13 +81,15 @@ class XentLossWithState(SingleIndexLossFnWithState):
     assert self.num_classes > 1
 
   def __call__(
-      self, apply: enn_base.ApplyFnWithState, params: hk.Params,
-      state: hk.State, batch: enn_base.Batch,
+      self,
+      apply: enn_base.ApplyFnWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: enn_base.Batch,
       index: enn_base.Index) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
-
+    chex.assert_shape(batch.y, (None, 1))
     logits, state = apply(params, state, batch.x, index)
-    chex.assert_shape(batch.y, (None, self.num_classes))
-    labels = batch.y
+    labels = jax.nn.one_hot(batch.y[:, 0], self.num_classes)
 
     softmax_xent = -jnp.sum(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
