@@ -83,19 +83,6 @@ class EpistemicNetwork:
   indexer: EpistemicIndexer
 
 
-# Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
-ApplyFnWithState = Callable[[hk.Params, hk.State, Array, Index], Output]
-InitFnWithState = Callable[[RngKey, Array, Index], Tuple[hk.Params, hk.State]]
-
-
-@dataclasses.dataclass
-class EpistemicNetworkWithState:
-  """Convenient pairing of Haiku transformed function and index sampler."""
-  apply: ApplyFnWithState
-  init: InitFnWithState
-  indexer: EpistemicIndexer
-
-
 class Batch(NamedTuple):
   x: Array  # Inputs
   y: Array  # Targets
@@ -113,6 +100,31 @@ class LossFn(typing_extensions.Protocol):
   def __call__(self,
                enn: EpistemicNetwork,
                params: hk.Params,
+               batch: Batch,
+               key: RngKey) -> Tuple[Array, LossMetrics]:
+    """Computes a loss based on one batch of data and a random key."""
+
+
+# Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
+ApplyFnWithState = Callable[[hk.Params, hk.State, Array, Index], Output]
+InitFnWithState = Callable[[RngKey, Array, Index], Tuple[hk.Params, hk.State]]
+
+
+@dataclasses.dataclass
+class EpistemicNetworkWithState:
+  """Convenient pairing of Haiku transformed function and index sampler."""
+  apply: ApplyFnWithState
+  init: InitFnWithState
+  indexer: EpistemicIndexer
+
+
+class LossFnWithState(typing_extensions.Protocol):
+  """Calculates a loss based on one batch of data per rng_key."""
+
+  def __call__(self,
+               enn: EpistemicNetworkWithState,
+               params: hk.Params,
+               state: hk.State,
                batch: Batch,
                key: RngKey) -> Tuple[Array, LossMetrics]:
     """Computes a loss based on one batch of data and a random key."""
