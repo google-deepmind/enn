@@ -37,6 +37,11 @@ from enn.losses.single_index import SingleIndexLossFn
 from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
+# Single Index With State
+from enn.losses.single_index_with_state import average_single_index_loss_with_state
+from enn.losses.single_index_with_state import SingleIndexLossFnWithState
+from enn.losses.single_index_with_state import XentLossWithState
+
 # Utils
 from enn.losses.utils import add_l2_weight_decay
 from enn.losses.utils import combine_losses
@@ -44,6 +49,7 @@ from enn.losses.utils import combine_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import l2_weights_with_predicate
+from enn.losses.utils import PredicateFn
 
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood
