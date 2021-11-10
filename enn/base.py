@@ -106,7 +106,8 @@ class LossFn(typing_extensions.Protocol):
 
 
 # Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
-ApplyFnWithState = Callable[[hk.Params, hk.State, Array, Index], Output]
+ApplyFnWithState = Callable[
+    [hk.Params, hk.State, Array, Index], Tuple[Output, hk.State]]
 InitFnWithState = Callable[[RngKey, Array, Index], Tuple[hk.Params, hk.State]]
 
 
