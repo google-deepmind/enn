@@ -64,6 +64,20 @@ def wrap_enn_as_enn_with_state(
   )
 
 
+def make_centered_enn(enn: base.EpistemicNetwork,
+                      x_train: base.Array) -> base.EpistemicNetwork:
+  """Returns an ENN that centers input according to x_train."""
+  assert x_train.ndim > 1  # need to include a batch dimension
+  x_mean = jnp.mean(x_train, axis=0)
+  x_std = jnp.std(x_train, axis=0)
+  def centered_apply(params: hk.Params,
+                     x: base.Array,
+                     z: base.Index) -> base.Output:
+    normalized_x = (x - x_mean) / (x_std + 1e-9)
+    return enn.apply(params, normalized_x, z)
+  return base.EpistemicNetwork(centered_apply, enn.init, enn.indexer)
+
+
 def parse_net_output(net_out: base.Output) -> base.Array:
   """Convert potential dict of network outputs to scalar prediction value."""
   if isinstance(net_out, base.OutputWithPrior):
