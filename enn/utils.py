@@ -56,10 +56,14 @@ def wrap_transformed_as_enn(
 def wrap_enn_as_enn_with_state(
     enn: base.EpistemicNetwork) -> base.EpistemicNetworkWithState:
   """Wraps a standard ENN as an ENN with a dummy network state."""
-  dummy_state = {'dummy_state': {'w': jnp.zeros(1)}}
+  def init(key, x, index):
+    unused_state = {}
+    return (enn.init(key, x, index), unused_state)
+  def apply(params, unused_state, x, index):
+    return (enn.apply(params, x, index), unused_state)
   return base.EpistemicNetworkWithState(
-      apply=lambda params, unused_state, x, z: enn.apply(params, x, z),
-      init=lambda key, x, z: (enn.init(key, x, z), dummy_state),
+      apply=apply,
+      init=init,
       indexer=enn.indexer,
   )
 
