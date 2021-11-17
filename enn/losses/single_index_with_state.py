@@ -16,8 +16,7 @@
 # ============================================================================
 """Single index loss functions *with state* (e.g. BatchNorm)."""
 
-import dataclasses
-from typing import Tuple
+from typing import Callable, Tuple
 
 import chex
 from enn import base as enn_base
@@ -72,13 +71,15 @@ def average_single_index_loss_with_state(
   return loss_fn
 
 
-@dataclasses.dataclass
 class XentLossWithState(SingleIndexLossFnWithState):
   """Cross-entropy single index loss with network state as auxiliary."""
-  num_classes: int
 
-  def __post_init__(self):
-    assert self.num_classes > 1
+  def __init__(self, num_classes: int):
+    assert num_classes > 1
+    super().__init__()
+    self.num_classes = num_classes
+    labeller = lambda x: jax.nn.one_hot(x, self.num_classes)
+    self._loss = xent_loss_with_state_custom_labels(labeller)
 
   def __call__(
       self,
@@ -87,12 +88,27 @@ class XentLossWithState(SingleIndexLossFnWithState):
       state: hk.State,
       batch: enn_base.Batch,
       index: enn_base.Index) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+    return self._loss(apply, params, state, batch, index)
+
+
+def xent_loss_with_state_custom_labels(
+    labeller: Callable[[chex.Array], chex.Array]) -> SingleIndexLossFnWithState:
+  """Factory method to create a loss function with custom labelling."""
+
+  def single_loss(
+      apply: enn_base.ApplyFnWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: enn_base.Batch,
+      index: enn_base.Index,) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+    """Xent loss with custom labelling."""
     chex.assert_shape(batch.y, (None, 1))
     logits, state = apply(params, state, batch.x, index)
-    labels = jax.nn.one_hot(batch.y[:, 0], self.num_classes)
+    labels = labeller(batch.y[:, 0])
 
     softmax_xent = -jnp.sum(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
 
     loss = jnp.mean(softmax_xent)
     return loss, {'loss': loss, 'state': state}
+  return single_loss
