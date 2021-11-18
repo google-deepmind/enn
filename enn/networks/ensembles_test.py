@@ -27,14 +27,14 @@ import jax
 import numpy as np
 
 
-class EinsumEnsemblesENNTest(parameterized.TestCase):
+class EnsemblesENNTest(parameterized.TestCase):
 
   @parameterized.product(
       input_dim=[1, 2],
       output_dim=[1, 3],
       num_ensemble=[1, 5],
   )
-  def test_einsum_ensemble_enn(
+  def test_ensemble_enn(
       self,
       input_dim: int,
       output_dim: int,
@@ -66,7 +66,63 @@ class EinsumEnsemblesENNTest(parameterized.TestCase):
           f'Output: {output} \n is not equal to expected: {expected_output}')
 
 
-class EnsemblesTest(parameterized.TestCase):
+class EnsemblesWithStateENNTest(parameterized.TestCase):
+
+  @parameterized.product(
+      input_dim=[1, 2],
+      output_dim=[1, 3],
+      num_ensemble=[1, 5],
+  )
+  def test_ensemble_with_state_enn(
+      self,
+      input_dim: int,
+      output_dim: int,
+      num_ensemble: int,
+  ):  # pylint:disable=[g-doc-args]
+    """Test the shape and update of the model state.
+
+    Tests that the parameters and states of the model has the right shape.
+    It also tests that the output is calculated correctly and the counter in
+    the state is incremented.
+    """
+
+    seed = 0
+    state_shape = (5, 7)
+
+    rng = hk.PRNGSequence(seed)
+    def model(inputs):
+      counter = hk.get_state(
+          'counter', shape=state_shape, dtype=np.int32, init=np.zeros)
+      hk.set_state('counter', counter + 1)
+      out = hk.nets.MLP([output_dim])(inputs)
+      return out
+    model = hk.without_apply_rng(hk.transform_with_state(model))
+    enn = ensembles.EnsembleWithState(model, num_ensemble)
+    params, state = enn.init(next(rng), np.zeros((input_dim,)), 0)
+    self.assertEqual(params['mlp/~/linear_0']['b'].shape,
+                     (num_ensemble, output_dim))
+    self.assertEqual(params['mlp/~/linear_0']['w'].shape,
+                     (num_ensemble, input_dim, output_dim))
+    self.assertEqual(state['~']['counter'].shape, (num_ensemble,) + state_shape)
+
+    # overwrite random params
+    params = jax.tree_map(lambda p: np.ones_like(p), params)  # pylint: disable=[unnecessary-lambda]
+    dummy_inputs = np.ones(shape=(1, input_dim), dtype=np.float32)
+    expected_output = (1 + input_dim) * np.ones(shape=(1, output_dim),
+                                                dtype=np.float32)
+    expected_state = np.zeros((num_ensemble,) + state_shape, dtype=np.int32)
+    for index in range(num_ensemble):
+      output, state = enn.apply(params, state, dummy_inputs, index)
+      expected_state[index, ...] = np.ones(state_shape, dtype=np.int32)
+      self.assertTrue(
+          np.all(output - expected_output == 0),
+          f'Output: {output} \n is not equal to expected: {expected_output}')
+      self.assertTrue(
+          np.all(state['~']['counter'] == expected_state),
+          f'State: {state} \n is not equal to expected: {expected_state}')
+
+
+class MLPEnsembleTest(parameterized.TestCase):
 
   @parameterized.parameters([
       ([], 1, True), ([10, 10], 5, True), ([], 1, False), ([10, 10], 5, False),

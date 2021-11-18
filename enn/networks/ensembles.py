@@ -72,20 +72,21 @@ class EnsembleWithState(base.EpistemicNetworkWithState):
              index: int) -> Tuple[hk.Params, hk.State]:
       del index  # Unused
       batched_init = jax.vmap(model.init, in_axes=[0, None], out_axes=0)
-      return batched_init(jax.random.split(key, num_ensemble), inputs)
+      params, states = batched_init(jax.random.split(key, num_ensemble), inputs)
+      return params, states
 
     def apply(params: hk.Params,
-              state: hk.State,
+              states: hk.State,
               inputs: chex.Array,
               index: int) -> Tuple[base.Output, hk.State]:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       particle_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(particle_selector, params)
-      sub_state = jax.tree_map(particle_selector, state)
-      output, new_sub_state = model.apply(sub_params, sub_state, inputs)
-      new_state = jax.tree_multimap(
-          lambda x, y: x.at[index].set(y), state, new_sub_state)
-      return output, new_state
+      sub_states = jax.tree_map(particle_selector, states)
+      out, new_sub_states = model.apply(sub_params, sub_states, inputs)
+      new_states = jax.tree_multimap(
+          lambda s, nss: s.at[index, ...].set(nss), states, new_sub_states)
+      return out, new_states
 
     indexer = indexers.EnsembleIndexer(num_ensemble)
     super().__init__(apply, init, indexer)
