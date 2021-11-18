@@ -127,5 +127,5 @@ class LossFnWithState(typing_extensions.Protocol):
                params: hk.Params,
                state: hk.State,
                batch: Batch,
-               key: RngKey) -> Tuple[Array, LossMetrics]:
+               key: RngKey) -> Tuple[Array, Tuple[hk.State, LossMetrics]]:
     """Computes a loss based on one batch of data and a random key."""

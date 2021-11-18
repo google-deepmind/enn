@@ -56,8 +56,10 @@ def average_single_index_loss(single_loss: SingleIndexLossFn,
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetwork, params: hk.Params,
-              batch: base.Batch, key: base.RngKey) -> base.Array:
+  def loss_fn(enn: base.EpistemicNetwork,
+              params: hk.Params,
+              batch: base.Batch,
+              key: base.RngKey) -> Tuple[base.Array, base.LossMetrics]:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))

@@ -19,7 +19,7 @@
 from typing import Callable, Tuple
 
 import chex
-from enn import base as enn_base
+from enn import base
 from enn import utils as enn_utils
 import haiku as hk
 import jax
@@ -36,19 +36,19 @@ class SingleIndexLossFnWithState(typing_extensions.Protocol):
 
   def __call__(
       self,
-      apply: enn_base.ApplyFn,
+      apply: base.ApplyFn,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
-      index: enn_base.Index,
-  ) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+      batch: base.Batch,
+      index: base.Index,
+  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
     """Computes a loss based on one batch of data and one index."""
 
 
 def average_single_index_loss_with_state(
     single_loss: SingleIndexLossFnWithState,
     num_index_samples: int = 1,
-) -> enn_base.LossFnWithState:
+) -> base.LossFnWithState:
   """Average a single index loss over multiple index samples.
 
   Args:
@@ -59,15 +59,20 @@ def average_single_index_loss_with_state(
     LossFnWithState that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: enn_base.EpistemicNetworkWithState, params: hk.Params,
-              state: hk.Params, batch: enn_base.Batch,
-              key: enn_base.RngKey) -> enn_base.Array:
-    batched_indexer = enn_utils.make_batch_indexer(
-        enn.indexer, num_index_samples)
+  def loss_fn(
+      enn: base.EpistemicNetworkWithState,
+      params: hk.Params,
+      state: hk.Params,
+      batch: base.Batch,
+      key: base.RngKey) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+    batched_indexer = enn_utils.make_batch_indexer(enn.indexer,
+                                                   num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
-    loss, metrics = batched_loss(
+    loss, (state, metrics) = batched_loss(
         enn.apply, params, state, batch, batched_indexer(key))
-    return jnp.mean(loss), jax.tree_map(jnp.mean, metrics)
+    mean_loss = jnp.mean(loss)
+    mean_metrics = jax.tree_map(jnp.mean, metrics)
+    return mean_loss, (state, mean_metrics)
   return loss_fn
 
 
@@ -83,11 +88,12 @@ class XentLossWithState(SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: enn_base.ApplyFnWithState,
+      apply: base.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
-      index: enn_base.Index) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+      batch: base.Batch,
+      index: base.Index,
+  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
     return self._loss(apply, params, state, batch, index)
 
 
@@ -96,11 +102,12 @@ def xent_loss_with_state_custom_labels(
   """Factory method to create a loss function with custom labelling."""
 
   def single_loss(
-      apply: enn_base.ApplyFnWithState,
+      apply: base.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
-      index: enn_base.Index,) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+      batch: base.Batch,
+      index: base.Index,
+  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
     """Xent loss with custom labelling."""
     chex.assert_shape(batch.y, (None, 1))
     logits, state = apply(params, state, batch.x, index)
@@ -110,5 +117,5 @@ def xent_loss_with_state_custom_labels(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
 
     loss = jnp.mean(softmax_xent)
-    return loss, {'loss': loss, 'state': state}
+    return loss, (state, {'loss': loss})
   return single_loss
