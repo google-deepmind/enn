@@ -68,11 +68,16 @@ def average_single_index_loss_with_state(
     batched_indexer = enn_utils.make_batch_indexer(enn.indexer,
                                                    num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
-    loss, (state, metrics) = batched_loss(
+    loss, (new_state, metrics) = batched_loss(
         enn.apply, params, state, batch, batched_indexer(key))
     mean_loss = jnp.mean(loss)
+    # We get a new full state per index. Should think about how to handle this.
+    # This is a temporary fix. The main issue is that multi-index trainng loop
+    # does not conform to the typical training loop where states are upated
+    # sequentially.
+    mean_new_state = jax.tree_map(lambda s: jnp.mean(s, axis=0), new_state)
     mean_metrics = jax.tree_map(jnp.mean, metrics)
-    return mean_loss, (state, mean_metrics)
+    return mean_loss, (mean_new_state, mean_metrics)
   return loss_fn
 
 
