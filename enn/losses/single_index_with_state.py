@@ -82,6 +82,11 @@ def average_single_index_loss_with_state(
         lambda x, y: chex.assert_equal_shape([x, y]), mean_new_state, state)
 
     mean_metrics = jax.tree_map(jnp.mean, metrics)
+
+    # TODO(author2): Adding a logging method for keeping track of state counter.
+    if len(mean_new_state) > 0:  # pylint:disable=g-explicit-length-test
+      first_state_layer = mean_new_state[list(mean_new_state.keys())[0]]
+      mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
     return mean_loss, (mean_new_state, mean_metrics)
   return loss_fn
 
