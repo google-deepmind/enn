@@ -20,7 +20,7 @@ from typing import Callable, Tuple
 
 import chex
 from enn import base
-from enn import utils as enn_utils
+from enn import utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -69,8 +69,7 @@ def average_single_index_loss_with_state(
       state: hk.State,
       batch: base.Batch,
       key: base.RngKey) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
-    batched_indexer = enn_utils.make_batch_indexer(enn.indexer,
-                                                   num_index_samples)
+    batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
     loss, (new_state, metrics) = batched_loss(
         enn.apply, params, state, batch, batched_indexer(key))
@@ -125,7 +124,8 @@ def xent_loss_with_state_custom_labels(
   ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
     """Xent loss with custom labelling."""
     chex.assert_shape(batch.y, (None, 1))
-    logits, state = apply(params, state, batch.x, index)
+    net_out, state = apply(params, state, batch.x, index)
+    logits = utils.parse_net_output(net_out)
     labels = labeller(batch.y[:, 0])
 
     softmax_xent = -jnp.sum(
