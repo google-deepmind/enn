@@ -96,12 +96,12 @@ def bbb_loss(sigma_0: float = 100, num_index_samples: int = 64):
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
     del enn
     log_likelihood_fn = losses.get_awgn_loglike_fn(prior.noise_std)
+
+    model_prior_kl_fn = losses.get_analytical_diagonal_linear_model_prior_kl_fn(
+        prior.num_train, sigma_0)
+    single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
     loss_fn = losses.average_single_index_loss(
-        losses.get_diagonal_linear_hypermodel_elbo_fn(
-            log_likelihood_fn=log_likelihood_fn,
-            sigma_0=sigma_0,
-            num_samples=prior.num_train
-            ),
+        single_loss,
         num_index_samples=num_index_samples)
     return loss_fn
   return loss_ctor
