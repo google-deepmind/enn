@@ -131,6 +131,12 @@ def xent_loss_with_state_custom_labels(
     softmax_xent = -jnp.sum(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
 
-    loss = jnp.mean(softmax_xent)
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.y)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, softmax_xent])
+
+    loss = jnp.mean(batch_weights * softmax_xent)
     return loss, (state, {'loss': loss})
   return single_loss

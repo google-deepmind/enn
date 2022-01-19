@@ -142,9 +142,7 @@ def make_bbb_ctor(sigma_0: float,
     output_sizes = list([hidden_size] * num_layers) + [prior.num_classes]
     enn = networks.make_bbb_enn(
         dummy_input=jnp.ones(shape=(prior.input_dim,)),
-        base_output_sizes=output_sizes,
-        sigma_0=sigma_0,
-        scale=True)
+        base_output_sizes=output_sizes,)
 
     return enn
 

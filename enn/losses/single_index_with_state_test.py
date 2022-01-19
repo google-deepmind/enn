@@ -41,15 +41,17 @@ class DummyLossFn(single_index_with_state.SingleIndexLossFnWithState):
     self._num_ensemble = num_ensemble
     self._dummy_metrics = dummy_metrics
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               state: hk.State,
-               batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+  def __call__(
+      self,
+      apply: base.ApplyFn,
+      params: hk.Params,
+      state: hk.State,
+      batch: base.Batch,
+      index: base.Index,
+  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
     """Computes a loss based on one batch of data and one index."""
-    del apply, params, state, batch
-    return ((2 * index + 1) / self._num_ensemble, self._dummy_metrics)
+    del apply, params, batch
+    return ((2 * index + 1) / self._num_ensemble, (state, self._dummy_metrics))
 
 
 class AvgSingleIndexLossTest(absltest.TestCase):
@@ -74,7 +76,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     )
     enn = utils.wrap_enn_as_enn_with_state(enn)
 
-    loss, metrics = loss_fn(
+    loss, (unused_new_state, metrics) = loss_fn(
         enn=enn,
         params=dict(),
         state=dict(),
@@ -117,7 +119,7 @@ class XentLossTest(parameterized.TestCase):
     )
 
     # Test when apply always return a uniform distribution over labels
-    apply = lambda p, s, x, i: np.ones(shape=(x.shape[0], num_classes))
+    apply = lambda p, s, x, i: (np.ones(shape=(x.shape[0], num_classes)), s)
     # Since the output is uniform the log loss is always log(1/num_classes).
     expected_loss = -np.log(1.0 / num_classes)
     loss, unused_metrics = loss_fn(
