@@ -49,6 +49,7 @@ setuptools.setup(
         'jax',
         'jaxlib',
         'matplotlib',
+        'neural-tangents',
         'numpy',
         'optax',
         'pandas',

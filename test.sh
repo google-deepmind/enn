@@ -20,7 +20,7 @@ set -e
 set -x
 
 # Set up a new virtual environment.
-python3 -m venv enn_testing --upgrade-deps
+python3 -m venv enn_testing
 source enn_testing/bin/activate
 
 # Install all dependencies.
