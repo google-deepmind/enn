@@ -44,7 +44,7 @@ setuptools.setup(
         'absl-py',
         'chex',
         'dm-acme',
-        'dm-haiku @ git+https://git@github.com/deepmind/dm-haiku',
+        'dm-haiku==0.0.5',
         'dataclasses',  # Back-port for Python 3.6.
         'jax',
         'jaxlib',
