@@ -25,7 +25,7 @@ import haiku as hk
 import jax
 import jax.config
 from neural_tangents import stax
-from neural_tangents.utils import typing as nt_types
+from neural_tangents._src.utils import typing as nt_types
 import numpy as np
 import typing_extensions
 

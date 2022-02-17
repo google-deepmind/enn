@@ -26,7 +26,7 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import neural_tangents as nt
-from neural_tangents.utils import typing as nt_types
+from neural_tangents._src.utils import typing as nt_types
 
 
 class GPRegression:
