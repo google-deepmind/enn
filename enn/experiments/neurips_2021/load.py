@@ -36,7 +36,7 @@ jax.config.update('jax_enable_x64', True)
 class KernelCtor(typing_extensions.Protocol):
   """Interface for generating a kernel for a given input dimension."""
 
-  def __call__(self, input_dim: int) -> nt_types.KernelFn:
+  def __call__(self, input_dim: int) -> nt_types.AnalyticKernelFn:
     """Generates a kernel for a given input dimension."""
 
 
@@ -49,7 +49,7 @@ class MLPKernelCtor(KernelCtor):
   def __post_init__(self):
     assert self.num_hidden_layers >= 1, 'Must have at least one hidden layer.'
 
-  def __call__(self, input_dim: int = 1) -> nt_types.KernelFn:
+  def __call__(self, input_dim: int = 1) -> nt_types.AnalyticKernelFn:
     """Generates a kernel for a given input dimension."""
     limit_width = 50  # Implementation detail of neural_testbed, unused.
     layers = [
@@ -64,7 +64,7 @@ class MLPKernelCtor(KernelCtor):
     return kernel
 
 
-def make_benchmark_kernel(input_dim: int = 1) -> nt_types.KernelFn:
+def make_benchmark_kernel(input_dim: int = 1) -> nt_types.AnalyticKernelFn:
   """Creates the benchmark kernel used in the testbed = 2-layer ReLU."""
   kernel_ctor = MLPKernelCtor(num_hidden_layers=2, activation=stax.Relu())
   return kernel_ctor(input_dim)

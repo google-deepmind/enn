@@ -33,7 +33,7 @@ class GPRegression:
   """GP with gaussian noise output."""
 
   def __init__(self,
-               kernel_fn: nt_types.KernelFn,
+               kernel_fn: nt_types.AnalyticKernelFn,
                x_train: chex.Array,
                x_test: chex.Array,
                key: chex.PRNGKey,
