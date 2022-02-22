@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 from absl import flags
 from enn import base
@@ -56,12 +56,36 @@ def wrap_transformed_as_enn(
 def wrap_enn_as_enn_with_state(
     enn: base.EpistemicNetwork) -> base.EpistemicNetworkWithState:
   """Wraps a standard ENN as an ENN with a dummy network state."""
-  def init(key, x, index):
-    unused_state = {}
-    return (enn.init(key, x, index), unused_state)
-  def apply(params, unused_state, x, index):
-    return (enn.apply(params, x, index), unused_state)
+  def init(key: base.RngKey,
+           x: base.Array,
+           z: base.Array) -> Tuple[hk.Params, hk.State]:
+    return (enn.init(key, x, z), {})
+  def apply(params: hk.Params,
+            unused_state: hk.State,
+            x: base.Array,
+            z: base.Index) -> Tuple[base.Output, hk.State]:
+    return (enn.apply(params, x, z), {})
   return base.EpistemicNetworkWithState(
+      apply=apply,
+      init=init,
+      indexer=enn.indexer,
+  )
+
+
+def wrap_enn_with_state_as_enn(
+    enn: base.EpistemicNetworkWithState,
+    constant_state: Optional[hk.State] = None,
+) -> base.EpistemicNetwork:
+  """Passes a dummy state to ENN with state as an ENN."""
+  if constant_state is None:
+    constant_state = {}
+  def init(key: base.RngKey, x: base.Array, z: base.Index) -> hk.Params:
+    params, unused_state = enn.init(key, x, z)
+    return params
+  def apply(params: hk.Params, x: base.Array, z: base.Index) -> base.Output:
+    output, unused_state = enn.apply(params, constant_state, x, z)
+    return output
+  return base.EpistemicNetwork(
       apply=apply,
       init=init,
       indexer=enn.indexer,
