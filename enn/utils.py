@@ -57,14 +57,17 @@ def wrap_enn_as_enn_with_state(
     enn: base.EpistemicNetwork) -> base.EpistemicNetworkWithState:
   """Wraps a standard ENN as an ENN with a dummy network state."""
   def init(key: base.RngKey,
-           x: base.Array,
-           z: base.Array) -> Tuple[hk.Params, hk.State]:
-    return (enn.init(key, x, z), {})
-  def apply(params: hk.Params,
-            unused_state: hk.State,
-            x: base.Array,
-            z: base.Index) -> Tuple[base.Output, hk.State]:
-    return (enn.apply(params, x, z), {})
+           inputs: base.Array,
+           index: base.Array,) -> Tuple[hk.Params, hk.State]:
+    return (enn.init(key, inputs, index), {})
+
+  def apply(
+      params: hk.Params,
+      unused_state: hk.State,
+      inputs: base.Array,
+      index: base.Array,
+  ) -> Tuple[base.Output, hk.State]:
+    return (enn.apply(params, inputs, index), {})
   return base.EpistemicNetworkWithState(
       apply=apply,
       init=init,
