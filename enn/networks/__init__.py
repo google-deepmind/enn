@@ -35,6 +35,11 @@ from enn.networks.ensembles import EnsembleWithState
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
 from enn.networks.ensembles import wrap_sequence_as_prior
+# Epinet
+from enn.networks.epinet import ExposedMLP
+from enn.networks.epinet import make_mlp_epinet
+from enn.networks.epinet import make_mlp_epinet_with_ensemble_prior
+from enn.networks.epinet import ProjectedMLP
 # Gaussian ENN
 from enn.networks.gaussian_enn import GaussianNoiseEnn
 from enn.networks.gaussian_enn import GaussianNoiseMLP
