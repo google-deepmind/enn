@@ -25,6 +25,7 @@ import chex
 from enn import base as enn_base
 from enn.networks import einsum_mlp
 from enn.networks import indexers
+from enn.networks import priors
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -35,6 +36,7 @@ class ExposedMLP(enn_base.EpistemicModule):
 
   def __init__(self,
                output_sizes: Sequence[int],
+               expose_layers: Optional[Sequence[bool]] = None,
                stop_gradient: bool = True,
                name: Optional[str] = None):
     """ReLU MLP that also exposes the internals as output."""
@@ -46,21 +48,32 @@ class ExposedMLP(enn_base.EpistemicModule):
     self.num_layers = len(self.layers)
     self.output_size = output_sizes[-1]
     self.stop_gradient = stop_gradient
+    self.expose_layers = expose_layers
+    # if expose_layers is None, we expose all layers
+    if self.expose_layers is None:
+      self.expose_layers = [True] * len(output_sizes)
+    assert len(self.expose_layers) == len(self.layers)
 
   def __call__(self, inputs: enn_base.Array) -> enn_base.OutputWithPrior:
-    """Standard MLP but exposes 'all_features' in .extra output."""
-    all_features = [inputs]
+    """Standard MLP but exposes 'exposed_features' in .extra output."""
+    layers_features = []
     out = inputs
     for i, layer in enumerate(self.layers):
       out = layer(out)
       if i < (self.num_layers - 1):
         out = jax.nn.relu(out)
-      all_features.append(out)
+      layers_features.append(out)
 
-    all_features = jnp.concatenate(all_features, axis=1)
+    exposed_features = [inputs]
+    for i, layer_feature in enumerate(layers_features):
+      # Add this layer feature if the expose flag for this layer is True
+      if self.expose_layers[i]:
+        exposed_features.append(layer_feature)
+
+    exposed_features = jnp.concatenate(exposed_features, axis=1)
     if self.stop_gradient:
-      all_features = jax.lax.stop_gradient(all_features)
-    extra = {'all_features': all_features}
+      exposed_features = jax.lax.stop_gradient(exposed_features)
+    extra = {'exposed_features': exposed_features}
     return enn_base.OutputWithPrior(train=out, extra=extra)
 
 
@@ -98,19 +111,22 @@ class ProjectedMLP(enn_base.EpistemicModule):
 def make_mlp_epinet(output_sizes: Sequence[int],
                     epinet_hiddens: Sequence[int],
                     index_dim: int,
+                    expose_layers: Optional[Sequence[bool]] = None,
                     prior_scale: float = 1.) -> enn_base.EpistemicNetwork:
   """Factory method to create a standard MLP epinet."""
 
   def net_fn(x: enn_base.Array, z: enn_base.Index) -> enn_base.OutputWithPrior:
-    base_mlp = ExposedMLP(output_sizes, name='base_mlp')
+    base_mlp = ExposedMLP(output_sizes, expose_layers, name='base_mlp')
+    num_classes = output_sizes[-1]
     train_epinet = ProjectedMLP(
-        epinet_hiddens, output_sizes[-1], index_dim, name='train_epinet')
+        epinet_hiddens, num_classes, index_dim, name='train_epinet')
     prior_epinet = ProjectedMLP(
-        epinet_hiddens, output_sizes[-1], index_dim, name='prior_epinet')
+        epinet_hiddens, num_classes, index_dim, name='prior_epinet')
 
     base_out = base_mlp(x)
-    epi_train = train_epinet(base_out.extra['all_features'], z)
-    epi_prior = prior_epinet(base_out.extra['all_features'], z)
+    features = base_out.extra['exposed_features']
+    epi_train = train_epinet(features, z)
+    epi_prior = prior_epinet(features, z)
     return enn_base.OutputWithPrior(
         train=base_out.train + epi_train,
         prior=prior_scale * epi_prior,
@@ -129,31 +145,24 @@ def make_mlp_epinet_with_ensemble_prior(
     epinet_hiddens: Sequence[int],
     ensemble_hiddens: Sequence[int],
     index_dim: int,
-    prior_scale: float = 1.) -> enn_base.EpistemicNetwork:
-  """Factory method to create a standard MLP epinet."""
-
-  def net_fn(x: enn_base.Array, z: enn_base.Index) -> enn_base.OutputWithPrior:
-    # TODO(author3): Use ensembles.py instead of einsum_mlp.py
-    ensemble_prior = einsum_mlp.EnsembleMLP(
-        list(ensemble_hiddens) + [output_sizes[-1]],
-        index_dim, name='ensemble_prior')
-    ensemble_prior_out = jnp.dot(ensemble_prior(x), z)
-
-    base_mlp = ExposedMLP(output_sizes, name='base_mlp')
-    base_out = base_mlp(x)
-
-    train_epinet = ProjectedMLP(
-        epinet_hiddens, output_sizes[-1], index_dim, name='train_epinet')
-    epi_train = train_epinet(base_out.extra['all_features'], z)
-
-    return enn_base.OutputWithPrior(
-        train=base_out.train + epi_train,
-        prior=prior_scale * ensemble_prior_out,
-    )
-
-  transformed = hk.without_apply_rng(hk.transform(net_fn))
-  return enn_base.EpistemicNetwork(
-      apply=transformed.apply,
-      init=transformed.init,
-      indexer=indexers.GaussianIndexer(index_dim)
+    dummy_input: enn_base.Array,
+    expose_layers: Optional[Sequence[bool]] = None,
+    prior_scale: float = 1.,
+    prior_scale_epi: float = 0.5,
+    seed: int = 0,) -> enn_base.EpistemicNetwork:
+  """Factory method to create a standard MLP epinet with ensemble prior."""
+  enn = make_mlp_epinet(
+      output_sizes=output_sizes,
+      epinet_hiddens=epinet_hiddens,
+      index_dim=index_dim,
+      expose_layers=expose_layers,
+      prior_scale=prior_scale_epi,
   )
+  num_classes = output_sizes[-1]
+  mlp_prior_fn = einsum_mlp.make_ensemble_prior(
+      output_sizes=list(ensemble_hiddens) + [num_classes,],
+      dummy_input=dummy_input,
+      num_ensemble=index_dim,
+      seed=seed
+      )
+  return priors.EnnWithAdditivePrior(enn, mlp_prior_fn, prior_scale)

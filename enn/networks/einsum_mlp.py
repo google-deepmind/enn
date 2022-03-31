@@ -20,6 +20,7 @@ from typing import Callable, Sequence
 import chex
 from enn import base
 from enn.networks import indexers
+from enn.networks import priors
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -109,6 +110,20 @@ def make_ensemble_mlp_with_prior_enn(
   return base.EpistemicNetwork(apply_with_prior, enn.init, enn.indexer)
 
 
+# TODO(author3): Come up with a better name and use ensembles.py instead.
+def make_ensemble_prior(output_sizes: Sequence[int],
+                        num_ensemble: int,
+                        dummy_input: chex.Array,
+                        seed: int = 999,) -> priors.PriorFn:
+  """Combining a few ensemble elements as prior function."""
+  def net_fn(x):
+    model = EnsembleMLP(output_sizes, num_ensemble)
+    return model(x)
+  transformed = hk.without_apply_rng(hk.transform(net_fn))
+  rng = hk.PRNGSequence(seed)
+  params = transformed.init(next(rng), dummy_input)
+  prior_fn = lambda x, z: jnp.dot(transformed.apply(params, x), z)
+  return jax.jit(prior_fn)
 ################################################################################
 # Einsum implementation of MLP
 

@@ -115,6 +115,7 @@ class EpinetTest(parameterized.TestCase):
         epinet_hiddens=epinet_hiddens,
         ensemble_hiddens=ensemble_hiddens,
         index_dim=index_dim,
+        dummy_input=test_experiment.dummy_input,
     )
 
     experiment = test_experiment.experiment_ctor(enn)
