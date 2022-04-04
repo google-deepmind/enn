@@ -29,6 +29,7 @@ from enn.networks.dropout import MLPDropoutENN
 from enn.networks.einsum_mlp import EnsembleMLP
 from enn.networks.einsum_mlp import make_einsum_ensemble_mlp_enn
 from enn.networks.einsum_mlp import make_ensemble_mlp_with_prior_enn
+from enn.networks.einsum_mlp import make_ensemble_prior
 # Ensemble
 from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import EnsembleWithState
@@ -38,7 +39,6 @@ from enn.networks.ensembles import wrap_sequence_as_prior
 # Epinet
 from enn.networks.epinet import ExposedMLP
 from enn.networks.epinet import make_mlp_epinet
-from enn.networks.epinet import make_mlp_epinet_with_ensemble_prior
 from enn.networks.epinet import ProjectedMLP
 # Gaussian ENN
 from enn.networks.gaussian_enn import GaussianNoiseEnn

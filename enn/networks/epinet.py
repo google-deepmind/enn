@@ -23,9 +23,7 @@ from typing import Optional, Sequence
 
 import chex
 from enn import base as enn_base
-from enn.networks import einsum_mlp
 from enn.networks import indexers
-from enn.networks import priors
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -136,33 +134,6 @@ def make_mlp_epinet(output_sizes: Sequence[int],
   return enn_base.EpistemicNetwork(
       apply=transformed.apply,
       init=transformed.init,
-      indexer=indexers.GaussianIndexer(index_dim)
+      indexer=indexers.GaussianIndexer(index_dim),
   )
 
-
-def make_mlp_epinet_with_ensemble_prior(
-    output_sizes: Sequence[int],
-    epinet_hiddens: Sequence[int],
-    ensemble_hiddens: Sequence[int],
-    index_dim: int,
-    dummy_input: enn_base.Array,
-    expose_layers: Optional[Sequence[bool]] = None,
-    prior_scale: float = 1.,
-    prior_scale_epi: float = 0.5,
-    seed: int = 0,) -> enn_base.EpistemicNetwork:
-  """Factory method to create a standard MLP epinet with ensemble prior."""
-  enn = make_mlp_epinet(
-      output_sizes=output_sizes,
-      epinet_hiddens=epinet_hiddens,
-      index_dim=index_dim,
-      expose_layers=expose_layers,
-      prior_scale=prior_scale_epi,
-  )
-  num_classes = output_sizes[-1]
-  mlp_prior_fn = einsum_mlp.make_ensemble_prior(
-      output_sizes=list(ensemble_hiddens) + [num_classes,],
-      dummy_input=dummy_input,
-      num_ensemble=index_dim,
-      seed=seed
-      )
-  return priors.EnnWithAdditivePrior(enn, mlp_prior_fn, prior_scale)

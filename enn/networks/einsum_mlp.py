@@ -17,6 +17,8 @@
 """Efficient ensemble implementations for JAX/Haiku via einsum."""
 from typing import Callable, Sequence
 
+# TODO(author2): Delete this implementation, base ensemble is fast enough.
+
 import chex
 from enn import base
 from enn.networks import indexers
