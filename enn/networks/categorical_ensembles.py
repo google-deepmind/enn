@@ -90,7 +90,7 @@ class CatMLPEnsembleGpPrior(base.EpistemicNetwork):
         input_dim, 1, num_feat, gamma, num_ensemble, seed)
     enn = priors.EnnWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
-        prior_fn=ensembles.wrap_sequence_as_prior(gp_priors),
+        prior_fn=ensembles.combine_functions_choice_via_index(gp_priors),
         prior_scale=prior_scale,
     )
     super().__init__(enn.apply, enn.init, enn.indexer)
@@ -111,7 +111,7 @@ class CatMLPEnsembleMlpPrior(base.EpistemicNetwork):
         output_sizes, dummy_input, num_ensemble, seed)
     enn = priors.EnnWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
-        prior_fn=ensembles.wrap_sequence_as_prior(mlp_priors),
+        prior_fn=ensembles.combine_functions_choice_via_index(mlp_priors),
         prior_scale=prior_scale,
     )
     super().__init__(enn.apply, enn.init, enn.indexer)

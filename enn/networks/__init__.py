@@ -31,12 +31,12 @@ from enn.networks.einsum_mlp import make_einsum_ensemble_mlp_enn
 from enn.networks.einsum_mlp import make_ensemble_mlp_with_prior_enn
 from enn.networks.einsum_mlp import make_ensemble_prior
 # Ensemble
-from enn.networks.ensembles import combine_sequence_linearly_as_prior
+from enn.networks.ensembles import combine_functions_choice_via_index
+from enn.networks.ensembles import combine_functions_linear_in_index
 from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import EnsembleWithState
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
-from enn.networks.ensembles import wrap_sequence_as_prior
 # Epinet
 from enn.networks.epinet import ExposedMLP
 from enn.networks.epinet import make_mlp_epinet
