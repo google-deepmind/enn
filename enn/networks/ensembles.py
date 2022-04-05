@@ -121,7 +121,20 @@ def make_mlp_ensemble_prior_fns(
 def wrap_sequence_as_prior(
     prior_fns: Sequence[Callable[[base.Array], base.Array]],
 ) -> Callable[[base.Array, base.Index], base.Array]:
+  """Returns a prior functions which selects one function from a sequence based on an index z."""
   return lambda x, z: jax.lax.switch(z, prior_fns, x)
+
+
+def combine_sequence_linearly_as_prior(
+    prior_fns: Sequence[Callable[[base.Array], base.Array]],
+) -> Callable[[base.Array, base.Index], base.Array]:
+  """Returns a prior functions which combines a sequence of functions with index z linearly."""
+  def enn_fn(x, z):
+    prior_outputs = jnp.array([prior_fn(x) for prior_fn in prior_fns])
+    num_index, unused_batch_size, unused_num_classes = prior_outputs.shape
+    chex.assert_shape(z, (num_index,))
+    return jnp.einsum('nbo,n->bo', prior_outputs, z)
+  return jax.jit(enn_fn)
 
 
 def make_random_gp_ensemble_prior_fns(
