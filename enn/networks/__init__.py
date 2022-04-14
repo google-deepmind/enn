@@ -1,4 +1,3 @@
-# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2021 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -61,6 +60,9 @@ from enn.networks.indexers import GaussianIndexer
 from enn.networks.indexers import GaussianWithUnitIndexer
 from enn.networks.indexers import PrngIndexer
 from enn.networks.indexers import ScaledGaussianIndexer
+# LeNet (MNIST)
+from enn.networks.lenet import EnsembleLeNet5ENN
+from enn.networks.lenet import LeNet5
 # Priors
 from enn.networks.priors import convert_enn_to_prior_fn
 from enn.networks.priors import EnnWithAdditivePrior
@@ -69,3 +71,17 @@ from enn.networks.priors import make_null_prior
 from enn.networks.priors import make_random_feat_gp
 from enn.networks.priors import NetworkWithAdditivePrior
 from enn.networks.priors import PriorFn
+# ResNet (Imagenet)
+from enn.networks.resnet import EnsembleResNetENN
+from enn.networks.resnet import resnet_model
+# ResNet Configs (Imagenet)
+from enn.networks.resnet_lib import ResBlockV2
+from enn.networks.resnet_lib import ResNet
+from enn.networks.resnet_lib import RESNET_101
+from enn.networks.resnet_lib import RESNET_152
+from enn.networks.resnet_lib import RESNET_200
+from enn.networks.resnet_lib import RESNET_50
+from enn.networks.resnet_lib import ResNetConfig
+# VGG (Cifar10)
+from enn.networks.vgg import EnsembleVGGENN
+from enn.networks.vgg import VGG

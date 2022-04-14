@@ -1,4 +1,3 @@
-# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2021 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -20,10 +19,10 @@ from typing import Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import networks
 from enn import supervised
 from enn import utils
 from enn.networks import epinet
+from enn.networks import indexers
 import haiku as hk
 
 
@@ -65,7 +64,7 @@ class EpinetTest(parameterized.TestCase):
           index_dim=index_dim,
       )
     enn = utils.epistemic_network_from_module(
-        enn_ctor, networks.GaussianIndexer(index_dim))
+        enn_ctor, indexers.GaussianIndexer(index_dim))
 
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)

@@ -14,34 +14,38 @@
 # limitations under the License.
 # ============================================================================
 
-"""Tests for Gaussian ENN."""
-
-from typing import List
+"""Tests for ENN Networks."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import supervised
-from enn.networks import gaussian_enn
+from enn.networks import vgg
+import haiku as hk
+import jax
 
 
-class GaussianEnnTest(parameterized.TestCase):
+class NetworkTest(parameterized.TestCase):
 
-  @parameterized.parameters([
-      ([], 1., True), ([10, 10], 0.1, True),
-      ([], 1., False), ([10, 10], 0.1, False),
-  ])
-  def test_ten_batches(self,
-                       hiddens: List[int],
-                       init_scale: float,
-                       regression: bool):
-    """Simple test to run just 10 batches."""
-    test_experiment = supervised.make_test_experiment(regression)
-
-    enn = gaussian_enn.GaussianNoiseMLP(
-        output_sizes=hiddens+[test_experiment.num_outputs],
-        init_scale=init_scale,
+  @parameterized.product(
+      num_classes=[2, 10],
+      batch_size=[1, 10],
+      image_size=[2, 10],
+  )
+  def test_forward_pass(
+      self,
+      num_classes: int,
+      batch_size: int,
+      image_size: int,
+  ):
+    """Tests forward pass and output shape."""
+    enn = vgg.EnsembleVGGENN(
+        num_output_classes=num_classes,
     )
-    experiment = test_experiment.experiment_ctor(enn)
-    experiment.train(10)
+    rng = hk.PRNGSequence(0)
+    image_shape = [image_size, image_size, 3]
+    x = jax.random.normal(next(rng), shape=[batch_size,] + image_shape)
+    index = enn.indexer(next(rng))
+    params, state = enn.init(next(rng), x, index)
+    out, unused_new_state = enn.apply(params, state, x, index)
+    self.assertEqual(out.shape, (batch_size, num_classes))
 
 
 if __name__ == '__main__':
