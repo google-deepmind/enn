@@ -14,6 +14,7 @@
 # limitations under the License.
 # ============================================================================
 """Refactor ResNet for easier research."""
+import abc
 import dataclasses
 import functools
 from typing import Optional, Sequence
@@ -25,87 +26,64 @@ import jax
 import jax.numpy as jnp
 
 
-@dataclasses.dataclass
-class ResNetConfig:
-  """Configuration options for ResNet."""
-  channels_per_group: Sequence[int]
-  blocks_per_group: Sequence[int]
-  strides_per_group: Sequence[int] = (1, 2, 2, 2)
+class ResBlock(abc.ABC, hk.Module):
+  """ResNet Block."""
 
-  def __post_init__(self):
-    assert len(self.channels_per_group) == self.num_groups
-    assert len(self.blocks_per_group) == self.num_groups
-    assert len(self.strides_per_group) == self.num_groups
-
-  @property
-  def num_groups(self) -> int:
-    return len(self.channels_per_group)
+  @abc.abstractmethod
+  def __call__(self,
+               inputs: chex.Array,
+               is_training: bool,
+               test_local_stats: bool) -> chex.Array:
+    """Forwards a ResNet block."""
 
 
-class ResNet(hk.Module):
-  """ResNet implementation designed for maximal clarity/simplicity.
+class ResBlockV1(ResBlock):
+  """ResNet block for datasets like CIFAR10/100 with smaller input image sizes."""
 
-  Now exposes the core hidden units for easier access with epinet training.
-  """
-
-  def __init__(self,
-               num_classes: int,
-               config: ResNetConfig,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      output_channels: int,
+      stride: int,
+      name: Optional[str] = None,
+  ):
     super().__init__(name=name)
 
-    # ResNet stem
-    self.initial_conv = hk.Conv2D(
-        output_channels=64,
-        kernel_shape=7,
-        stride=2,
-        padding='SAME',
-        with_bias=False,
-        name='initial_conv',
-    )
+    # Custom constructors for batchnorm and conv
+    bn_ctor = functools.partial(
+        hk.BatchNorm, create_scale=True, create_offset=True, decay_rate=0.9)
+    conv_ctor = functools.partial(hk.Conv2D, padding='SAME', with_bias=False)
 
-    # ResNet body
-    self.blocks = []
-    for group_idx in range(config.num_groups):
-      for block_idx in range(config.blocks_per_group[group_idx]):
-        block = ResBlockV2(
-            output_channels=config.channels_per_group[group_idx],
-            stride=config.strides_per_group[group_idx] if block_idx == 0 else 1,
-            use_projection=block_idx == 0,
-        )
-        self.blocks.append(block)
+    # Blocks of batchnorm and convolutions, with shortcut.
+    self.conv0 = conv_ctor(
+        output_channels, kernel_shape=3, stride=stride, name='conv0')
+    self.bn0 = bn_ctor(name='batchnorm_0')
+    self.conv1 = conv_ctor(
+        output_channels, kernel_shape=3, stride=1, name='conv1')
+    self.bn1 = bn_ctor(name='batchnorm_1')
 
-    # ResNet head
-    self.final_bn = hk.BatchNorm(create_scale=True, create_offset=True,
-                                 decay_rate=0.9, name='final_batchnorm')
-    self.final_fc = hk.Linear(num_classes, w_init=jnp.zeros, name='final_fc')
+    if stride != 1:
+      width = output_channels // 4
+      self.shortcut = lambda x: jnp.pad(x[:, ::2, ::2, :], (  # pylint: disable=g-long-lambda
+          (0, 0), (0, 0), (0, 0), (width, width)), 'constant')
+    else:
+      self.shortcut = lambda x: x
 
   def __call__(self,
                inputs: chex.Array,
                is_training: bool,
-               test_local_stats: bool) -> base.OutputWithPrior:
-    # Holds the output of hidden layers.
-    extra = {}
-
-    # Stem
-    out = self.initial_conv(inputs)
-    out = hk.max_pool(
-        out, window_shape=(1, 3, 3, 1), strides=(1, 2, 2, 1), padding='SAME')
-
-    # Body
-    for i, block in enumerate(self.blocks):
-      out = block(out, is_training, test_local_stats)
-      extra[f'hidden_{i}'] = out
-
-    # Head
-    out = self.final_bn(out, is_training, test_local_stats)
+               test_local_stats: bool) -> chex.Array:
+    out = shortcut = inputs
+    out = self.conv0(out)
+    out = self.bn0(out, is_training, test_local_stats)
     out = jax.nn.relu(out)
-    pool = jnp.mean(out, axis=[1, 2])
-    extra['final_out'] = pool
-    return base.OutputWithPrior(train=self.final_fc(pool), extra=extra)
+    out = self.conv1(out)
+    out = self.bn1(out, is_training, test_local_stats)
+
+    shortcut = self.shortcut(shortcut)
+    return jax.nn.relu(out + shortcut)
 
 
-class ResBlockV2(hk.Module):
+class ResBlockV2(ResBlock):
   """ResNet preactivation block, 1x1->3x3->1x1 plus shortcut.
 
   This block is designed to be maximally simplistic and readable starting point
@@ -113,11 +91,13 @@ class ResBlockV2(hk.Module):
   haiku implementation.
   """
 
-  def __init__(self,
-               output_channels: int,
-               stride: int,
-               use_projection: bool,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      output_channels: int,
+      stride: int,
+      use_projection: bool,
+      name: Optional[str] = None,
+  ):
     super().__init__(name=name)
     self._use_projection = use_projection
     width = output_channels // 4
@@ -156,7 +136,171 @@ class ResBlockV2(hk.Module):
     return layer_3 + shortcut
 
 
-RESNET_50 = ResNetConfig((256, 512, 1024, 2048), (3, 4, 6, 3))
-RESNET_101 = ResNetConfig((256, 512, 1024, 2048), (3, 4, 23, 3))
-RESNET_152 = ResNetConfig((256, 512, 1024, 2048), (3, 8, 36, 3))
-RESNET_200 = ResNetConfig((256, 512, 1024, 2048), (3, 24, 36, 3))
+@dataclasses.dataclass
+class ResNetConfig:
+  """Configuration options for ResNet."""
+  channels_per_group: Sequence[int]
+  blocks_per_group: Sequence[int]
+  strides_per_group: Sequence[int]
+  resnet_block_version: str
+
+  def __post_init__(self):
+    assert len(self.channels_per_group) == self.num_groups
+    assert len(self.blocks_per_group) == self.num_groups
+    assert len(self.strides_per_group) == self.num_groups
+    assert self.resnet_block_version in ['V1', 'V2']
+
+  @property
+  def num_groups(self) -> int:
+    return len(self.channels_per_group)
+
+
+class ResNet(hk.Module):
+  """ResNet implementation designed for maximal clarity/simplicity.
+
+  Now exposes the core hidden units for easier access with epinet training.
+  """
+
+  def __init__(self,
+               num_classes: int,
+               config: ResNetConfig,
+               name: Optional[str] = None):
+    super().__init__(name=name)
+
+    self.is_resnet_block_v1 = config.resnet_block_version == 'V1'
+    self.is_resnet_block_v2 = not self.is_resnet_block_v1
+
+    # Custom constructors for batchnorm and conv
+    bn_ctor = functools.partial(
+        hk.BatchNorm, create_scale=True, create_offset=True, decay_rate=0.9)
+    conv_ctor = functools.partial(hk.Conv2D, padding='SAME', with_bias=False)
+
+    if self.is_resnet_block_v1:
+      self.initial_conv = conv_ctor(
+          output_channels=16,
+          kernel_shape=3,
+          stride=1,
+          name='initial_conv',
+      )
+      self.initial_bn = bn_ctor(name='initial_batchnorm')
+
+    if self.is_resnet_block_v2:
+      self.initial_conv = conv_ctor(
+          output_channels=64,
+          kernel_shape=7,
+          stride=2,
+          name='initial_conv',
+      )
+      self.final_bn = bn_ctor(name='final_batchnorm')
+
+    # ResNet body
+    self.blocks = _make_resnet_blocks(config)
+
+    # ResNet head
+    self.final_fc = hk.Linear(num_classes, w_init=jnp.zeros, name='final_fc')
+
+  def __call__(self,
+               inputs: chex.Array,
+               is_training: bool,
+               test_local_stats: bool) -> base.OutputWithPrior:
+    # Holds the output of hidden layers.
+    extra = {}
+
+    # Stem
+    out = self.initial_conv(inputs)
+    if self.is_resnet_block_v1:
+      out = self.initial_bn(out, is_training, test_local_stats)
+      out = jax.nn.relu(out)
+    if self.is_resnet_block_v2:
+      out = hk.max_pool(
+          out, window_shape=(1, 3, 3, 1), strides=(1, 2, 2, 1), padding='SAME')
+
+    # Body
+    for i, block in enumerate(self.blocks):
+      out = block(out, is_training, test_local_stats)
+      extra[f'hidden_{i}'] = out
+
+    # Head
+    if self.is_resnet_block_v2:
+      out = self.final_bn(out, is_training, test_local_stats)
+      out = jax.nn.relu(out)
+    pool = jnp.mean(out, axis=[1, 2])
+    extra['final_out'] = pool
+    return base.OutputWithPrior(train=self.final_fc(pool), extra=extra)
+
+
+def _make_resnet_blocks(config: ResNetConfig) -> Sequence[ResBlock]:
+  """Makes a sequence of ResNet blocks based on config."""
+  blocks = []
+  for group_idx in range(config.num_groups):
+    for block_idx in range(config.blocks_per_group[group_idx]):
+      if config.resnet_block_version == 'V1':
+        block = ResBlockV1(
+            output_channels=config.channels_per_group[group_idx],
+            stride=config.strides_per_group[group_idx] if block_idx == 0 else 1,
+        )
+      else:
+        block = ResBlockV2(
+            output_channels=config.channels_per_group[group_idx],
+            stride=config.strides_per_group[group_idx] if block_idx == 0 else 1,
+            use_projection=block_idx == 0,
+        )
+      blocks.append(block)
+  return blocks
+
+
+RESNET_18 = ResNetConfig(
+    channels_per_group=(16, 32, 64),
+    blocks_per_group=(2, 2, 2),
+    strides_per_group=(1, 2, 2),
+    resnet_block_version='V1',
+)
+RESNET_32 = ResNetConfig(
+    channels_per_group=(16, 32, 64),
+    blocks_per_group=(5, 5, 5),
+    strides_per_group=(1, 2, 2),
+    resnet_block_version='V1',
+)
+RESNET_44 = ResNetConfig(
+    channels_per_group=(16, 32, 64),
+    blocks_per_group=(7, 7, 7),
+    strides_per_group=(1, 2, 2),
+    resnet_block_version='V1',
+)
+RESNET_56 = ResNetConfig(
+    channels_per_group=(16, 32, 64),
+    blocks_per_group=(9, 9, 9),
+    strides_per_group=(1, 2, 2),
+    resnet_block_version='V1',
+)
+RESNET_110 = ResNetConfig(
+    channels_per_group=(16, 32, 64),
+    blocks_per_group=(18, 18, 18),
+    strides_per_group=(1, 2, 2),
+    resnet_block_version='V1',
+)
+
+RESNET_50 = ResNetConfig(
+    channels_per_group=(256, 512, 1024, 2048),
+    blocks_per_group=(3, 4, 6, 3),
+    strides_per_group=(1, 2, 2, 2),
+    resnet_block_version='V2',
+)
+RESNET_101 = ResNetConfig(
+    channels_per_group=(256, 512, 1024, 2048),
+    blocks_per_group=(3, 4, 23, 3),
+    strides_per_group=(1, 2, 2, 2),
+    resnet_block_version='V2',
+)
+RESNET_152 = ResNetConfig(
+    channels_per_group=(256, 512, 1024, 2048),
+    blocks_per_group=(3, 8, 36, 3),
+    strides_per_group=(1, 2, 2, 2),
+    resnet_block_version='V2',
+)
+RESNET_200 = ResNetConfig(
+    channels_per_group=(256, 512, 1024, 2048),
+    blocks_per_group=(3, 24, 36, 3),
+    strides_per_group=(1, 2, 2, 2),
+    resnet_block_version='V2',
+)

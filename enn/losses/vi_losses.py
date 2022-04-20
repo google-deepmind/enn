@@ -1,4 +1,3 @@
-# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2021 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -25,6 +24,8 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 from tensorflow_probability.substrates import jax as tfp
+
+import typing_extensions
 tfd = tfp.distributions
 
 
@@ -116,9 +117,21 @@ def normal_log_prob(latent: base.Array, sigma: float = 1, mu: float = 0):
                  + latent_l2_sq / sigma**2)
 
 
+class _KlLossFn(typing_extensions.Protocol):
+  """Calculates a loss based on model output, params, and one index.."""
+
+  def __call__(
+      self,
+      out: base.Output,
+      params: hk.Params,
+      index: base.Index,
+  ) -> float:
+    """Computes a loss based on model output, params, and one index."""
+
+
 def get_sample_based_model_prior_kl_fn(
     num_samples: float, sigma_1: float, sigma_2: float = 1., scale: float = 1.
-) -> Callable[[base.Output, hk.Params, base.Index], float]:
+) -> _KlLossFn:
   """Returns a function for computing the KL distance between model and prior.
 
   Args:
@@ -165,7 +178,7 @@ def get_sample_based_model_prior_kl_fn(
 
 def get_analytical_diagonal_linear_model_prior_kl_fn(
     num_samples: float, sigma_0: float
-) -> Callable[[base.Output, hk.Params, base.Index], float]:
+) -> _KlLossFn:
   """Returns a function for computing the KL distance between model and prior.
 
   It assumes index to be standard Gaussian.
@@ -222,7 +235,7 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
 
 def get_analytical_linear_model_prior_kl_fn(
     num_samples: float, sigma_0: float
-) -> Callable[[base.Output, hk.Params, base.Index], float]:
+) -> _KlLossFn:
   """Returns a function for computing the KL distance between model and prior.
 
   It assumes index to be Gaussian with standard deviation sigma_0.
@@ -285,7 +298,7 @@ def get_analytical_linear_model_prior_kl_fn(
 
 def get_analytical_hyperflow_model_prior_kl_fn(
     num_samples: float, sigma_0: float
-) -> Callable[[base.Output, hk.Params, base.Index], float]:
+) -> _KlLossFn:
   """Returns a function for computing the KL distance between model and prior.
 
   It assumes index to be Gaussian with standard deviation sigma_0.

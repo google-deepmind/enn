@@ -1,4 +1,3 @@
-# python3
 # pylint: disable=g-bad-file-header
 # Copyright 2021 DeepMind Technologies Limited. All Rights Reserved.
 #
@@ -48,6 +47,7 @@ setuptools.setup(
         'dataclasses',  # Back-port for Python 3.6.
         'jax',
         'jaxlib',
+        'jaxline',
         'matplotlib',
         'neural-tangents',
         'numpy',

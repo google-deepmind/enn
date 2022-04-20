@@ -36,7 +36,7 @@ class EpinetTest(parameterized.TestCase):
     """Test that the exposed MLP runs."""
     test_experiment = supervised.make_test_experiment(regression)
 
-    output_sizes = hiddens + [test_experiment.num_outputs]
+    output_sizes = list(hiddens) + [test_experiment.num_outputs,]
     def net_fn(x):
       return epinet.ExposedMLP(output_sizes)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
@@ -84,7 +84,7 @@ class EpinetTest(parameterized.TestCase):
     test_experiment = supervised.make_test_experiment(regression)
 
     enn = epinet.make_mlp_epinet(
-        output_sizes=list(base_hiddens) + [test_experiment.num_outputs],
+        output_sizes=list(base_hiddens) + [test_experiment.num_outputs,],
         epinet_hiddens=epinet_hiddens,
         index_dim=index_dim,
     )

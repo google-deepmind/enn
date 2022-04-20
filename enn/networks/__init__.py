@@ -75,12 +75,18 @@ from enn.networks.priors import PriorFn
 from enn.networks.resnet import EnsembleResNetENN
 from enn.networks.resnet import resnet_model
 # ResNet Configs (Imagenet)
+from enn.networks.resnet_lib import ResBlockV1
 from enn.networks.resnet_lib import ResBlockV2
 from enn.networks.resnet_lib import ResNet
 from enn.networks.resnet_lib import RESNET_101
+from enn.networks.resnet_lib import RESNET_110
 from enn.networks.resnet_lib import RESNET_152
+from enn.networks.resnet_lib import RESNET_18
 from enn.networks.resnet_lib import RESNET_200
+from enn.networks.resnet_lib import RESNET_32
+from enn.networks.resnet_lib import RESNET_44
 from enn.networks.resnet_lib import RESNET_50
+from enn.networks.resnet_lib import RESNET_56
 from enn.networks.resnet_lib import ResNetConfig
 # VGG (Cifar10)
 from enn.networks.vgg import EnsembleVGGENN

@@ -18,6 +18,7 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn.networks import resnet
+from enn.networks import resnet_lib
 import haiku as hk
 import jax
 
@@ -28,16 +29,19 @@ class NetworkTest(parameterized.TestCase):
       num_classes=[2, 10],
       batch_size=[1, 10],
       image_size=[2, 10],
+      config=[resnet_lib.RESNET_18, resnet_lib.RESNET_50],
   )
   def test_forward_pass(
       self,
       num_classes: int,
       batch_size: int,
       image_size: int,
+      config: resnet_lib.ResNetConfig,
   ):
     """Tests forward pass and output shape."""
     enn = resnet.EnsembleResNetENN(
         num_output_classes=num_classes,
+        config=config,
     )
     rng = hk.PRNGSequence(0)
     image_shape = [image_size, image_size, 3]
