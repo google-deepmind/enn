@@ -20,7 +20,7 @@ Note that we *may* want to pull this into a separate library from the ENN.
 """
 
 import dataclasses
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, Union
 
 from absl import logging
 import chex
@@ -31,11 +31,14 @@ import jax
 import jax.numpy as jnp
 import typing_extensions
 
+_ENN = Union[base.EpistemicNetwork, base.EpistemicNetworkWithState]
+
 
 @dataclasses.dataclass
 class BootstrapNoise(data_noise_base.DataNoise):
   """Apply bootstrap reweighting to a batch of data."""
-  enn: base.EpistemicNetwork
+  # TODO(vikranthd): just pass indexer instead of the enn
+  enn: _ENN
   distribution: str
   seed: int = 0
 
@@ -88,8 +91,8 @@ def null_bootstrap(
   return jnp.ones_like(data_index)
 
 
-# TODO(vikranthd): Add some tests to these functions
-def make_boot_fn(enn: base.EpistemicNetwork,
+# TODO(vikranthd): Pass just the indexer instead of entire enn
+def make_boot_fn(enn: _ENN,
                  distribution: str,
                  seed: int = 0) -> BootstrapFn:
   """Factory method to create bootstrap for given ENN and distribution."""

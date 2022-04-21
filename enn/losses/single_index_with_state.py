@@ -19,6 +19,7 @@ from typing import Callable, Tuple
 
 import chex
 from enn import base
+from enn import data_noise
 from enn import utils
 import haiku as hk
 import jax
@@ -92,6 +93,23 @@ def average_single_index_loss_with_state(
       mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
     return mean_loss, (mean_new_state, mean_metrics)
   return loss_fn
+
+
+def add_data_noise_to_loss_with_state(
+    single_loss: SingleIndexLossFnWithState,
+    noise_fn: data_noise.DataNoise) -> SingleIndexLossFnWithState:
+  """Applies a DataNoise function to each batch of data."""
+
+  def noisy_loss(
+      apply: base.ApplyFn,
+      params: hk.Params,
+      state: hk.State,
+      batch: base.Batch,
+      index: base.Index,
+  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+    noisy_batch = noise_fn(batch, index)
+    return single_loss(apply, params, state, noisy_batch, index)
+  return noisy_loss
 
 
 class XentLossWithState(SingleIndexLossFnWithState):

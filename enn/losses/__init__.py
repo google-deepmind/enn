@@ -37,6 +37,7 @@ from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
 # Single Index With State
+from enn.losses.single_index_with_state import add_data_noise_to_loss_with_state
 from enn.losses.single_index_with_state import average_single_index_loss_with_state
 from enn.losses.single_index_with_state import SingleIndexLossFnWithState
 from enn.losses.single_index_with_state import xent_loss_with_state_custom_labels
