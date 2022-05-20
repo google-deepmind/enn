@@ -13,22 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Network definitions for epinet.
-
-Trying to fork out some reusable pieces for the code.
-"""
+"""MLP variants for ENN."""
 
 from typing import Optional, Sequence
 
 import chex
 from enn import base as enn_base
-from enn.networks import indexers
 import haiku as hk
 import jax
 import jax.numpy as jnp
 
 
-class ExposedMLP(enn_base.EpistemicModule):
+class ExposedMLP(hk.Module):
   """MLP module that exposes internal layers in output."""
 
   def __init__(self,
@@ -103,36 +99,4 @@ class ProjectedMLP(enn_base.EpistemicModule):
     reshaped_output = jnp.reshape(
         self.mlp(inputs), [inputs.shape[0], self.final_out, self.index_dim])
     return jnp.dot(reshaped_output, index)
-
-
-def make_mlp_epinet(output_sizes: Sequence[int],
-                    epinet_hiddens: Sequence[int],
-                    index_dim: int,
-                    expose_layers: Optional[Sequence[bool]] = None,
-                    prior_scale: float = 1.) -> enn_base.EpistemicNetwork:
-  """Factory method to create a standard MLP epinet."""
-
-  def net_fn(x: enn_base.Array, z: enn_base.Index) -> enn_base.OutputWithPrior:
-    base_mlp = ExposedMLP(output_sizes, expose_layers, name='base_mlp')
-    num_classes = output_sizes[-1]
-    train_epinet = ProjectedMLP(
-        epinet_hiddens, num_classes, index_dim, name='train_epinet')
-    prior_epinet = ProjectedMLP(
-        epinet_hiddens, num_classes, index_dim, name='prior_epinet')
-
-    base_out = base_mlp(x)
-    features = base_out.extra['exposed_features']
-    epi_train = train_epinet(features, z)
-    epi_prior = prior_epinet(features, z)
-    return enn_base.OutputWithPrior(
-        train=base_out.train + epi_train,
-        prior=prior_scale * epi_prior,
-    )
-
-  transformed = hk.without_apply_rng(hk.transform(net_fn))
-  return enn_base.EpistemicNetwork(
-      apply=transformed.apply,
-      init=transformed.init,
-      indexer=indexers.GaussianIndexer(index_dim),
-  )
 

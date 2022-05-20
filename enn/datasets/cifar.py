@@ -18,7 +18,7 @@
 import dataclasses
 import enum
 import functools
-from typing import Dict
+from typing import Dict, Sequence
 
 from enn import base as enn_base
 from enn.datasets import base as ds_base
@@ -76,6 +76,10 @@ class Cifar(ds_base.DatasetWithTransform):
   def num_classes(self) -> int:
     return self.cifar_variant.num_classes
 
+  @property
+  def eval_input_shape(self) -> Sequence[int]:
+    return (32, 32, 3)
+
   def train_dataset(self,) -> ds_base.DatasetGenerator:
     """Returns the train dataset."""
     def build_train_input():
@@ -93,8 +97,8 @@ class Cifar(ds_base.DatasetWithTransform):
           split=f'train[:{self.num_train}]',
       )
       ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
-      ds = self.train_ds_transformer(ds)
       ds = ds_utils.add_data_index_to_dataset(ds)
+      ds = self.train_ds_transformer(ds)
       ds = ds.shard(jax.process_count(), jax.process_index())
       # Shuffle before repeat ensures all examples seen in an epoch.
       # https://www.tensorflow.org/guide/data_performance#repeat_and_shuffle
@@ -210,7 +214,7 @@ def preprocess_batch(batch: enn_base.Batch,
       images = _cutout_single_image(
           probability=0.5, cutout_size=16, image=images)
 
-  return ds_utils.update_x_in_batch(batch=batch, x=images)
+  return batch._replace(x=images)
 
 
 def _cutout_single_image(

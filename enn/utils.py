@@ -94,6 +94,35 @@ def wrap_enn_with_state_as_enn(
   )
 
 
+def scale_enn_output(
+    enn: base.EpistemicNetworkWithState,
+    scale: float,
+) -> base.EpistemicNetworkWithState:
+  """Returns an ENN with output scaled by a scaling factor."""
+  def scaled_apply(
+      params: hk.Params,
+      state: hk.State,
+      inputs: base.Array,
+      index: base.Index
+  ) -> Tuple[base.Output, hk.State]:
+    out, state = enn.apply(params, state, inputs, index)
+    if isinstance(out, base.OutputWithPrior):
+      scaled_out = base.OutputWithPrior(
+          train=out.train * scale,
+          prior=out.prior * scale,
+          extra=out.extra,
+      )
+    else:
+      scaled_out = out * scale
+    return scaled_out, state
+
+  return base.EpistemicNetworkWithState(
+      apply=scaled_apply,
+      init=enn.init,
+      indexer=enn.indexer,
+  )
+
+
 def make_centered_enn(enn: base.EpistemicNetwork,
                       x_train: base.Array) -> base.EpistemicNetwork:
   """Returns an ENN that centers input according to x_train."""
@@ -109,11 +138,19 @@ def make_centered_enn(enn: base.EpistemicNetwork,
 
 
 def parse_net_output(net_out: base.Output) -> base.Array:
-  """Convert potential dict of network outputs to scalar prediction value."""
+  """Convert network output to scalar prediction value."""
   if isinstance(net_out, base.OutputWithPrior):
     return net_out.preds
   else:
     return net_out
+
+
+def parse_to_output_with_prior(net_out: base.Output) -> base.OutputWithPrior:
+  """Convert network output to base.OutputWithPrior."""
+  if isinstance(net_out, base.OutputWithPrior):
+    return net_out
+  else:
+    return base.OutputWithPrior(train=net_out, prior=jnp.zeros_like(net_out))
 
 
 def make_batch_indexer(indexer: base.EpistemicIndexer,

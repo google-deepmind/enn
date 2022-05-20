@@ -62,7 +62,8 @@ def average_single_index_loss(single_loss: SingleIndexLossFn,
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
-    return jnp.mean(loss), jax.tree_map(jnp.mean, metrics)
+    batch_mean = lambda x: jnp.mean(x, axis=0)
+    return batch_mean(loss), jax.tree_map(batch_mean, metrics)
   return loss_fn
 
 

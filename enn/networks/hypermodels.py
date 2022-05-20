@@ -142,8 +142,12 @@ def hypermodel_module(
       # Apply the hyper_torso to the epistemic index
       hyper_index = hyper_torso(index)
 
+      b_init = w_init = hk.initializers.VarianceScaling(
+          mode='fan_avg', distribution='truncated_normal')
       # Generate a linear layer of size "base_shapes_flat"
-      final_layers = jax.tree_map(hk.Linear, base_shapes_flat)
+      final_layers = jax.tree_map(
+          lambda s: hk.Linear(s, w_init=w_init, b_init=b_init),
+          base_shapes_flat)
 
       # Apply this linear output to the output of the hyper_torso
       flat_output = jax.tree_map(lambda layer: layer(hyper_index), final_layers)
@@ -252,6 +256,7 @@ class HyperLinear(hk.Module):
                weight_scaling: float = 1.,
                bias_scaling: float = 1.,
                fixed_bias_val: float = 0.0,
+               first_layer: bool = False,
                name: str = 'hyper_linear'):
     super().__init__(name=name)
     self._output_size = output_size
@@ -259,6 +264,7 @@ class HyperLinear(hk.Module):
     self._weight_scaling = weight_scaling
     self._bias_scaling = bias_scaling
     self._fixed_bias_val = fixed_bias_val
+    self._first_layer = first_layer
 
   def __call__(self, x: base.Array, z: base.Index) -> base.Array:
     unused_x_batch_size, hidden_size = x.shape
@@ -272,7 +278,10 @@ class HyperLinear(hk.Module):
     w /= jnp.linalg.norm(w, axis=-1, keepdims=True)
     b /= jnp.linalg.norm(b, axis=-1, keepdims=True)
 
-    w *= jnp.sqrt(self._weight_scaling / hidden_size)
+    w *= jnp.sqrt(self._weight_scaling)
+    if not self._first_layer:
+      w *= jnp.sqrt(1 / hidden_size)
+
     b = b * jnp.sqrt(self._bias_scaling) + self._fixed_bias_val
 
     weights = jnp.einsum('ohi,i->oh', w, z)
@@ -311,12 +320,14 @@ class PriorMLPIndependentLayers(hk.Module):
     # Defining layers of the prior MLP and associating each layer with a set of
     # indices
     self._layers = []
+    first_layer = True
     for layer_indices, output_size in zip(self._layers_indices,
                                           self._output_sizes):
       index_dim_per_layer = len(layer_indices)
       layer = HyperLinear(output_size, index_dim_per_layer,
                           self._weight_scaling, self._bias_scaling,
-                          self._fixed_bias_val)
+                          self._fixed_bias_val, first_layer=first_layer)
+      first_layer = False
       self._layers.append(layer)
 
   def __call__(self, x: base.Array, z: base.Index) -> base.Array:

@@ -17,29 +17,36 @@
 """Tests for ENN Networks."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn.networks import resnet
-from enn.networks import resnet_lib
+from enn import utils
+from enn.networks.resnet import base
+from enn.networks.resnet import lib
 import haiku as hk
 import jax
 
+_TEST_CONFIGS = (
+    lib.CanonicalResNets.RESNET_18.value,
+    lib.CanonicalResNets.RESNET_50.value,
+)
+
 
 class NetworkTest(parameterized.TestCase):
+  """Tests for ResNet."""
 
   @parameterized.product(
       num_classes=[2, 10],
       batch_size=[1, 10],
       image_size=[2, 10],
-      config=[resnet_lib.RESNET_18, resnet_lib.RESNET_50],
+      config=_TEST_CONFIGS,
   )
   def test_forward_pass(
       self,
       num_classes: int,
       batch_size: int,
       image_size: int,
-      config: resnet_lib.ResNetConfig,
+      config: lib.ResNetConfig,
   ):
     """Tests forward pass and output shape."""
-    enn = resnet.EnsembleResNetENN(
+    enn = base.EnsembleResNetENN(
         num_output_classes=num_classes,
         config=config,
     )
@@ -49,7 +56,8 @@ class NetworkTest(parameterized.TestCase):
     index = enn.indexer(next(rng))
     params, state = enn.init(next(rng), x, index)
     out, unused_new_state = enn.apply(params, state, x, index)
-    self.assertEqual(out.shape, (batch_size, num_classes))
+    logits = utils.parse_net_output(out)
+    self.assertEqual(logits.shape, (batch_size, num_classes))
 
 
 if __name__ == '__main__':

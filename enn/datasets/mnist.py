@@ -18,7 +18,7 @@
 import dataclasses
 import enum
 import functools
-from typing import Dict
+from typing import Dict, Sequence
 
 from enn import base as enn_base
 from enn.datasets import base as ds_base
@@ -54,6 +54,10 @@ class Mnist(ds_base.DatasetWithTransform):
   @property
   def num_classes(self) -> int:
     return 10
+
+  @property
+  def eval_input_shape(self) -> Sequence[int]:
+    return (28, 28, 1)
 
   def train_dataset(self,) -> ds_base.DatasetGenerator:
     """Returns the train dataset."""
@@ -128,4 +132,4 @@ def preprocess_batch(batch: enn_base.Batch,
         'Normalization mode should be one among custom, standard or identity.'
     )
 
-  return ds_utils.update_x_in_batch(batch=batch, x=images)
+  return batch._replace(x=images)

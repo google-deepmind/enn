@@ -36,10 +36,6 @@ from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import EnsembleWithState
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
-# Epinet
-from enn.networks.epinet import ExposedMLP
-from enn.networks.epinet import make_mlp_epinet
-from enn.networks.epinet import ProjectedMLP
 # Gaussian ENN
 from enn.networks.gaussian_enn import GaussianNoiseEnn
 from enn.networks.gaussian_enn import GaussianNoiseMLP
@@ -63,8 +59,12 @@ from enn.networks.indexers import ScaledGaussianIndexer
 # LeNet (MNIST)
 from enn.networks.lenet import EnsembleLeNet5ENN
 from enn.networks.lenet import LeNet5
+# MLP
+from enn.networks.mlp import ExposedMLP
+from enn.networks.mlp import ProjectedMLP
 # Priors
 from enn.networks.priors import convert_enn_to_prior_fn
+from enn.networks.priors import EnnStateWithAdditivePrior
 from enn.networks.priors import EnnWithAdditivePrior
 from enn.networks.priors import get_random_mlp_with_index
 from enn.networks.priors import make_null_prior
@@ -72,22 +72,17 @@ from enn.networks.priors import make_random_feat_gp
 from enn.networks.priors import NetworkWithAdditivePrior
 from enn.networks.priors import PriorFn
 # ResNet (Imagenet)
-from enn.networks.resnet import EnsembleResNetENN
-from enn.networks.resnet import resnet_model
+from enn.networks.resnet.base import EnsembleResNetENN
+from enn.networks.resnet.base import resnet_model
 # ResNet Configs (Imagenet)
-from enn.networks.resnet_lib import ResBlockV1
-from enn.networks.resnet_lib import ResBlockV2
-from enn.networks.resnet_lib import ResNet
-from enn.networks.resnet_lib import RESNET_101
-from enn.networks.resnet_lib import RESNET_110
-from enn.networks.resnet_lib import RESNET_152
-from enn.networks.resnet_lib import RESNET_18
-from enn.networks.resnet_lib import RESNET_200
-from enn.networks.resnet_lib import RESNET_32
-from enn.networks.resnet_lib import RESNET_44
-from enn.networks.resnet_lib import RESNET_50
-from enn.networks.resnet_lib import RESNET_56
-from enn.networks.resnet_lib import ResNetConfig
+from enn.networks.resnet.lib import CanonicalResNets
+from enn.networks.resnet.lib import ResBlockV1
+from enn.networks.resnet.lib import ResBlockV2
+from enn.networks.resnet.lib import ResNet
+from enn.networks.resnet.lib import ResNetConfig
+# ResNet (Imagenet)
+from enn.networks.resnet.priors import ResnetCnnPrior
+from enn.networks.resnet.priors import ResnetMlpPrior
 # VGG (Cifar10)
 from enn.networks.vgg import EnsembleVGGENN
 from enn.networks.vgg import VGG

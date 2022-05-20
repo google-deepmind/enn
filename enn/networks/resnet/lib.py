@@ -13,27 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Refactor ResNet for easier research."""
+"""Refactored ResNet for easier research."""
 import abc
 import dataclasses
+import enum
 import functools
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import chex
 from enn import base
 import haiku as hk
 import jax
 import jax.numpy as jnp
+from typing_extensions import Protocol
 
 
-class ResBlock(abc.ABC, hk.Module):
+class ForwardFn(Protocol):
+
+  def __call__(self,
+               inputs: base.Array,
+               is_training: bool,
+               test_local_stats: bool = False) -> Any:
+    """Forwards a ResNet block with appropriate defaults."""
+
+
+class ResBlock(abc.ABC, hk.Module, ForwardFn):
   """ResNet Block."""
 
   @abc.abstractmethod
   def __call__(self,
                inputs: chex.Array,
                is_training: bool,
-               test_local_stats: bool) -> chex.Array:
+               test_local_stats: bool = True) -> Any:
     """Forwards a ResNet block."""
 
 
@@ -202,7 +213,7 @@ class ResNet(hk.Module):
   def __call__(self,
                inputs: chex.Array,
                is_training: bool,
-               test_local_stats: bool) -> base.OutputWithPrior:
+               test_local_stats: bool = False) -> base.OutputWithPrior:
     # Holds the output of hidden layers.
     extra = {}
 
@@ -226,7 +237,10 @@ class ResNet(hk.Module):
       out = jax.nn.relu(out)
     pool = jnp.mean(out, axis=[1, 2])
     extra['final_out'] = pool
-    return base.OutputWithPrior(train=self.final_fc(pool), extra=extra)
+
+    logits = self.final_fc(pool)
+    return base.OutputWithPrior(
+        train=logits, prior=jnp.zeros_like(logits), extra=extra)
 
 
 def _make_resnet_blocks(config: ResNetConfig) -> Sequence[ResBlock]:
@@ -249,58 +263,60 @@ def _make_resnet_blocks(config: ResNetConfig) -> Sequence[ResBlock]:
   return blocks
 
 
-RESNET_18 = ResNetConfig(
-    channels_per_group=(16, 32, 64),
-    blocks_per_group=(2, 2, 2),
-    strides_per_group=(1, 2, 2),
-    resnet_block_version='V1',
-)
-RESNET_32 = ResNetConfig(
-    channels_per_group=(16, 32, 64),
-    blocks_per_group=(5, 5, 5),
-    strides_per_group=(1, 2, 2),
-    resnet_block_version='V1',
-)
-RESNET_44 = ResNetConfig(
-    channels_per_group=(16, 32, 64),
-    blocks_per_group=(7, 7, 7),
-    strides_per_group=(1, 2, 2),
-    resnet_block_version='V1',
-)
-RESNET_56 = ResNetConfig(
-    channels_per_group=(16, 32, 64),
-    blocks_per_group=(9, 9, 9),
-    strides_per_group=(1, 2, 2),
-    resnet_block_version='V1',
-)
-RESNET_110 = ResNetConfig(
-    channels_per_group=(16, 32, 64),
-    blocks_per_group=(18, 18, 18),
-    strides_per_group=(1, 2, 2),
-    resnet_block_version='V1',
-)
+class CanonicalResNets(enum.Enum):
+  """Canonical ResNet configs."""
+  RESNET_18: ResNetConfig = ResNetConfig(
+      channels_per_group=(16, 32, 64),
+      blocks_per_group=(2, 2, 2),
+      strides_per_group=(1, 2, 2),
+      resnet_block_version='V1',
+  )
+  RESNET_32: ResNetConfig = ResNetConfig(
+      channels_per_group=(16, 32, 64),
+      blocks_per_group=(5, 5, 5),
+      strides_per_group=(1, 2, 2),
+      resnet_block_version='V1',
+  )
+  RESNET_44: ResNetConfig = ResNetConfig(
+      channels_per_group=(16, 32, 64),
+      blocks_per_group=(7, 7, 7),
+      strides_per_group=(1, 2, 2),
+      resnet_block_version='V1',
+  )
+  RESNET_56: ResNetConfig = ResNetConfig(
+      channels_per_group=(16, 32, 64),
+      blocks_per_group=(9, 9, 9),
+      strides_per_group=(1, 2, 2),
+      resnet_block_version='V1',
+  )
+  RESNET_110: ResNetConfig = ResNetConfig(
+      channels_per_group=(16, 32, 64),
+      blocks_per_group=(18, 18, 18),
+      strides_per_group=(1, 2, 2),
+      resnet_block_version='V1',
+  )
 
-RESNET_50 = ResNetConfig(
-    channels_per_group=(256, 512, 1024, 2048),
-    blocks_per_group=(3, 4, 6, 3),
-    strides_per_group=(1, 2, 2, 2),
-    resnet_block_version='V2',
-)
-RESNET_101 = ResNetConfig(
-    channels_per_group=(256, 512, 1024, 2048),
-    blocks_per_group=(3, 4, 23, 3),
-    strides_per_group=(1, 2, 2, 2),
-    resnet_block_version='V2',
-)
-RESNET_152 = ResNetConfig(
-    channels_per_group=(256, 512, 1024, 2048),
-    blocks_per_group=(3, 8, 36, 3),
-    strides_per_group=(1, 2, 2, 2),
-    resnet_block_version='V2',
-)
-RESNET_200 = ResNetConfig(
-    channels_per_group=(256, 512, 1024, 2048),
-    blocks_per_group=(3, 24, 36, 3),
-    strides_per_group=(1, 2, 2, 2),
-    resnet_block_version='V2',
-)
+  RESNET_50: ResNetConfig = ResNetConfig(
+      channels_per_group=(256, 512, 1024, 2048),
+      blocks_per_group=(3, 4, 6, 3),
+      strides_per_group=(1, 2, 2, 2),
+      resnet_block_version='V2',
+  )
+  RESNET_101: ResNetConfig = ResNetConfig(
+      channels_per_group=(256, 512, 1024, 2048),
+      blocks_per_group=(3, 4, 23, 3),
+      strides_per_group=(1, 2, 2, 2),
+      resnet_block_version='V2',
+  )
+  RESNET_152: ResNetConfig = ResNetConfig(
+      channels_per_group=(256, 512, 1024, 2048),
+      blocks_per_group=(3, 8, 36, 3),
+      strides_per_group=(1, 2, 2, 2),
+      resnet_block_version='V2',
+  )
+  RESNET_200: ResNetConfig = ResNetConfig(
+      channels_per_group=(256, 512, 1024, 2048),
+      blocks_per_group=(3, 24, 36, 3),
+      strides_per_group=(1, 2, 2, 2),
+      resnet_block_version='V2',
+  )

@@ -15,13 +15,13 @@
 # ============================================================================
 
 """Implementing some mechanisms for prior functions with ENNs in JAX."""
+import dataclasses
 from typing import Callable, Iterable, Optional, Tuple, Union
 
 from absl import logging
-
 import chex
-import dataclasses
 from enn import base
+from enn import utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -37,16 +37,32 @@ class EnnWithAdditivePrior(base.EpistemicNetwork):
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
+    enn_state = utils.wrap_enn_as_enn_with_state(enn)
+    enn_state_p = EnnStateWithAdditivePrior(enn_state, prior_fn, prior_scale)
+    enn_prior = utils.wrap_enn_with_state_as_enn(enn_state_p)
+    super().__init__(enn_prior.apply, enn_prior.init, enn_prior.indexer)
+
+
+class EnnStateWithAdditivePrior(base.EpistemicNetworkWithState):
+  """Create an ENN with additive prior_fn applied to outputs."""
+
+  def __init__(self,
+               enn: base.EpistemicNetworkWithState,
+               prior_fn: PriorFn,
+               prior_scale: float = 1.):
+    """Create an ENN with additive prior_fn applied to outputs."""
     def apply_fn(params: hk.Params,
+                 state: hk.State,
                  inputs: base.Array,
-                 index: base.Index) -> base.OutputWithPrior:
-      net_out = enn.apply(params, inputs, index)
+                 index: base.Index) -> Tuple[base.OutputWithPrior, hk.State]:
+      net_out, state_out = enn.apply(params, state, inputs, index)
       prior = prior_scale * prior_fn(inputs, index)
       if isinstance(net_out, base.OutputWithPrior):
         net_out: base.OutputWithPrior = net_out
-        return net_out._replace(prior=net_out.prior + prior)
+        out = net_out._replace(prior=net_out.prior + prior)
       else:
-        return base.OutputWithPrior(train=net_out, prior=prior)
+        out = base.OutputWithPrior(train=net_out, prior=prior)
+      return out, state_out
     super().__init__(
         apply=apply_fn,
         init=enn.init,

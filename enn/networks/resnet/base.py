@@ -15,40 +15,35 @@
 # ============================================================================
 """Network definitions for ResNet."""
 
-from typing import Mapping, Text
-
 import chex
 from enn import base
 from enn import utils
 from enn.networks import ensembles
-from enn.networks import resnet_lib
+from enn.networks.resnet import lib
 import haiku as hk
 import jax
 import jax.numpy as jnp
-import numpy as np
 
 
-Batch = Mapping[Text, np.ndarray]
-
-
-def resnet_model(num_output_classes: int,
-                 enable_double_transpose: bool = True,
-                 config: resnet_lib.ResNetConfig = resnet_lib.RESNET_50):
+def resnet_model(
+    num_output_classes: int,
+    enable_double_transpose: bool = True,
+    config: lib.ResNetConfig = lib.CanonicalResNets.RESNET_50.value,
+) -> lib.ForwardFn:
   """Returns forward network for ResNet."""
-  model = resnet_lib.ResNet(num_output_classes, config)
+  model = lib.ResNet(num_output_classes, config)
   should_transpose_images = (
       enable_double_transpose and jax.local_devices()[0].platform == 'tpu')
 
   def forward_fn(inputs: base.Array,
                  is_training: bool,
-                 test_local_stats: bool = False) -> chex.Array:
+                 test_local_stats: bool = False) -> base.OutputWithPrior:
+    # If enabled, there should be a matching NHWC->HWCN transpose in the data.
     if should_transpose_images:
-      # If enabled, there should be a matching NHWC->HWCN transpose in the data
-      # pipeline.
       inputs = jnp.transpose(inputs, (3, 0, 1, 2))  # HWCN -> NHWC
-    output = model(
-        inputs, is_training=is_training, test_local_stats=test_local_stats)
-    return utils.parse_net_output(output)
+
+    net_out = model(inputs, is_training, test_local_stats)
+    return utils.parse_to_output_with_prior(net_out)
 
   return forward_fn
 
@@ -60,13 +55,15 @@ class EnsembleResNetENN(base.EpistemicNetworkWithState):
                num_output_classes: int,
                num_ensemble: int = 1,
                is_training: bool = True,
+               test_local_stats: bool = False,
                enable_double_transpose: bool = True,
-               config: resnet_lib.ResNetConfig = resnet_lib.RESNET_50):
-    def net_fn(x: chex.Array) -> chex.Array:
+               config: lib.ResNetConfig = lib.CanonicalResNets.RESNET_50.value):
+    def net_fn(x: chex.Array) -> base.OutputWithPrior:
       forward_fn = resnet_model(num_output_classes=num_output_classes,
                                 enable_double_transpose=enable_double_transpose,
                                 config=config)
-      return forward_fn(x, is_training=is_training)
+      net_out = forward_fn(x, is_training, test_local_stats)
+      return utils.parse_to_output_with_prior(net_out)
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
 
     enn = ensembles.EnsembleWithState(transformed, num_ensemble)

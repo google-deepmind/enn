@@ -66,6 +66,10 @@ class Imagenet(ds_base.DatasetWithTransform):
   def num_classes(self) -> int:
     return 1000
 
+  @property
+  def eval_input_shape(self) -> Sequence[int]:
+    return (224, 224, 3)
+
   def train_dataset(self) -> ds_base.DatasetGenerator:
     """Returns the train dataset."""
     def build_train_input() -> ds_base.DatasetGenerator:
@@ -200,7 +204,7 @@ def load(
                      example_rng: Optional[tf.Tensor] = None) -> enn_base.Batch:
     image = _preprocess_image(batch.x, is_training, image_size,
                               example_rng)
-    return ds_utils.update_x_in_batch(batch=batch, x=image)
+    return batch._replace(x=image)
 
   def _preprocess_with_per_example_rng(
       ds: tf.data.Dataset, *, rng: Optional[np.ndarray]) -> tf.data.Dataset:
@@ -233,11 +237,11 @@ def load(
     # model code. The compiler cannot make this optimization for us since our
     # data pipeline and model are compiled separately.
     transposed_x = tf.transpose(batch.x, (1, 2, 3, 0))
-    return ds_utils.update_x_in_batch(batch=batch, x=transposed_x)
+    return batch._replace(x=transposed_x)
 
   def cast_fn(batch: enn_base.Batch) -> enn_base.Batch:
     x = tf.cast(batch.x, tf.dtypes.as_dtype(dtype))
-    return ds_utils.update_x_in_batch(batch=batch, x=x)
+    return batch._replace(x=x)
 
   for i, batch_size in enumerate(reversed(batch_dims)):
     ds = ds.batch(batch_size, drop_remainder=True)

@@ -16,7 +16,7 @@
 # ============================================================================
 """Utility functions for working with datasets."""
 
-from typing import Dict
+from typing import Dict, Sequence
 
 from enn import base as enn_base
 from enn.datasets import base as ds_base
@@ -42,13 +42,6 @@ def _add_data_index(data_index: int, batch: enn_base.Batch) -> enn_base.Batch:
   return enn_base.Batch(x=batch.x, y=batch.y, data_index=data_index)
 
 
-# TODO(author3): Possibly move to enn utils.
-def update_x_in_batch(batch: enn_base.Batch,
-                      x: enn_base.Array) -> enn_base.Batch:
-  """Updates x in enn batch."""
-  return enn_base.Batch(x=x, y=batch.y, data_index=batch.data_index)
-
-
 class OverrideTrainDataset(ds_base.DatasetWithTransform):
   """Overrides the train dataset with a replacement dataset."""
 
@@ -64,6 +57,10 @@ class OverrideTrainDataset(ds_base.DatasetWithTransform):
   @property
   def num_classes(self) -> int:
     return self.original_dataset.num_classes
+
+  @property
+  def eval_input_shape(self) -> Sequence[int]:
+    return self.original_dataset.eval_input_shape
 
   def train_dataset(self) -> ds_base.DatasetGenerator:
     return self.new_dataset.train_dataset()

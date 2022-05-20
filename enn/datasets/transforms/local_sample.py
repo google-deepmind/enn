@@ -23,7 +23,6 @@ from typing import Callable, Optional
 
 from enn import base as enn_base
 from enn.datasets import base as ds_base
-from enn.datasets import utils as ds_utils
 import tensorflow.compat.v2 as tf
 
 
@@ -89,6 +88,6 @@ def make_dyadic_transform(
                                tf.image.ResizeMethod.BICUBIC)
     if flip:
       images = tf.image.random_flip_left_right(images)
-    return ds_utils.update_x_in_batch(batch=batch, x=images)
+    return batch._replace(x=images)
 
   return make_repeat_sample_transform(num_repeat, perturb_fn, limit_data)

@@ -21,8 +21,8 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
 from enn import utils
-from enn.networks import epinet
 from enn.networks import indexers
+from enn.networks import mlp
 import haiku as hk
 
 
@@ -38,7 +38,7 @@ class EpinetTest(parameterized.TestCase):
 
     output_sizes = list(hiddens) + [test_experiment.num_outputs,]
     def net_fn(x):
-      return epinet.ExposedMLP(output_sizes)(x)
+      return mlp.ExposedMLP(output_sizes)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
     enn = utils.wrap_transformed_as_enn(transformed)
 
@@ -58,36 +58,13 @@ class EpinetTest(parameterized.TestCase):
     test_experiment = supervised.make_test_experiment(regression)
 
     def enn_ctor():
-      return epinet.ProjectedMLP(
+      return mlp.ProjectedMLP(
           hidden_sizes=hiddens,
           final_out=test_experiment.num_outputs,
           index_dim=index_dim,
       )
     enn = utils.epistemic_network_from_module(
         enn_ctor, indexers.GaussianIndexer(index_dim))
-
-    experiment = test_experiment.experiment_ctor(enn)
-    experiment.train(10)
-
-  @parameterized.product(
-      base_hiddens=[[], [10, 10]],
-      epinet_hiddens=[[], [10, 10]],
-      index_dim=[1, 3],
-      regression=[True, False]
-  )
-  def test_mlp_epinet(self,
-                      base_hiddens: Sequence[int],
-                      epinet_hiddens: Sequence[int],
-                      index_dim: int,
-                      regression: bool):
-    """Test that the MLP epinet runs."""
-    test_experiment = supervised.make_test_experiment(regression)
-
-    enn = epinet.make_mlp_epinet(
-        output_sizes=list(base_hiddens) + [test_experiment.num_outputs,],
-        epinet_hiddens=epinet_hiddens,
-        index_dim=index_dim,
-    )
 
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)

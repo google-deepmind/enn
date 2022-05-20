@@ -19,14 +19,14 @@
 import abc
 import dataclasses
 import enum
-from typing import Callable, Dict, Generator, List, Union, Text
+from typing import Callable, Dict, Generator, List, Union, Sequence
 from enn import base as enn_base
 import numpy as np
 import tensorflow.compat.v2 as tf
 
 Array = Union[np.ndarray, tf.Tensor]
 # DatasetDict is a Dict with "images" and "labels" as keys
-DatasetDict = Dict[Text, Array]
+DatasetDict = Dict[str, Array]
 
 # TODO(author3): Describe DatasetGenerator
 DatasetGenerator = Generator[enn_base.Batch, None, None]
@@ -39,6 +39,10 @@ class Dataset(abc.ABC):
   @abc.abstractproperty
   def num_classes(self) -> int:
     """Number of output classes."""
+
+  @abc.abstractproperty
+  def eval_input_shape(self) -> Sequence[int]:
+    """Returns the shape of a single eval input from the dataset."""
 
   @abc.abstractmethod
   def train_dataset(self) -> DatasetGenerator:
