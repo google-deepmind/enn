@@ -15,7 +15,7 @@
 # ============================================================================
 """Install script for setuptools."""
 
-import imp
+import imp   # pylint: disable=deprecated-module
 
 import setuptools
 
@@ -43,7 +43,7 @@ setuptools.setup(
         'absl-py',
         'chex',
         'dm-acme',
-        'dm-haiku==0.0.5',
+        'dm-haiku',
         'dataclasses',  # Back-port for Python 3.6.
         'jax',
         'jaxlib',

@@ -40,6 +40,9 @@ class EpinetCheckpoint:
   base_index: Optional[enn_base.Index] = None  # Optional specify base_index.
   base_scale: float = 1.  # Scaling of base net output.
 
+  # Optionally rescale ENN outputs by 1/ temperature.
+  temperature: Optional[float] = None  # Temperature scale for ENN outputs.
+
   # Optional attributes used to identify the provenance of these models.
   # This is mostly used *internally*, but can be useful outside too.
   dataset: Optional[datasets.Dataset] = None  # Dataset used in training.

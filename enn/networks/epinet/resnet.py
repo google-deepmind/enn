@@ -76,6 +76,7 @@ def make_checkpoint_from_config(
       parse_hidden=config.parse_hidden,
       base_cpt=config.base_checkpoint,
       base_scale=config.base_logits_scale,
+      temperature=config.temperature,
   )
 
 

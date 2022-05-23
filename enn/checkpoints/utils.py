@@ -184,7 +184,7 @@ def make_epinet_sampler_from_checkpoint(
     # Combined logits
     combined_logits = jnp.expand_dims(base_logits, 0) + enn_logits
     chex.assert_equal_shape([combined_logits, enn_logits])
-    return combined_logits
+    return combined_logits / epinet_cpt.temperature
 
   return jax.jit(sample_logits)
 
