@@ -42,7 +42,7 @@ setuptools.setup(
     install_requires=[
         'absl-py',
         'chex',
-        'dm-acme',
+        'dm-acme @ git+https://git@github.com/deepmind/acme',
         'dm-haiku',
         'dataclasses',  # Back-port for Python 3.6.
         'jax',
@@ -59,8 +59,8 @@ setuptools.setup(
         'scikit-image',
         'scikit-learn',
         'six',
-        'tensorflow',
-        'tensorflow-datasets',
+        'tensorflow==2.8.0',
+        'tensorflow-datasets==4.5.2',
         'termcolor',
         'typing-extensions',
     ],
