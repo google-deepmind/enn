@@ -116,7 +116,7 @@ If you use `ENN` in your work, please cite the accompanying [paper]:
 ```bibtex
 @inproceedings{,
     title={Epistemic Neural Networks},
-    author={Ian Osband, Zheng Wen, Mohammad Asghari, Morteza Ibrahimi, Xiyuan Lu, Benjamin Van Roy},
+    author={Ian Osband, Zheng Wen, Mohammad Asghari, Morteza Ibrahimi, Xiuyuan Lu, Benjamin Van Roy},
     booktitle={arxiv},
     year={2021},
     url={https://arxiv.org/abs/2107.08924}
