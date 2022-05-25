@@ -124,7 +124,7 @@ $$ f_\theta(x, z) = \mu_\zeta(x) + \sigma_\eta([[\phi_\zeta(x)]], z). $$
 
 We can visualize this network architecture:
 
-![epinet diagram](statics/images/epinet_diagram.jpg)
+![epinet diagram](statics/images/epinet_new.png)
 
 As part of our release include an [epinet colab] that loads in a pre-trained base network and epinet on ImageNet.
 The core network logic for epinet is available in [networks/epinet](enn/networks/epinet/README.md).
