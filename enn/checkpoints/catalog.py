@@ -18,6 +18,8 @@
 import enum
 
 from enn.checkpoints import base as checkpoint_base
+from enn.checkpoints import cifar10
+from enn.checkpoints import cifar100
 from enn.checkpoints import epinet as checkpoint_epinet
 from enn.checkpoints import imagenet
 
@@ -25,6 +27,34 @@ from enn.checkpoints import imagenet
 # Alias to fit inside character limit
 _EnnCpt = checkpoint_base.EnnCheckpoint
 _EpiCpt = checkpoint_epinet.EpinetCheckpoint
+
+
+class Cifar10Models(enum.Enum):
+  """Pretrained models on Cifar10."""
+  RESNET_18: _EnnCpt = cifar10.resnet_18()
+  RESNET_32: _EnnCpt = cifar10.resnet_32()
+  RESNET_44: _EnnCpt = cifar10.resnet_44()
+  RESNET_56: _EnnCpt = cifar10.resnet_56()
+  RESNET_110: _EnnCpt = cifar10.resnet_110()
+  RESNET_18_FINAL_EPINET: _EpiCpt = cifar10.resnet_18_final_epinet()
+  RESNET_32_FINAL_EPINET: _EpiCpt = cifar10.resnet_32_final_epinet()
+  RESNET_44_FINAL_EPINET: _EpiCpt = cifar10.resnet_44_final_epinet()
+  RESNET_56_FINAL_EPINET: _EpiCpt = cifar10.resnet_56_final_epinet()
+  RESNET_110_FINAL_EPINET: _EpiCpt = cifar10.resnet_110_final_epinet()
+
+
+class Cifar100Models(enum.Enum):
+  """Pretrained models on Cifar100."""
+  RESNET_18: _EnnCpt = cifar100.resnet_18()
+  RESNET_32: _EnnCpt = cifar100.resnet_32()
+  RESNET_44: _EnnCpt = cifar100.resnet_44()
+  RESNET_56: _EnnCpt = cifar100.resnet_56()
+  RESNET_110: _EnnCpt = cifar100.resnet_110()
+  RESNET_18_FINAL_EPINET: _EpiCpt = cifar100.resnet_18_final_epinet()
+  RESNET_32_FINAL_EPINET: _EpiCpt = cifar100.resnet_32_final_epinet()
+  RESNET_44_FINAL_EPINET: _EpiCpt = cifar100.resnet_44_final_epinet()
+  RESNET_56_FINAL_EPINET: _EpiCpt = cifar100.resnet_56_final_epinet()
+  RESNET_110_FINAL_EPINET: _EpiCpt = cifar100.resnet_110_final_epinet()
 
 
 class ImagenetModels(enum.Enum):
