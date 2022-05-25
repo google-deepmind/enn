@@ -14,16 +14,12 @@ provides a similarly simple and coherent convention for defining and training
 neural networks that represent uncertainty over a hypothesis class of models.
 
 ## Technical overview
-In a supervised setting, For input `x_i ∈ X` and
-outputs `y_i ∈ Y` a point estimate `f_θ(x)` is trained by fitting the
-observed data `D = {(xi, yi) for i = 1, ..., N}` by minimizing a loss
-function `l(θ, D) ∈ R`. In epistemic neural networks we
-introduce the concept of an epistemic index `z ∈ I ⊆ R^{n_z}` distributed
-according to some reference distribution `p_z(·)`. An augmented epistemic
-function approximator then takes the form `f_θ(x, z)`; where the function
-class `fθ(·, z)` is a neural network. The index `z` allows unambiguous
-identification of a corresponding function value and sampling `z` corresponds
-to sampling from the hypothesis class of functions.
+
+Given an input x and parameters &theta;, a conventional NN produces an output f<sub>&theta;</sub>(x).
+The output f<sub>&theta;</sub>(x, z) of an ENN depends additionally on an *epistemic index* z.
+An ENN specifies a fixed reference distribution P<sub>Z</sub> for the epistemic index.
+Typical choices include a uniform distribution over a finite set or a standard Gaussian over a vector space.
+The index z is used to express epistemic uncertainty. In particular, variation of the network output with z indicates uncertainty that might be resolved by future data.
 
 On some level, ENNs are purely a notational convenience and most existing
 approaches to dealing with uncertainty in deep learning can be rephrased in
@@ -39,9 +35,6 @@ the exact computations are intractable.
 
 For a more comprehensive overview, see the accompanying [paper].
 
-## Reproducing NeurIPS experiments
-
-To reproduce the experiments from our paper please see `experiments/neurips_2021`.
 
 ## Getting started
 
