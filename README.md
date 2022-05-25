@@ -1,45 +1,53 @@
 # Epistemic Neural Networks
 
-A library for uncertainty representation and training in neural networks.
+> A library for neural networks that know what they don't know.
+
+For background information, please see the [paper]
 
 ## Introduction
-Many applications in deep learning requires or benefit from going beyond a
-point estimte and representing uncertainty about the model. The coherent use
-of Bayes’ rule and probability theory are the gold standard for updating
-beliefs and estimating uncertainty. But exact computation quickly becomes
-infeasible for even simple problems. Modern machine learning has developed an
-effective toolkit for learning in high-dimensional using a simple and
-coherent convention. Epistemic neural network (ENN) is a library that
-provides a similarly simple and coherent convention for defining and training
-neural networks that represent uncertainty over a hypothesis class of models.
+
+Conventional neural networks generate *marginal* predictions: given one input, they predict one label.
+If a neural network outputs probability 50:50 it remains unclear if that is because of genuine ambiguity in the input, or just because the neural network has insufficient training data.
+These two possibilities would be distinguished by *joint* predictions: given multiple inputs, predict multiple labels.
+
+![rabbit or duck](statics/images/rabbit_duck.png)
+
+
+An epistemic neural network (ENN) makes predictions given a single input `x`, but also an epistemic index `z`.
+The ENN controls the index `z` and uses it to produce joint predictions over multiple inputs `x_1,..,x_t` which may be different from just the product of marginals.
+
+![nn diagrams](statics/images/enn_diagrams.png)
+
+An ENN provides a general interface for thinking about uncertainty estimation in deep learning.
+Note that, all existing approaches to uncertainty modeling, such as Bayesian neural networks (BNNs), can be expressed as ENNs.
+However, there are ENN architectures that are not natural to express and BNNs.
+This library provides interfaces and tools for the design and training of ENNs.
+
 
 ## Technical overview
 
-Given an input x and parameters &theta;, a conventional NN produces an output f<sub>&theta;</sub>(x).
-The output f<sub>&theta;</sub>(x, z) of an ENN depends additionally on an *epistemic index* z.
-An ENN specifies a fixed reference distribution P<sub>Z</sub> for the epistemic index.
-Typical choices include a uniform distribution over a finite set or a standard Gaussian over a vector space.
-The index z is used to express epistemic uncertainty. In particular, variation of the network output with z indicates uncertainty that might be resolved by future data.
+> The `enn` library provides a lightweight interface for ENNs implemented on top of [JAX](https://github.com/google/jax) and [Haiku](https://github.com/deepmind/dm-haiku).
+If you want to use our `enn` library, we highly recommend you start by familiarizing yourself with these libraries first.
 
-On some level, ENNs are purely a notational convenience and most existing
-approaches to dealing with uncertainty in deep learning can be rephrased in
-this way. For example, an ensemble of point estimates `{f_θ1, ..., f_θK }`
-can be viewed as an ENN with `θ = (θ1, .., θK)`, `z ∈ {1, .., K}`, and
-`f_θ(x, z) := f_θz(x)`. However, this simplicity hides a deeper insight: that
-the process of epistemic update itself can be tackled through the tools of
-machine learning typically reserved for point estimates, through the addition
-of this epistemic index. Further, since these machine learning tools were
-explicitly designed to scale to large and complex problems, they might
-provide tractable approximations to large scale Bayesian inference even where
-the exact computations are intractable.
 
-For a more comprehensive overview, see the accompanying [paper].
+We outline the key high-level interfaces for our code in [base.py](enn/base.py):
+
+- `EpistemicNetwork`: a convenient pairing of Haiku transformed + index sampler.
+  - `apply`: haiku-style apply function taking `params, x, z -> f_params(x,z)``
+  - `init`: haiku-style init function taking `key, x, z -> params_init`
+  - `indexer`: generates a sample from the reference index distribution taking `key -> z`.
+- `LossFn`: Given an ENN, parameters, and data: how to compute a loss.
+  - Takes: `enn, params, batch, key`
+  - Outputs: `loss, metrics`
+
+We then use these high-level concepts to build and train ENNs.
 
 
 ## Getting started
 
 You can get started in our [colab tutorial] without installing anything on your
 machine.
+
 
 ### Installation
 
@@ -98,9 +106,29 @@ We have tested `ENN` on Python 3.7. To install the dependencies:
     experiment.train(FLAGS.num_batch)
     ```
 
-More examples can be found in the [colab tutorial].
-
 4. **Optional**: run the tests by executing `./test.sh` from ENN root directory.
+
+
+## Epinet
+
+One of the key contributions of our [paper] is the *epinet*: a new ENN architecture that can supplement any conventional NN and be trained to estimate uncertainty.
+
+
+An epinet is a neural network with privileged access to inputs and outputs of activation units in the base network.
+A subset of these inputs and outputs, denoted by $$\phi_\zeta(x)$$, are taken as input to the epinet along with an epistemic index $$z$$.
+For epinet parameters $$\eta$$, the epinet outputs $$\sigma_\eta(\phi_\zeta(x), z)$$.
+To produce an ENN, the output of the epinet is added to that of the base network, though with a "stop gradient":
+
+$$ \underbrace{f_\theta(x, z)}_{\text{ENN}} = \underbrace{\mu_\zeta(x)}_{\text{base net}} + \underbrace{\sigma_\eta(\mathrm{sg}[\phi_\zeta(x)], z)}_{\text{epinet}}. $$
+
+We can visualize this network architecture:
+
+![epinet diagram](statics/images/epinet_diagram.jpg)
+
+As part of our release include an [epinet colab] that loads in a pre-trained base network and epinet on ImageNet.
+The core network logic for epinet is available in [networks/epinet](enn/networks/epinet/README.md).
+
+
 
 ## Citing
 
@@ -116,4 +144,5 @@ If you use `ENN` in your work, please cite the accompanying [paper]:
 ```
 
 [colab tutorial]: https://colab.research.google.com/github/deepmind/enn/blob/master/enn/colabs/enn_demo.ipynb
+[epinet colab]: https://colab.research.google.com/github/deepmind/enn/blob/master/enn/colabs/enn_demo.ipynb
 [paper]: https://arxiv.org/abs/2107.08924

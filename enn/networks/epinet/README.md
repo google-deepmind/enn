@@ -1,3 +1,3 @@
-# Epinet network defintion
+# Epinet network definition
 
-WARNING: this code is not yet gold quality... work in progress.
+This folder contains the key network definitions for epinet.
