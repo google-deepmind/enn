@@ -115,11 +115,12 @@ One of the key contributions of our [paper] is the *epinet*: a new ENN architect
 
 
 An epinet is a neural network with privileged access to inputs and outputs of activation units in the base network.
-A subset of these inputs and outputs, denoted by $$\phi_\zeta(x)$$, are taken as input to the epinet along with an epistemic index $$z$$.
-For epinet parameters $$\eta$$, the epinet outputs $$\sigma_\eta(\phi_\zeta(x), z)$$.
-To produce an ENN, the output of the epinet is added to that of the base network, though with a "stop gradient":
+A subset of these inputs and outputs, denoted by $\phi_\zeta(x)$, are taken as input to the epinet along with an epistemic index $$z$$.
+For epinet parameters $\eta$, the epinet outputs $\sigma_\eta(\phi_\zeta(x), z)$.
+To produce an ENN, the output of the epinet is added to that of the base network, though with a "stop gradient" written $[[\cdot]]$:
 
-$$ \underbrace{f_\theta(x, z)}_{\text{ENN}} = \underbrace{\mu_\zeta(x)}_{\text{base net}} + \underbrace{\sigma_\eta(\mathrm{sg}[\phi_\zeta(x)], z)}_{\text{epinet}}. $$
+$$ f_\theta(x, z) = \mu_\zeta(x) + \sigma_\eta([[\phi_\zeta(x)]], z). $$
+
 
 We can visualize this network architecture:
 
