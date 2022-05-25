@@ -114,9 +114,9 @@ More examples can be found in the [colab tutorial].
 If you use `ENN` in your work, please cite the accompanying [paper]:
 
 ```bibtex
-@article{osband2021epistemic,
+@article{osband2022epistemic,
   title={Epistemic neural networks},
-  author={Osband, Ian and Wen, Zheng and Asghari, Mohammad and Ibrahimi, Morteza and Lu, Xiuyuan and Van Roy, Benjamin},
+  author={Osband, Ian and Wen, Zheng and Asghari, Seyed Mohammad and Dwaracherla, Vikranth and Ibrahimi, Morteza and Lu, Xiuyuan and Van Roy, Benjamin},
   journal={arXiv preprint arXiv:2107.08924},
   year={2022}
 }
