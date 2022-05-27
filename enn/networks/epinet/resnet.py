@@ -45,7 +45,6 @@ class ResnetFinalEpinetConfig:
   freeze_base: bool = True
   parse_hidden: epinet_base.BaseHiddenParser = last_layer.parse_base_hidden
   seed: int = 23
-  temperature: Optional[float] = None
 
 
 class ResnetFinalEpinet(enn_base.EpistemicNetworkWithState):
@@ -61,6 +60,7 @@ def make_checkpoint_from_config(
     name: str,
     load_fn: checkpoints_base.ParamsStateLoadFn,
     config: ResnetFinalEpinetConfig,
+    tuned_eval_temperature: Optional[float] = None,
 ) -> checkpoints_epinet.EpinetCheckpoint:
   """Returns an EpinetCheckpoint from ResnetFinalEpinetConfig.
 
@@ -68,6 +68,7 @@ def make_checkpoint_from_config(
     name: string identifier for checkpoint.
     load_fn: gives params, state for epinet. Base network init from base_cpt.
     config: ResnetFinalEpinetConfig, which includes base_cpt as component.
+    tuned_eval_temperature: Optional temperature rescaling for evaluation.
   """
   return checkpoints_epinet.EpinetCheckpoint(
       name=name,
@@ -76,7 +77,7 @@ def make_checkpoint_from_config(
       parse_hidden=config.parse_hidden,
       base_cpt=config.base_checkpoint,
       base_scale=config.base_logits_scale,
-      temperature=config.temperature,
+      tuned_eval_temperature=tuned_eval_temperature,
   )
 
 
@@ -114,7 +115,6 @@ def _make_enn_from_config(config: ResnetFinalEpinetConfig) -> _EpinetPieces:
       parse_hidden=config.parse_hidden,
       base_scale=config.base_logits_scale,
       freeze_base=config.freeze_base,
-      temperature=config.temperature,
   )
 
   return _EpinetPieces(enn, epinet)

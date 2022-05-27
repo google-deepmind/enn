@@ -70,7 +70,6 @@ def combine_base_epinet_as_enn(
     base_index: Optional[enn_base.Index] = None,
     base_scale: float = 1,
     freeze_base: bool = True,
-    temperature: Optional[float] = None,
 ) -> enn_base.EpistemicNetworkWithState:
   """Returns a combined ENN from a base network and an epinet.
 
@@ -83,12 +82,8 @@ def combine_base_epinet_as_enn(
     freeze_base: If True, then the only parameters/state returned will be
       specific just to the epinet. If False, then the parameters/state are
       combined with those of the base network. Useful for finetuning.
-    temperature: Optionally rescale the network output by 1/temperature.
   """
   # TODO(author2): Add testing to this function.
-
-  if temperature is None:
-    temperature = 1.
 
   # Parse the base network from checkpoint
   base_params_init, base_state_init = base_checkpoint.load_fn()
@@ -116,8 +111,8 @@ def combine_base_epinet_as_enn(
         params, state, inputs, index, parse_hidden(base_out))
 
     output = enn_base.OutputWithPrior(
-        train=(base_out.train * base_scale + epi_out.train) / temperature,
-        prior=(base_out.prior * base_scale + epi_out.prior) / temperature,
+        train=base_out.train * base_scale + epi_out.train,
+        prior=base_out.prior * base_scale + epi_out.prior,
     )
     state = epi_state if freeze_base else {**base_state, **epi_state}
     return output, state

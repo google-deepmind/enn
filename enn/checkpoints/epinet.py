@@ -41,7 +41,7 @@ class EpinetCheckpoint:
   base_scale: float = 1.  # Scaling of base net output.
 
   # Optionally rescale ENN outputs by 1/ temperature.
-  temperature: Optional[float] = None  # Temperature scale for ENN outputs.
+  tuned_eval_temperature: Optional[float] = None
 
   # Optional attributes used to identify the provenance of these models.
   # This is mostly used *internally*, but can be useful outside too.

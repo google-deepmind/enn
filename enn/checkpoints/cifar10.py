@@ -18,7 +18,6 @@
 from enn import base as enn_base
 from enn import datasets
 from enn import networks
-from enn import utils as enn_utils
 from enn.checkpoints import base as checkpoint_base
 from enn.checkpoints import epinet as checkpoint_epinet
 from enn.checkpoints import utils
@@ -28,18 +27,16 @@ from enn.networks.epinet import resnet as resnet_epinet_lib
 
 def _make_resnet_ctor(
     config: networks.ResNetConfig,
-    temperature: float = 1.,
 ) -> checkpoint_base.EnnCtor:
   """Creates a resnet constructor for appropriate config."""
   def enn_ctor() -> enn_base.EpistemicNetworkWithState:
-    enn = networks.EnsembleResNetENN(
+    return networks.EnsembleResNetENN(
         num_output_classes=datasets.Cifar10().num_classes,
         num_ensemble=1,
         is_training=False,
         enable_double_transpose=False,
         config=config,
     )
-    return enn_utils.scale_enn_output(enn=enn, scale=1/temperature)
   return enn_ctor
 
 
@@ -48,10 +45,7 @@ def resnet_18() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='cifar10_resnet18',
       load_fn=utils.load_from_file(file_name='resnet18_cifar10'),
-      enn_ctor=_make_resnet_ctor(
-          networks.CanonicalResNets.RESNET_18.value,
-          temperature=1.1,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_18.value),
       dataset=datasets.Cifar10(),
   )
 
@@ -61,10 +55,7 @@ def resnet_32() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='cifar10_resnet32',
       load_fn=utils.load_from_file(file_name='resnet32_cifar10'),
-      enn_ctor=_make_resnet_ctor(
-          networks.CanonicalResNets.RESNET_32.value,
-          temperature=1.1,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_32.value),
       dataset=datasets.Cifar10(),
   )
 
@@ -74,10 +65,7 @@ def resnet_44() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='cifar10_resnet44',
       load_fn=utils.load_from_file(file_name='resnet44_cifar10'),
-      enn_ctor=_make_resnet_ctor(
-          networks.CanonicalResNets.RESNET_44.value,
-          temperature=1.1,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_44.value),
       dataset=datasets.Cifar10(),
   )
 
@@ -87,10 +75,7 @@ def resnet_56() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='cifar10_resnet56',
       load_fn=utils.load_from_file(file_name='resnet56_cifar10'),
-      enn_ctor=_make_resnet_ctor(
-          networks.CanonicalResNets.RESNET_56.value,
-          temperature=1.1,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_56.value),
       dataset=datasets.Cifar10(),
   )
 
@@ -100,10 +85,7 @@ def resnet_110() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='cifar10_resnet110',
       load_fn=utils.load_from_file(file_name='resnet110_cifar10'),
-      enn_ctor=_make_resnet_ctor(
-          networks.CanonicalResNets.RESNET_110.value,
-          temperature=1.1,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_110.value),
       dataset=datasets.Cifar10(),
   )
 
@@ -124,7 +106,6 @@ def _make_epinet_config(
       add_prior_scale=0.0,
       prior_fn_ctor=prior_fn_ctor,
       freeze_base=True,
-      temperature=0.5,
   )
 
 

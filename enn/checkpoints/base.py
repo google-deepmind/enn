@@ -39,3 +39,6 @@ class EnnCheckpoint:
   # This is mostly used *internally*, but can be useful outside too.
   dataset: Optional[datasets.Dataset] = None  # Dataset used in training.
   report_cl: Optional[int] = None  # Integer id for report CL (encouraged).
+
+  # Optionally rescale ENN outputs by 1/ temperature.
+  tuned_eval_temperature: Optional[float] = None

@@ -18,7 +18,6 @@
 from enn import base as enn_base
 from enn import datasets
 from enn import networks
-from enn import utils as enn_utils
 from enn.checkpoints import base as checkpoint_base
 from enn.checkpoints import epinet as checkpoint_epinet
 from enn.checkpoints import utils
@@ -28,18 +27,16 @@ from enn.networks.epinet import resnet as resnet_epinet_lib
 
 def _make_resnet_ctor(
     config: networks.ResNetConfig,
-    temperature: float = 1.,
 ) -> checkpoint_base.EnnCtor:
   """Creates a resnet constructor for appropriate config."""
   def enn_ctor() -> enn_base.EpistemicNetworkWithState:
-    enn = networks.EnsembleResNetENN(
+    return networks.EnsembleResNetENN(
         num_output_classes=datasets.Imagenet().num_classes,
         num_ensemble=1,
         is_training=False,
         enable_double_transpose=True,
         config=config,
     )
-    return enn_utils.scale_enn_output(enn=enn, scale=1/temperature)
   return enn_ctor
 
 
@@ -48,11 +45,9 @@ def resnet_50() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='imagenet_resnet50',
       load_fn=utils.load_from_file(file_name='resnet50_imagenet'),
-      enn_ctor=_make_resnet_ctor(
-          config=networks.CanonicalResNets.RESNET_50.value,
-          temperature=0.8,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_50.value),
       dataset=datasets.Imagenet(),
+      tuned_eval_temperature=0.8,
   )
 
 
@@ -61,11 +56,9 @@ def resnet_101() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='imagenet_resnet101',
       load_fn=utils.load_from_file(file_name='resnet101_imagenet'),
-      enn_ctor=_make_resnet_ctor(
-          config=networks.CanonicalResNets.RESNET_101.value,
-          temperature=0.8,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_101.value),
       dataset=datasets.Imagenet(),
+      tuned_eval_temperature=0.8,
   )
 
 
@@ -74,11 +67,9 @@ def resnet_152() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='imagenet_resnet152',
       load_fn=utils.load_from_file(file_name='resnet152_imagenet'),
-      enn_ctor=_make_resnet_ctor(
-          config=networks.CanonicalResNets.RESNET_152.value,
-          temperature=0.8,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_152.value),
       dataset=datasets.Imagenet(),
+      tuned_eval_temperature=0.8,
   )
 
 
@@ -87,11 +78,9 @@ def resnet_200() -> checkpoint_base.EnnCheckpoint:
   return checkpoint_base.EnnCheckpoint(
       name='imagenet_resnet200',
       load_fn=utils.load_from_file(file_name='resnet200_imagenet'),
-      enn_ctor=_make_resnet_ctor(
-          config=networks.CanonicalResNets.RESNET_200.value,
-          temperature=0.8,
-      ),
+      enn_ctor=_make_resnet_ctor(networks.CanonicalResNets.RESNET_200.value),
       dataset=datasets.Imagenet(),
+      tuned_eval_temperature=0.8,
   )
 
 
@@ -103,13 +92,12 @@ def _make_epinet_config(
       base_checkpoint=base_checkpoint,
       index_dim=30,
       num_classes=1000,
-      base_logits_scale=1.,
+      base_logits_scale=1 / base_checkpoint.tuned_eval_temperature,
       epinet_hiddens=[50],
       epi_prior_scale=1.,
       add_prior_scale=1.,
       prior_fn_ctor=lambda: priors.make_imagenet_conv_prior(num_ensemble=30),
       freeze_base=True,
-      temperature=0.7,
   )
 
 
@@ -119,6 +107,7 @@ def resnet_50_final_epinet() -> checkpoint_epinet.EpinetCheckpoint:
       name='imagenet_final_epinet_resnet50',
       load_fn=utils.load_from_file(file_name='resnet50_epinet_imagenet'),
       config=_make_epinet_config(resnet_50()),
+      tuned_eval_temperature=0.7,
   )
 
 
@@ -128,6 +117,7 @@ def resnet_101_final_epinet() -> checkpoint_epinet.EpinetCheckpoint:
       name='imagenet_final_epinet_resnet101',
       load_fn=utils.load_from_file(file_name='resnet101_epinet_imagenet'),
       config=_make_epinet_config(resnet_101()),
+      tuned_eval_temperature=0.7,
   )
 
 
@@ -137,6 +127,7 @@ def resnet_152_final_epinet() -> checkpoint_epinet.EpinetCheckpoint:
       name='imagenet_final_epinet_resnet152',
       load_fn=utils.load_from_file(file_name='resnet152_epinet_imagenet'),
       config=_make_epinet_config(resnet_152()),
+      tuned_eval_temperature=0.7,
   )
 
 
@@ -146,4 +137,5 @@ def resnet_200_final_epinet() -> checkpoint_epinet.EpinetCheckpoint:
       name='imagenet_final_epinet_resnet200',
       load_fn=utils.load_from_file(file_name='resnet200_epinet_imagenet'),
       config=_make_epinet_config(resnet_200()),
+      tuned_eval_temperature=0.7,
   )

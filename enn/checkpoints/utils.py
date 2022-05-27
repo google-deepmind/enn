@@ -101,18 +101,24 @@ def average_logits(array: chex.Array) -> chex.Array:
 def make_enn_sampler_from_checkpoint(
     checkpoint: checkpoint_base.EnnCheckpoint,
     num_enn_samples: int,
+    temperature_rescale: bool = False,
 ) -> EnnSampler:
   """Makes a sampler that samples multiple logits given inputs and key.
 
   Args:
     checkpoint: an ENN checkpoint.
     num_enn_samples: number of index samples for ENN.
+    temperature_rescale: whether to apply the tuned evaluation temperature.
 
   Returns:
     Callable: inputs, key --> logits of shape [num_enn_samples, batch, class].
   """
   enn = checkpoint.enn_ctor()
   params, state = checkpoint.load_fn()
+  if temperature_rescale and checkpoint.tuned_eval_temperature:
+    temperature = checkpoint.tuned_eval_temperature
+  else:
+    temperature = 1.
 
   def sample_logits(inputs: chex.Array, key: chex.PRNGKey,) -> chex.Array:
     index_fwd = lambda z: enn.apply(params, state, inputs, z)
@@ -120,7 +126,7 @@ def make_enn_sampler_from_checkpoint(
     enn_out, _ = jax.lax.map(index_fwd, indices)
     logits = enn_utils.parse_net_output(enn_out)
     chex.assert_shape(logits, [num_enn_samples, None, None])
-    return logits
+    return logits / temperature
 
   return jax.jit(sample_logits)
 
@@ -128,10 +134,12 @@ def make_enn_sampler_from_checkpoint(
 def load_checkpoint_as_logit_fn(
     checkpoint: checkpoint_base.EnnCheckpoint,
     num_enn_samples: int = 1,
+    temperature_rescale: bool = False,
     seed: int = 0,
 ) -> Callable[[chex.Array], enn_base.OutputWithPrior]:
   """Loads an ENN as a simple forward function: images --> logits."""
-  enn_sampler = make_enn_sampler_from_checkpoint(checkpoint, num_enn_samples)
+  enn_sampler = make_enn_sampler_from_checkpoint(
+      checkpoint, num_enn_samples, temperature_rescale)
 
   def forward_fn(inputs: chex.Array) -> chex.Array:
     logits = enn_sampler(inputs, jax.random.PRNGKey(seed))
@@ -149,6 +157,7 @@ def load_checkpoint_as_logit_fn(
 def make_epinet_sampler_from_checkpoint(
     epinet_cpt: checkpoint_epinet.EpinetCheckpoint,
     num_enn_samples: int = 1000,
+    temperature_rescale: bool = False,
 ) -> EnnSampler:
   """Forms a callable that samples multiple logits based on inputs and key."""
   base_enn = epinet_cpt.base_cpt.enn_ctor()
@@ -163,6 +172,11 @@ def make_epinet_sampler_from_checkpoint(
   # Pull out the parameters
   base_params, base_state = epinet_cpt.base_cpt.load_fn()
   epi_params, epi_state = epinet_cpt.load_fn()
+
+  if temperature_rescale and epinet_cpt.tuned_eval_temperature:
+    temperature = epinet_cpt.tuned_eval_temperature
+  else:
+    temperature = 1.
 
   def sample_logits(inputs: chex.Array, key: chex.PRNGKey,) -> chex.Array:
     # Forward the base network once
@@ -184,7 +198,7 @@ def make_epinet_sampler_from_checkpoint(
     # Combined logits
     combined_logits = jnp.expand_dims(base_logits, 0) + enn_logits
     chex.assert_equal_shape([combined_logits, enn_logits])
-    return combined_logits / epinet_cpt.temperature
+    return combined_logits / temperature
 
   return jax.jit(sample_logits)
 
@@ -192,11 +206,12 @@ def make_epinet_sampler_from_checkpoint(
 def make_epinet_forward_fn(
     epinet_cpt: checkpoint_epinet.EpinetCheckpoint,
     num_enn_samples: int = 1000,
+    temperature_rescale: bool = False,
     seed: int = 44,
 ) -> Callable[[chex.Array], chex.Array]:
   """Forms a callable that averages epinet over num_enn_samples indices."""
   epinet_sampler = make_epinet_sampler_from_checkpoint(
-      epinet_cpt, num_enn_samples)
+      epinet_cpt, num_enn_samples, temperature_rescale)
   key = jax.random.PRNGKey(seed)
 
   def forward_fn(inputs: chex.Array) -> chex.Array:
