@@ -112,10 +112,9 @@ def _make_epinet_config(
     base_checkpoint: checkpoint_base.EnnCheckpoint
 ) -> resnet_epinet_lib.ResnetFinalEpinetConfig:
   """Creates an epinet config given a base net checkpoint."""
-  prior_fn = priors.make_cifar_conv_prior(
-      num_ensemble=20,
-      num_classes=10,
-  )
+  def prior_fn_ctor() -> networks.PriorFn:
+    return priors.make_cifar_conv_prior(num_ensemble=20, num_classes=10)
+
   return resnet_epinet_lib.ResnetFinalEpinetConfig(
       base_checkpoint=base_checkpoint,
       index_dim=20,
@@ -123,7 +122,7 @@ def _make_epinet_config(
       epinet_hiddens=[50,],
       epi_prior_scale=4.,
       add_prior_scale=0.0,
-      prior_fn_ctor=lambda: prior_fn,
+      prior_fn_ctor=prior_fn_ctor,
       freeze_base=True,
       temperature=0.5,
   )
