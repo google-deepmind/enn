@@ -18,7 +18,7 @@
 
 import abc
 import dataclasses
-from typing import Any, Callable, Dict, Iterator, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, NamedTuple, Optional, Tuple, Union, TypeVar
 
 import haiku as hk
 import jax
@@ -92,17 +92,24 @@ class Batch(NamedTuple):
 BatchIterator = Iterator[Batch]  # Equivalent to the dataset we loop through
 LossMetrics = Dict[str, Array]
 LossOutput = Tuple[Array, LossMetrics]
+# Defining Data as a generic type for a batch of data. This allows our base
+# methods and classes to work with different types of data batch, not only Batch
+# defined here.
+Data = TypeVar('Data')
 
 
-class LossFn(typing_extensions.Protocol):
+class LossFnBase(typing_extensions.Protocol[Data]):
   """Calculates a loss based on one batch of data per rng_key."""
 
   def __call__(self,
                enn: EpistemicNetwork,
                params: hk.Params,
-               batch: Batch,
+               batch: Data,
                key: RngKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
+
+# LossFnBase specialized to work only with Batch.
+LossFn = LossFnBase[Batch]
 
 
 # Repeat EpistemicNetwork definition for networks with "state" e.g. BatchNorm
@@ -122,13 +129,17 @@ class EpistemicNetworkWithState:
 LossOutputWithState = Tuple[Array, Tuple[hk.State, LossMetrics]]
 
 
-class LossFnWithState(typing_extensions.Protocol):
+class LossFnWithStateBase(typing_extensions.Protocol[Data]):
   """Calculates a loss based on one batch of data per rng_key."""
 
   def __call__(self,
                enn: EpistemicNetworkWithState,
                params: hk.Params,
                state: hk.State,
-               batch: Batch,
+               batch: Data,
                key: RngKey) -> LossOutputWithState:
     """Computes a loss based on one batch of data and a random key."""
+
+
+# LossFnWithStateBase specialized to work only with Batch.
+LossFnWithState = LossFnWithStateBase[Batch]

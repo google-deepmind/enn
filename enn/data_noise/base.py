@@ -19,10 +19,14 @@ from enn import base
 import typing_extensions
 
 
-class DataNoise(typing_extensions.Protocol):
+class DataNoiseBase(typing_extensions.Protocol[base.Data]):
 
-  def __call__(self, data: base.Batch, index: base.Index) -> base.Batch:
+  def __call__(self, data: base.Data, index: base.Index) -> base.Data:
     """Apply some noise process to a batch of data based on epistemic index."""
+
+
+# DataNoiseBase specialized to work only with base.Batch.
+DataNoise = DataNoiseBase[base.Batch]
 
 
 def get_indexer(indexer: base.EpistemicIndexer):

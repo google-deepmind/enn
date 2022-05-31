@@ -17,6 +17,7 @@
 """Exposing the public methods of the losses."""
 # Base
 from enn.data_noise.base import DataNoise
+from enn.data_noise.base import DataNoiseBase
 
 # Boostrapping
 from enn.data_noise.bootstrapping import BootstrapNoise
