@@ -47,8 +47,11 @@ def add_l2_weight_decay(loss_fn: base.LossFn,
     scale_fn = lambda ps: jax.tree_map(lambda p: scale * p, ps)
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
-  def new_loss(a, params: hk.Params, c, d) -> base.Array:
-    loss, metrics = loss_fn(a, params, c, d)
+  def new_loss(enn: base.EpistemicNetwork,
+               params: hk.Params,
+               batch: base.Batch,
+               key: base.RngKey) -> base.Array:
+    loss, metrics = loss_fn(enn, params, batch, key)
     decay = l2_weights_with_predicate(scale_fn(params), predicate)
     total_loss = loss +  decay
     metrics['decay'] = decay
