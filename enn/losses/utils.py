@@ -16,7 +16,7 @@
 
 """Helpful functions relating to losses."""
 import dataclasses
-from typing import Any, Dict, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Callable, List, Optional, Sequence, Union
 
 from enn import base
 from enn.losses import single_index
@@ -69,7 +69,7 @@ def combine_single_index_losses_as_metric(
   def combined_loss(apply: base.ApplyFn,
                     params: hk.Params,
                     batch: base.Batch,
-                    index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+                    index: base.Index) -> base.LossOutput:
     loss, metrics = train_loss(apply, params, batch, index)
     for name, loss_fn in extra_losses.items():
       extra_loss, extra_metrics = loss_fn(apply, params, batch, index)
@@ -90,7 +90,7 @@ def combine_losses_as_metric(
   def combined_loss(enn: base.EpistemicNetwork,
                     params: hk.Params,
                     batch: base.Batch,
-                    key: base.RngKey) -> Tuple[base.Array, base.LossMetrics]:
+                    key: base.RngKey) -> base.LossOutput:
     loss, metrics = train_loss(enn, params, batch, key)
     for name, loss_fn in extra_losses.items():
       extra_loss, extra_metrics = loss_fn(enn, params, batch, key)
@@ -121,7 +121,7 @@ def combine_losses(
   def loss_fn(enn: base.EpistemicNetwork,
               params: hk.Params,
               batch: base.Batch,
-              key: base.RngKey) -> Tuple[base.Array, base.LossMetrics]:
+              key: base.RngKey) -> base.LossOutput:
     combined_loss = 0.
     combined_metrics = {}
     for loss_config in clean_losses:

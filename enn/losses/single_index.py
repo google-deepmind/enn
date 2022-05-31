@@ -16,7 +16,7 @@
 
 """Collection of simple losses applied to one single index."""
 import dataclasses
-from typing import Callable, Tuple, Optional
+from typing import Callable, Optional
 
 import chex
 from enn import base
@@ -39,7 +39,7 @@ class SingleIndexLossFn(typing_extensions.Protocol):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     """Computes a loss based on one batch of data and one index."""
 
 
@@ -58,7 +58,7 @@ def average_single_index_loss(single_loss: SingleIndexLossFn,
   def loss_fn(enn: base.EpistemicNetwork,
               params: hk.Params,
               batch: base.Batch,
-              key: base.RngKey) -> Tuple[base.Array, base.LossMetrics]:
+              key: base.RngKey) -> base.LossOutput:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
@@ -74,7 +74,7 @@ def add_data_noise(single_loss: SingleIndexLossFn,
   def noisy_loss(apply: base.ApplyFn,
                  params: hk.Params,
                  batch: base.Batch,
-                 index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+                 index: base.Index) -> base.LossOutput:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, noisy_batch, index)
   return noisy_loss
@@ -88,7 +88,7 @@ class L2Loss(SingleIndexLossFn):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     """L2 regression applied to a single epistemic index."""
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
@@ -115,7 +115,7 @@ class XentLoss(SingleIndexLossFn):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
     net_out = apply(params, batch.x, index)
@@ -141,7 +141,7 @@ class AccuracyErrorLoss(SingleIndexLossFn):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     net_out = apply(params, batch.x, index)
     logits = utils.parse_net_output(net_out)
@@ -172,7 +172,7 @@ class ElboLoss(SingleIndexLossFn):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     """This function returns a one-sample MC estimate of the ELBO."""
     out = apply(params, batch.x, index)
     log_likelihood = self.log_likelihood_fn(out, batch)
@@ -193,7 +193,7 @@ class VaeLoss(SingleIndexLossFn):
                apply: base.ApplyFn,
                params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> Tuple[base.Array, base.LossMetrics]:
+               index: base.Index) -> base.LossOutput:
     net_out = apply(params, batch.x, index)
     kl_term = self.latent_kl_fn(net_out)
     log_likelihood = self.log_likelihood_fn(net_out, batch)

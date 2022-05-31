@@ -15,7 +15,7 @@
 # ============================================================================
 """Single index loss functions *with state* (e.g. BatchNorm)."""
 
-from typing import Callable, Tuple
+from typing import Callable
 
 import chex
 from enn import base
@@ -41,7 +41,7 @@ class SingleIndexLossFnWithState(typing_extensions.Protocol):
       state: hk.State,
       batch: base.Batch,
       index: base.Index,
-  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+  ) -> base.LossOutputWithState:
     """Computes a loss based on one batch of data and one index."""
 
 
@@ -68,7 +68,7 @@ def average_single_index_loss_with_state(
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
-      key: base.RngKey) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+      key: base.RngKey) -> base.LossOutputWithState:
     # Apply the loss in parallel over num_index_samples different indices.
     # This is the key logic to this loss function.
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
@@ -109,7 +109,7 @@ def add_data_noise_to_loss_with_state(
       state: hk.State,
       batch: base.Batch,
       index: base.Index,
-  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+  ) -> base.LossOutputWithState:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, state, noisy_batch, index)
   return noisy_loss
@@ -132,7 +132,7 @@ class XentLossWithState(SingleIndexLossFnWithState):
       state: hk.State,
       batch: base.Batch,
       index: base.Index,
-  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+  ) -> base.LossOutputWithState:
     return self._loss(apply, params, state, batch, index)
 
 
@@ -146,7 +146,7 @@ def xent_loss_with_state_custom_labels(
       state: hk.State,
       batch: base.Batch,
       index: base.Index,
-  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+  ) -> base.LossOutputWithState:
     """Xent loss with custom labelling."""
     chex.assert_shape(batch.y, (None, 1))
     net_out, state = apply(params, state, batch.x, index)

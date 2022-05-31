@@ -91,6 +91,7 @@ class Batch(NamedTuple):
 
 BatchIterator = Iterator[Batch]  # Equivalent to the dataset we loop through
 LossMetrics = Dict[str, Array]
+LossOutput = Tuple[Array, LossMetrics]
 
 
 class LossFn(typing_extensions.Protocol):
@@ -100,7 +101,7 @@ class LossFn(typing_extensions.Protocol):
                enn: EpistemicNetwork,
                params: hk.Params,
                batch: Batch,
-               key: RngKey) -> Tuple[Array, LossMetrics]:
+               key: RngKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
 
 
@@ -118,6 +119,9 @@ class EpistemicNetworkWithState:
   indexer: EpistemicIndexer
 
 
+LossOutputWithState = Tuple[Array, Tuple[hk.State, LossMetrics]]
+
+
 class LossFnWithState(typing_extensions.Protocol):
   """Calculates a loss based on one batch of data per rng_key."""
 
@@ -126,5 +130,5 @@ class LossFnWithState(typing_extensions.Protocol):
                params: hk.Params,
                state: hk.State,
                batch: Batch,
-               key: RngKey) -> Tuple[Array, Tuple[hk.State, LossMetrics]]:
+               key: RngKey) -> LossOutputWithState:
     """Computes a loss based on one batch of data and a random key."""
