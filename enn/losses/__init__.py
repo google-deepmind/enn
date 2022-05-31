@@ -51,7 +51,6 @@ from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
-from enn.losses.utils import rescale_loss
 
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood

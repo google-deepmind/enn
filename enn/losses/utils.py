@@ -134,8 +134,3 @@ def combine_losses(
     return combined_loss, combined_metrics
 
   return loss_fn
-
-
-def rescale_loss(loss_fn: base.LossFn, scale: float) -> base.LossFn:
-  """Rescales a loss function by a scalar."""
-  return lambda e, p, b, k: scale * loss_fn(e, p, b, k)
