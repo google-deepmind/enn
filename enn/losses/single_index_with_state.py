@@ -36,7 +36,7 @@ class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Data]):
 
   def __call__(
       self,
-      apply: base.ApplyFn,
+      apply: base.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -109,7 +109,7 @@ def add_data_noise_to_loss_with_state(
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(
-      apply: base.ApplyFn,
+      apply: base.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
