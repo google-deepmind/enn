@@ -86,7 +86,7 @@ def average_single_index_loss_with_state(
     batch_mean = lambda x: jnp.mean(x, axis=0)
     mean_loss = batch_mean(loss)
 
-    if new_state is not None:
+    if new_state:
       # TODO(author2): This section is a bit of a hack, since we do not have
       # a clear way to deal with network "state" in the presence of epistemic
       # index. We choose to average the state across epistemic indices and
