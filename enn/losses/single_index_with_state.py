@@ -86,21 +86,22 @@ def average_single_index_loss_with_state(
     batch_mean = lambda x: jnp.mean(x, axis=0)
     mean_loss = batch_mean(loss)
 
-    # TODO(author2): This section is a bit of a hack, since we do not have
-    # a clear way to deal with network "state" in the presence of epistemic
-    # index. We choose to average the state across epistemic indices and
-    # then perform basic error checking to make sure the shape is unchanged.
-    mean_new_state = jax.tree_map(batch_mean, new_state)
-    jax.tree_multimap(
-        lambda x, y: chex.assert_equal_shape([x, y]), mean_new_state, state)
+    if new_state is not None:
+      # TODO(author2): This section is a bit of a hack, since we do not have
+      # a clear way to deal with network "state" in the presence of epistemic
+      # index. We choose to average the state across epistemic indices and
+      # then perform basic error checking to make sure the shape is unchanged.
+      new_state = jax.tree_map(batch_mean, new_state)
+      jax.tree_multimap(
+          lambda x, y: chex.assert_equal_shape([x, y]), new_state, state)
     mean_metrics = jax.tree_map(batch_mean, metrics)
 
     # TODO(author2): Adding a logging method for keeping track of state counter.
     # This piece of code is only used for debugging/metrics.
-    if len(mean_new_state) > 0:  # pylint:disable=g-explicit-length-test
-      first_state_layer = mean_new_state[list(mean_new_state.keys())[0]]
+    if len(new_state) > 0:  # pylint:disable=g-explicit-length-test
+      first_state_layer = new_state[list(new_state.keys())[0]]
       mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
-    return mean_loss, (mean_new_state, mean_metrics)
+    return mean_loss, (new_state, mean_metrics)
   return loss_fn
 
 
