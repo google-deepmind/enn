@@ -21,11 +21,15 @@ import typing_extensions
 
 class DataNoiseBase(typing_extensions.Protocol[base.Data]):
 
-  def __call__(self, data: base.Data, index: base.Index) -> base.Data:
+  def __call__(
+      self,
+      data: base.Data,
+      index: base.Index,
+  ) -> base.Data:
     """Apply some noise process to a batch of data based on epistemic index."""
 
 
-# DataNoiseBase specialized to work only with base.Batch.
+# DataNoiseBase specialized to work only with Batch data.
 DataNoise = DataNoiseBase[base.Batch]
 
 

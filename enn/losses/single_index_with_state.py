@@ -27,7 +27,8 @@ import jax.numpy as jnp
 import typing_extensions
 
 
-class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Data]):
+class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Input,
+                                                                base.Data]):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFnWithState out of
@@ -36,7 +37,7 @@ class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Data]):
 
   def __call__(
       self,
-      apply: base.ApplyFnWithState,
+      apply: base.ApplyFnWithStateBase[base.Input],
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -45,14 +46,15 @@ class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Data]):
     """Computes a loss based on one batch of data and one index."""
 
 
-# SingleIndexLossFnWithStateBase specialized to work only with base.Batch.
-SingleIndexLossFnWithState = SingleIndexLossFnWithStateBase[base.Batch]
+# Module specialized to work only with Array inputs and Batch data.
+SingleIndexLossFnWithState = SingleIndexLossFnWithStateBase[base.Array,
+                                                            base.Batch]
 
 
 def average_single_index_loss_with_state(
-    single_loss: SingleIndexLossFnWithStateBase[base.Data],
+    single_loss: SingleIndexLossFnWithStateBase[base.Input, base.Data],
     num_index_samples: int = 1,
-) -> base.LossFnWithStateBase[base.Data]:
+) -> base.LossFnWithStateBase[base.Input, base.Data]:
   """Average a single index loss over multiple index samples.
 
   Note that the *network state* is also averaged over indices. This is not going
@@ -68,7 +70,7 @@ def average_single_index_loss_with_state(
   """
 
   def loss_fn(
-      enn: base.EpistemicNetworkWithState,
+      enn: base.EpistemicNetworkWithStateBase[base.Input],
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -103,13 +105,13 @@ def average_single_index_loss_with_state(
 
 
 def add_data_noise_to_loss_with_state(
-    single_loss: SingleIndexLossFnWithStateBase[base.Data],
+    single_loss: SingleIndexLossFnWithStateBase[base.Input, base.Data],
     noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> SingleIndexLossFnWithStateBase[base.Data]:
+) -> SingleIndexLossFnWithStateBase[base.Input, base.Data]:
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(
-      apply: base.ApplyFnWithState,
+      apply: base.ApplyFnWithStateBase[base.Input],
       params: hk.Params,
       state: hk.State,
       batch: base.Data,

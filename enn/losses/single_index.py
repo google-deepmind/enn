@@ -28,7 +28,7 @@ import jax.numpy as jnp
 import typing_extensions
 
 
-class SingleIndexLossFnBase(typing_extensions.Protocol[base.Data]):
+class SingleIndexLossFnBase(typing_extensions.Protocol[base.Input, base.Data]):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFn out of the
@@ -36,20 +36,20 @@ class SingleIndexLossFnBase(typing_extensions.Protocol[base.Data]):
   """
 
   def __call__(self,
-               apply: base.ApplyFn,
+               apply: base.ApplyFnBase[base.Input],
                params: hk.Params,
                batch: base.Data,
                index: base.Index) -> base.LossOutput:
     """Computes a loss based on one batch of data and one index."""
 
 
-# SingleIndexLossFnBase specialized to work only with base.Batch.
-SingleIndexLossFn = SingleIndexLossFnBase[base.Batch]
+# Module specialized to work only with Array inputs and Batch data.
+SingleIndexLossFn = SingleIndexLossFnBase[base.Array, base.Batch]
 
 
 def average_single_index_loss(
-    single_loss: SingleIndexLossFnBase[base.Data],
-    num_index_samples: int = 1) -> base.LossFnBase[base.Data]:
+    single_loss: SingleIndexLossFnBase[base.Input, base.Data],
+    num_index_samples: int = 1) -> base.LossFnBase[base.Input, base.Data]:
   """Average a single index loss over multiple index samples.
 
   Args:
@@ -60,7 +60,7 @@ def average_single_index_loss(
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetwork,
+  def loss_fn(enn: base.EpistemicNetworkBase[base.Input],
               params: hk.Params,
               batch: base.Data,
               key: base.RngKey) -> base.LossOutput:
@@ -73,12 +73,12 @@ def average_single_index_loss(
 
 
 def add_data_noise(
-    single_loss: SingleIndexLossFnBase[base.Data],
+    single_loss: SingleIndexLossFnBase[base.Input, base.Data],
     noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> SingleIndexLossFnBase[base.Data]:
+) -> SingleIndexLossFnBase[base.Input, base.Data]:
   """Applies a DataNoise function to each batch of data."""
 
-  def noisy_loss(apply: base.ApplyFn,
+  def noisy_loss(apply: base.ApplyFnBase[base.Input],
                  params: hk.Params,
                  batch: base.Data,
                  index: base.Index) -> base.LossOutput:
