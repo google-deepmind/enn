@@ -15,6 +15,9 @@
 # ============================================================================
 
 """Base classes for Epistemic Neural Network design in JAX / Haiku."""
+# TODO(author2, author3): Slim down the base interfaces.
+# Current code has drifted away from desired code quality with feature creep.
+# We want to rethink this interface and get it down to something more clear.
 
 import abc
 import dataclasses
