@@ -16,9 +16,9 @@
 
 """Implementing categorical regression (MuZero-style) in JAX."""
 
-import chex
 import dataclasses
-from enn import base
+import chex
+from enn import base_legacy
 from enn import networks
 from enn.losses import single_index
 import haiku as hk
@@ -27,7 +27,8 @@ import jax.numpy as jnp
 import rlax
 
 
-def transform_to_2hot(target: base.Array, support: base.Array) -> base.Array:
+def transform_to_2hot(target: base_legacy.Array,
+                      support: base_legacy.Array) -> base_legacy.Array:
   """Converts a scalar target to a 2-hot encoding of the nearest support."""
   target = jnp.clip(target, support.min(), support.max())
   high_idx = jnp.sum(support < target)
@@ -47,8 +48,9 @@ def transform_to_2hot(target: base.Array, support: base.Array) -> base.Array:
 class Cat2HotRegression(single_index.SingleIndexLossFn):
   """Apply categorical loss to 2-hot regression target."""
 
-  def __call__(self, apply: base.ApplyFn, params: hk.Params,
-               batch: base.Batch, index: base.Index) -> base.Array:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.Array:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
 

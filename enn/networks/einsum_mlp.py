@@ -19,7 +19,7 @@ from typing import Callable, Sequence
 # TODO(author2): Delete this implementation, base ensemble is fast enough.
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
@@ -32,7 +32,7 @@ def make_einsum_ensemble_mlp_enn(
     num_ensemble: int,
     nonzero_bias: bool = True,
     activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
-) -> base.EpistemicNetwork:
+) -> base_legacy.EpistemicNetwork:
   """Factory method to create fast einsum MLP ensemble ENN.
 
   This is a specialized implementation for ReLU MLP without a prior network.
@@ -45,7 +45,8 @@ def make_einsum_ensemble_mlp_enn(
   Returns:
     EpistemicNetwork as an ensemble of MLP.
   """
-  def ensemble_forward(x: base.Array) -> base.OutputWithPrior:
+
+  def ensemble_forward(x: base_legacy.Array) -> base_legacy.OutputWithPrior:
     """Forwards the entire ensemble at given input x."""
     model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias, activation)
     return model(x)
@@ -53,22 +54,20 @@ def make_einsum_ensemble_mlp_enn(
   transformed = hk.without_apply_rng(hk.transform(ensemble_forward))
 
   # Apply function selects the appropriate index of the ensemble output.
-  def apply(params: hk.Params,
-            x: base.Array,
-            z: base.Index) -> base.OutputWithPrior:
+  def apply(params: hk.Params, x: base_legacy.Array,
+            z: base_legacy.Index) -> base_legacy.OutputWithPrior:
     net_out = transformed.apply(params, x)
     one_hot_index = jax.nn.one_hot(z, num_ensemble)
     return jnp.dot(net_out, one_hot_index)
 
-  def init(key: base.RngKey,
-           x: base.Array,
-           z: base.Index) -> hk.Params:
+  def init(key: base_legacy.RngKey, x: base_legacy.Array,
+           z: base_legacy.Index) -> hk.Params:
     del z
     return transformed.init(key, x)
 
   indexer = indexers.EnsembleIndexer(num_ensemble)
 
-  return base.EpistemicNetwork(apply, init, indexer)
+  return base_legacy.EpistemicNetwork(apply, init, indexer)
 
 
 def make_ensemble_mlp_with_prior_enn(
@@ -78,7 +77,7 @@ def make_ensemble_mlp_with_prior_enn(
     prior_scale: float = 1.,
     nonzero_bias: bool = True,
     seed: int = 999,
-) -> base.EpistemicNetwork:
+) -> base_legacy.EpistemicNetwork:
   """Factory method to create fast einsum MLP ensemble with matched prior.
 
   Args:
@@ -98,17 +97,14 @@ def make_ensemble_mlp_with_prior_enn(
   prior_params = enn.init(init_key, dummy_input, jnp.array([]))
 
   # Apply function selects the appropriate index of the ensemble output.
-  def apply_with_prior(params: hk.Params,
-                       x: base.Array,
-                       z: base.Index) -> base.OutputWithPrior:
+  def apply_with_prior(params: hk.Params, x: base_legacy.Array,
+                       z: base_legacy.Index) -> base_legacy.OutputWithPrior:
     ensemble_train = enn.apply(params, x, z)
     ensemble_prior = enn.apply(prior_params, x, z) * prior_scale
-    return base.OutputWithPrior(
-        train=ensemble_train,
-        prior=ensemble_prior
-    )
+    return base_legacy.OutputWithPrior(
+        train=ensemble_train, prior=ensemble_prior)
 
-  return base.EpistemicNetwork(apply_with_prior, enn.init, enn.indexer)
+  return base_legacy.EpistemicNetwork(apply_with_prior, enn.init, enn.indexer)
 
 
 # TODO(author3): Come up with a better name and use ensembles.py instead.

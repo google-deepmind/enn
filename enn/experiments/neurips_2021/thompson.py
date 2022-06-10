@@ -19,7 +19,7 @@ import functools
 from typing import Dict, Optional, Sequence, Tuple
 
 from acme.utils import loggers
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import utils
 from enn.experiments.neurips_2021 import agents
 from enn.experiments.neurips_2021 import base as testbed_base
@@ -160,5 +160,3 @@ class ThompsonEnnBandit:
           batch = self._make_batch(self.replay[-self._batch_size:])
         self.params, self.opt_state = self._sgd_step(
             self.params, self.opt_state, batch, next(self.rng))
-
-

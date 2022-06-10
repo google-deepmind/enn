@@ -24,14 +24,15 @@ from typing import Callable, Optional, Sequence, Union
 
 from absl import logging
 import chex
-from enn import base
+from enn import base_legacy
 from enn import networks
 from enn.data_noise import base as data_noise_base
 import jax
 import jax.numpy as jnp
 import typing_extensions
 
-_ENN = Union[base.EpistemicNetwork, base.EpistemicNetworkWithState]
+_ENN = Union[base_legacy.EpistemicNetwork,
+             base_legacy.EpistemicNetworkWithState]
 
 
 @dataclasses.dataclass
@@ -42,7 +43,8 @@ class BootstrapNoise(data_noise_base.DataNoise):
   distribution: str
   seed: int = 0
 
-  def __call__(self, data: base.Batch, index: base.Index) -> base.Batch:
+  def __call__(self, data: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.Batch:
     """Apply bootstrap reweighting to a batch of data."""
     boot_fn = make_boot_fn(self.enn, self.distribution, self.seed)
     boot_weights = boot_fn(data.data_index, index)
@@ -52,8 +54,8 @@ class BootstrapNoise(data_noise_base.DataNoise):
 ################################################################################
 # BootstrapFn reweights data based on epistemic index
 
-BatchWeights = base.Array  # Bootstrap weights for each datapoint
-BootstrapFn = Callable[[base.DataIndex, base.Index], BatchWeights]
+BatchWeights = base_legacy.Array  # Bootstrap weights for each datapoint
+BootstrapFn = Callable[[base_legacy.DataIndex, base_legacy.Index], BatchWeights]
 
 # TODO(author2): Currently all functions written assuming batch dimensions.
 # but it might be more elegant to rework the vmap and instead define for one
@@ -67,7 +69,7 @@ class WeightFn(typing_extensions.Protocol):
 
   def __call__(
       self,
-      rng_key: base.RngKey,
+      rng_key: base_legacy.RngKey,
       indices: Optional[Sequence[int]] = None,
   ) -> jnp.DeviceArray:
     ...
@@ -83,8 +85,8 @@ DISTRIBUTIONS = {
 }
 
 
-def null_bootstrap(
-    data_index: base.DataIndex, index: base.Index) -> BatchWeights:
+def null_bootstrap(data_index: base_legacy.DataIndex,
+                   index: base_legacy.Index) -> BatchWeights:
   """Null bootstrap does not reweight the data at all."""
   del index
   chex.assert_shape(data_index, (None, 1))
@@ -157,7 +159,8 @@ def make_boot_fn(enn: _ENN,
 
 def _make_prng_bootstrap_fn(weight_fn: WeightFn) -> BootstrapFn:
   """Factory method for bootstrap with PRNG index."""
-  def boot_fn(data_index: base.DataIndex, index: base.Index):
+
+  def boot_fn(data_index: base_legacy.DataIndex, index: base_legacy.Index):
     chex.assert_shape(data_index, (None, 1))
     boot_weights = weight_fn(index, data_index.shape)
     chex.assert_shape(boot_weights, (None, 1))
@@ -165,7 +168,7 @@ def _make_prng_bootstrap_fn(weight_fn: WeightFn) -> BootstrapFn:
   return boot_fn
 
 
-def _make_key(data_index: base.Array, seed: int) -> base.RngKey:
+def _make_key(data_index: base_legacy.Array, seed: int) -> base_legacy.RngKey:
   """Creates RngKeys for a batch of data index."""
   chex.assert_shape(data_index, (None, 1))
   return jax.vmap(jax.random.PRNGKey)(jnp.squeeze(data_index, axis=1) + seed)
@@ -185,7 +188,7 @@ def _make_ensemble_bootstrap_fn(
   fold_in = jax.vmap(jax.random.fold_in)
   weight_fn = jax.vmap(weight_fn)
 
-  def boot_fn(data_index: base.DataIndex, index: base.Index):
+  def boot_fn(data_index: base_legacy.DataIndex, index: base_legacy.Index):
     """Assumes integer index for ensemble weights."""
     chex.assert_shape(data_index, (None, 1))
     if not index.shape:  # If it's a single integer -> repeat for batch
@@ -207,7 +210,7 @@ def _make_gaussian_index_exponential_bootstrap(
   std_gauss = lambda x: jax.random.normal(x, [index_dim]) * scale
   sample_std_gaussian = jax.vmap(std_gauss)
 
-  def boot_fn(data_index: base.DataIndex, index: base.Index):
+  def boot_fn(data_index: base_legacy.DataIndex, index: base_legacy.Index):
     """Assumes integer index for ensemble weights."""
     chex.assert_shape(data_index, (None, 1))
     b_keys = _make_key(data_index, seed)
@@ -230,7 +233,7 @@ def _make_gaussian_index_bernoulli_bootstrap(
   std_gauss = lambda x: jax.random.normal(x, [index_dim]) / jnp.sqrt(index_dim)
   sample_std_gaussian = jax.vmap(std_gauss)
 
-  def boot_fn(data_index: base.DataIndex, index: base.Index):
+  def boot_fn(data_index: base_legacy.DataIndex, index: base_legacy.Index):
     """Assumes integer index for ensemble weights."""
     chex.assert_shape(data_index, (None, 1))
     b_keys = _make_key(data_index, seed)

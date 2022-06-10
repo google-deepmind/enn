@@ -20,7 +20,7 @@ import enum
 import itertools as it
 from typing import Dict, Optional, Sequence, Tuple
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn.datasets import base as ds_base
 from enn.datasets import utils as ds_utils
 import jax

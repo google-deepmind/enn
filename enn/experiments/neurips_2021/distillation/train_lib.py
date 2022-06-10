@@ -18,7 +18,7 @@
 import dataclasses
 from typing import Dict, Sequence, Tuple
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 from enn import utils
 import haiku as hk
@@ -141,5 +141,3 @@ def combine_losses(loss_seq: Sequence[enn_base.LossFn]) -> enn_base.LossFn:
       combined_metrics.update(metrics)
     return combined_loss, combined_metrics
   return combined_loss_fn
-
-

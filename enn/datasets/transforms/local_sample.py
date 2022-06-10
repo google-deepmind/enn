@@ -21,7 +21,7 @@ This is used to generate evaluation batches that are of the (kappa, N) format.
 
 from typing import Callable, Optional
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn.datasets import base as ds_base
 import tensorflow.compat.v2 as tf
 

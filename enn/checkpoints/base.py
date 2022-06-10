@@ -17,7 +17,7 @@
 
 import dataclasses
 from typing import Callable, Optional, Tuple
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import datasets
 import haiku as hk
 

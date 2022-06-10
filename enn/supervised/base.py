@@ -17,23 +17,24 @@
 """Base classes for a 'standard' supervised experiment."""
 import abc
 import dataclasses
-from enn import base
+from enn import base_legacy
 
 
 @dataclasses.dataclass
 class BaseExperiment(abc.ABC):
   """Base interface for experiment classes."""
-  dataset: base.BatchIterator
+  dataset: base_legacy.BatchIterator
 
   @abc.abstractmethod
   def train(self, num_batches: int):
     """Train the ENN for num_batches."""
 
   @abc.abstractmethod
-  def predict(
-      self, inputs: base.Array, key: base.RngKey) -> base.Array:
+  def predict(self, inputs: base_legacy.Array,
+              key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the trained model at given inputs."""
 
   @abc.abstractmethod
-  def loss(self, batch: base.Batch, key: base.RngKey) -> base.Array:
+  def loss(self, batch: base_legacy.Batch,
+           key: base_legacy.RngKey) -> base_legacy.Array:
     """Calculate the loss at a given batch."""

@@ -17,7 +17,7 @@
 """Functions for 2D classification."""
 from typing import Optional, Tuple
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import supervised
 from enn import utils
 import haiku as hk

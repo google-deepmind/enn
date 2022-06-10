@@ -18,7 +18,7 @@
 from typing import Optional, Sequence
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -99,4 +99,3 @@ class ProjectedMLP(enn_base.EpistemicModule):
     reshaped_output = jnp.reshape(
         self.mlp(inputs), [inputs.shape[0], self.final_out, self.index_dim])
     return jnp.dot(reshaped_output, index)
-

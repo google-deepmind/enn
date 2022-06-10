@@ -18,7 +18,7 @@
 from typing import Optional, Sequence
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import networks
 from enn.networks.epinet import base as epinet_base
 import haiku as hk

@@ -16,7 +16,7 @@
 
 """Functions for 1D regression data."""
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import supervised
 from enn import utils
 import haiku as hk

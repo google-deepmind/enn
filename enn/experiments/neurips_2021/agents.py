@@ -18,7 +18,7 @@ import dataclasses
 from typing import Dict, Optional
 
 from acme.utils import loggers
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import supervised
 from enn import utils
 from enn.experiments.neurips_2021 import base as testbed_base

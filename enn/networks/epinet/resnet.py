@@ -16,9 +16,9 @@
 """Factory methods for epinet derived from resnet."""
 
 import dataclasses
-from typing import Optional, Sequence, Callable
+from typing import Callable, Optional, Sequence
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn.checkpoints import base as checkpoints_base
 from enn.checkpoints import epinet as checkpoints_epinet
 from enn.networks import priors as enn_priors
@@ -118,4 +118,3 @@ def _make_enn_from_config(config: ResnetFinalEpinetConfig) -> _EpinetPieces:
   )
 
   return _EpinetPieces(enn, epinet)
-

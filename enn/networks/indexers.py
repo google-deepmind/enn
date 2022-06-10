@@ -16,66 +16,66 @@
 
 """Epistemic indexers for ENNs."""
 import dataclasses
-from enn import base
+from enn import base_legacy
 import jax
 import jax.numpy as jnp
 
 
-class PrngIndexer(base.EpistemicIndexer):
+class PrngIndexer(base_legacy.EpistemicIndexer):
   """Index by JAX PRNG sequence."""
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return key
 
 
 @dataclasses.dataclass
-class EnsembleIndexer(base.EpistemicIndexer):
+class EnsembleIndexer(base_legacy.EpistemicIndexer):
   """Index into an ensemble by integer."""
   num_ensemble: int
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return jax.random.randint(key, [], 0, self.num_ensemble)
 
 
 @dataclasses.dataclass
-class GaussianIndexer(base.EpistemicIndexer):
+class GaussianIndexer(base_legacy.EpistemicIndexer):
   """A Gaussian indexer ~ N(0, I)."""
   index_dim: int
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return jax.random.normal(key, shape=[self.index_dim])
 
 
 @dataclasses.dataclass
-class ScaledGaussianIndexer(base.EpistemicIndexer):
+class ScaledGaussianIndexer(base_legacy.EpistemicIndexer):
   """A scaled Gaussian indexer."""
   index_dim: int
   # When index_scale is 1.0 the returned random variable has expected norm = 1.
   index_scale: float = 1.0
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return self.index_scale / jnp.sqrt(self.index_dim) * jax.random.normal(
         key, shape=[self.index_dim])
 
 
 @dataclasses.dataclass
-class GaussianWithUnitIndexer(base.EpistemicIndexer):
+class GaussianWithUnitIndexer(base_legacy.EpistemicIndexer):
   """Produces index (1, z) for z dimension=index_dim-1 unit ball."""
   index_dim: int
 
   @property
-  def mean_index(self) -> base.Array:
+  def mean_index(self) -> base_legacy.Array:
     return jnp.append(1, jnp.zeros(self.index_dim - 1))
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return jnp.append(1, jax.random.normal(
         key, shape=[self.index_dim - 1]) / jnp.sqrt(self.index_dim - 1))
 
 
 @dataclasses.dataclass
-class DirichletIndexer(base.EpistemicIndexer):
+class DirichletIndexer(base_legacy.EpistemicIndexer):
   """Samples a Dirichlet index with parameter alpha."""
-  alpha: base.Array
+  alpha: base_legacy.Array
 
-  def __call__(self, key: base.RngKey) -> base.Index:
+  def __call__(self, key: base_legacy.RngKey) -> base_legacy.Index:
     return jax.random.dirichlet(key, self.alpha)

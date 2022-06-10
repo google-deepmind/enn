@@ -16,7 +16,7 @@
 """Network definitions for ResNet."""
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn import utils
 from enn.networks import ensembles
 from enn.networks.resnet import lib
@@ -35,9 +35,9 @@ def resnet_model(
   should_transpose_images = (
       enable_double_transpose and jax.local_devices()[0].platform == 'tpu')
 
-  def forward_fn(inputs: base.Array,
+  def forward_fn(inputs: base_legacy.Array,
                  is_training: bool,
-                 test_local_stats: bool = False) -> base.OutputWithPrior:
+                 test_local_stats: bool = False) -> base_legacy.OutputWithPrior:
     # If enabled, there should be a matching NHWC->HWCN transpose in the data.
     if should_transpose_images:
       inputs = jnp.transpose(inputs, (3, 0, 1, 2))  # HWCN -> NHWC
@@ -48,7 +48,7 @@ def resnet_model(
   return forward_fn
 
 
-class EnsembleResNetENN(base.EpistemicNetworkWithState):
+class EnsembleResNetENN(base_legacy.EpistemicNetworkWithState):
   """Ensemble of ResNet Networks created using einsum ensemble."""
 
   def __init__(self,
@@ -58,7 +58,8 @@ class EnsembleResNetENN(base.EpistemicNetworkWithState):
                test_local_stats: bool = False,
                enable_double_transpose: bool = True,
                config: lib.ResNetConfig = lib.CanonicalResNets.RESNET_50.value):
-    def net_fn(x: chex.Array) -> base.OutputWithPrior:
+
+    def net_fn(x: chex.Array) -> base_legacy.OutputWithPrior:
       forward_fn = resnet_model(num_output_classes=num_output_classes,
                                 enable_double_transpose=enable_double_transpose,
                                 config=config)

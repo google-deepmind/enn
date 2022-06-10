@@ -20,7 +20,7 @@ import dataclasses
 from typing import Callable
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn import networks
 from enn.data_noise import base as data_noise_base
 import jax
@@ -30,11 +30,12 @@ import jax.numpy as jnp
 @dataclasses.dataclass
 class GaussianTargetNoise(data_noise_base.DataNoise):
   """Apply Gaussian noise to the target y."""
-  enn: base.EpistemicNetwork
+  enn: base_legacy.EpistemicNetwork
   noise_std: float
   seed: int = 0
 
-  def __call__(self, data: base.Batch, index: base.Index) -> base.Batch:
+  def __call__(self, data: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.Batch:
     """Apply Gaussian noise to the target y."""
     chex.assert_shape(data.y, (None, 1))  # Only implemented for 1D now.
     noise_fn = make_noise_fn(self.enn, self.noise_std, self.seed)
@@ -42,10 +43,11 @@ class GaussianTargetNoise(data_noise_base.DataNoise):
     return data._replace(y=data.y + y_noise)
 
 
-NoiseFn = Callable[[base.DataIndex, base.Index], base.Array]
+NoiseFn = Callable[[base_legacy.DataIndex, base_legacy.Index],
+                   base_legacy.Array]
 
 
-def make_noise_fn(enn: base.EpistemicNetwork,
+def make_noise_fn(enn: base_legacy.EpistemicNetwork,
                   noise_std: float,
                   seed: int = 0) -> NoiseFn:
   """Factory method to create noise_fn for given ENN."""
@@ -72,7 +74,7 @@ def make_noise_fn(enn: base.EpistemicNetwork,
     raise ValueError(f'Unsupported ENN={enn}.')
 
 
-def _make_key(data_index: base.Array, seed: int) -> base.RngKey:
+def _make_key(data_index: base_legacy.Array, seed: int) -> base_legacy.RngKey:
   """Creates RngKeys for a batch of data index."""
   chex.assert_shape(data_index, (None, 1))
   return jax.vmap(jax.random.PRNGKey)(jnp.squeeze(data_index, axis=1) + seed)
@@ -83,7 +85,8 @@ def _make_ensemble_gaussian_noise(noise_std: float, seed: int) -> NoiseFn:
   batch_fold_in = jax.vmap(jax.random.fold_in)
   batch_normal = jax.vmap(jax.random.normal)
 
-  def noise_fn(data_index: base.DataIndex, index: base.Index) -> base.Array:
+  def noise_fn(data_index: base_legacy.DataIndex,
+               index: base_legacy.Index) -> base_legacy.Array:
     """Assumes integer index for ensemble."""
     chex.assert_shape(data_index, (None, 1))
     if not index.shape:  # If it's a single integer -> repeat for batch
@@ -105,7 +108,8 @@ def _make_scaled_gaussian_index_noise(
   std_gauss = lambda x: jax.random.normal(x, [index_dim])
   sample_std_gaussian = jax.vmap(std_gauss)
 
-  def noise_fn(data_index: base.DataIndex, index: base.Index) -> base.Array:
+  def noise_fn(data_index: base_legacy.DataIndex,
+               index: base_legacy.Index) -> base_legacy.Array:
     """Assumes scaled Gaussian index with reserved first component."""
     chex.assert_shape(data_index, (None, 1))
     b_keys = _make_key(data_index, seed)
@@ -133,7 +137,8 @@ def _make_gaussian_index_noise(
     return x / jnp.sqrt(jnp.sum(x ** 2))
   batch_sample_sphere = jax.vmap(sample_sphere)
 
-  def noise_fn(data_index: base.DataIndex, index: base.Index) -> base.Array:
+  def noise_fn(data_index: base_legacy.DataIndex,
+               index: base_legacy.Index) -> base_legacy.Array:
     """Assumes scaled Gaussian index with reserved first component."""
     chex.assert_shape(data_index, (None, 1))
     b_keys = _make_key(data_index, seed)

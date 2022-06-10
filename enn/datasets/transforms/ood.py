@@ -18,7 +18,7 @@
 
 from typing import Dict, Tuple
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn.datasets import base
 import numpy as np
 import tensorflow.compat.v2 as tf
@@ -44,7 +44,8 @@ def make_ood_transformers(
     fraction_ood_classes: float = 0.2,
     ood_proportion_in_train: float = 0.001,
     seed: int = 321,
-) -> Tuple[base.DatasetTransformer, Dict[str, base.DatasetTransformer]]:
+) -> Tuple[base.DatasetTransformer, Dict[
+    str, base.DatasetTransformer]]:
   """Returns a tuple of ood transfomers for train and eval datasets.
 
   Args:

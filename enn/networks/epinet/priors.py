@@ -18,10 +18,10 @@
 WARNING: NOT GOLD QUALITY YET - WORK IN PROGRESS.
 """
 
-from typing import Sequence, Tuple, Optional
+from typing import Optional, Sequence, Tuple
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import networks
 from enn.networks.epinet import base as epinet_base
 import haiku as hk

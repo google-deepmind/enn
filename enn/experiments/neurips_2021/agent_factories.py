@@ -18,7 +18,7 @@ import dataclasses
 from typing import Any, Callable, Dict, List, Sequence
 
 from acme.utils import loggers
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import networks
 from enn.experiments.neurips_2021 import agents
 from enn.experiments.neurips_2021 import base as testbed_base

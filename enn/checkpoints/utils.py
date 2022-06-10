@@ -21,7 +21,7 @@ from typing import Callable, Tuple
 
 import chex
 import dill
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import utils as enn_utils
 from enn.checkpoints import base as checkpoint_base
 from enn.checkpoints import epinet as checkpoint_epinet

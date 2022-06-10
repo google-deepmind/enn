@@ -18,7 +18,7 @@
 
 from typing import Sequence
 
-from enn import base
+from enn import base_legacy
 from enn import utils
 from enn.networks import indexers
 from enn.networks import priors
@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class ConcatIndexMLP(base.EpistemicModule):
+class ConcatIndexMLP(base_legacy.EpistemicModule):
   """An MLP that has an d-dimensional index concatenated to every layer."""
   # TODO(author2): Rationalize the type behaviour of network outputs.
 
@@ -42,8 +42,8 @@ class ConcatIndexMLP(base.EpistemicModule):
     self.output_dim = output_sizes[-1]
     self.variance_dim = variance_dim
 
-  def __call__(
-      self, inputs: base.Array, index: base.Index) -> base.OutputWithPrior:
+  def __call__(self, inputs: base_legacy.Array,
+               index: base_legacy.Index) -> base_legacy.OutputWithPrior:
     """Index must be of shape (index_dim,) intended to be Gaussian."""
     batch_size = inputs.shape[0]
     batched_index = jnp.repeat(jnp.expand_dims(index, 0), batch_size, axis=0)
@@ -60,13 +60,13 @@ class ConcatIndexMLP(base.EpistemicModule):
         [self.variance_dim], activate_final=True)(flat_inputs)
     var_embedding = jnp.concatenate([out_no_index, input_projection], axis=1)
     var_pred = hk.nets.MLP([self.variance_dim, self.output_dim])(var_embedding)
-    return base.OutputWithPrior(
+    return base_legacy.OutputWithPrior(
         train=hk.Linear(self.output_dim)(out),
         extra={'log_var': var_pred},
     )
 
 
-class IndexMLPWithGpPrior(base.EpistemicNetwork):
+class IndexMLPWithGpPrior(base_legacy.EpistemicNetwork):
   """An Index MLP with GP prior as an ENN."""
 
   def __init__(self,
@@ -95,9 +95,8 @@ class IndexMLPWithGpPrior(base.EpistemicNetwork):
       prior_fns.append(priors.make_random_feat_gp(
           input_dim, output_dim, num_feat, next(rng), gamma))
 
-    def apply(params: hk.Params,
-              inputs: base.Array,
-              index: base.Index) -> base.OutputWithPrior:
+    def apply(params: hk.Params, inputs: base_legacy.Array,
+              index: base_legacy.Index) -> base_legacy.OutputWithPrior:
       """Forward the SpecialMLP and also the prior network with index."""
       net_out = transformed.apply(params, inputs, index)
       all_priors = [prior(inputs) for prior in prior_fns]
@@ -111,7 +110,7 @@ class IndexMLPWithGpPrior(base.EpistemicNetwork):
     )
 
 
-class IndexMLPEnn(base.EpistemicNetwork):
+class IndexMLPEnn(base_legacy.EpistemicNetwork):
   """An MLP with index appended to each layer as ENN."""
 
   def __init__(self,

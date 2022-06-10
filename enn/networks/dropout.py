@@ -14,9 +14,9 @@
 # limitations under the License.
 # ============================================================================
 """Implementing Dropout as an ENN in JAX."""
-from typing import Optional, Sequence, List
+from typing import List, Optional, Sequence
 
-from enn import base
+from enn import base_legacy
 from enn.networks import indexers
 import haiku as hk
 import jax
@@ -32,7 +32,7 @@ def cummulative_sum(x):
   return output
 
 
-def generate_masks(key: base.RngKey, input_size: int,
+def generate_masks(key: base_legacy.RngKey, input_size: int,
                    output_sizes: Sequence[int],
                    dropout_rate: float) -> List[jnp.ndarray]:
   """Generates masks for nodes of the network excluding nodes of the last layer."""
@@ -51,7 +51,7 @@ def generate_masks(key: base.RngKey, input_size: int,
   return masks
 
 
-class MLPDropoutENN(base.EpistemicNetwork):
+class MLPDropoutENN(base_legacy.EpistemicNetwork):
   """MLP with dropout as an ENN."""
 
   def __init__(
@@ -66,8 +66,8 @@ class MLPDropoutENN(base.EpistemicNetwork):
   ):
     """MLP with dropout as an ENN."""
 
-    def enn_fn(inputs: base.Array,
-               z: base.Index) -> base.Output:
+    def enn_fn(inputs: base_legacy.Array,
+               z: base_legacy.Index) -> base_legacy.Output:
 
       assert inputs.ndim == 2
       unused_batch, input_size = inputs.shape
@@ -116,9 +116,8 @@ class MLPDropoutENN(base.EpistemicNetwork):
 
     # Apply function for enn_fn requires a rng key to generate masks. We use
     # the index z in f(x,z) as the rng key.
-    def apply(params: hk.Params,
-              x: base.Array,
-              z: base.Index) -> base.Output:
+    def apply(params: hk.Params, x: base_legacy.Array,
+              z: base_legacy.Index) -> base_legacy.Output:
       net_out = transformed.apply(params, x, z)
       return net_out
 

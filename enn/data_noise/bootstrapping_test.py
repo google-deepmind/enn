@@ -17,7 +17,7 @@
 """Tests for enn.bootstrapping."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base
+from enn import base_legacy
 from enn import networks
 from enn.data_noise import bootstrapping
 import jax
@@ -40,15 +40,19 @@ class BootstrappingTest(parameterized.TestCase):
       [networks.PrngIndexer(), 'exponential'],
       [networks.PrngIndexer(), 'uniform'],
   ])
-  def test_average_weight_approx_one(
-      self, indexer: base.EpistemicIndexer, distribution: str):
+  def test_average_weight_approx_one(self,
+                                     indexer: base_legacy.EpistemicIndexer,
+                                     distribution: str):
     """Check that the average weight of bootstrap sample approximately one."""
     seed = 999
     num_data = 10_000
     tolerance = 1  # TODO(author2): Test fails at lower tolerance --> fix.
-    fake_enn = base.EpistemicNetwork(
+    def init_fn(k, x, z):
+      del k, x, z
+      return {'lin': {'w': np.ones(1), 'b': np.ones(1)}}
+    fake_enn = base_legacy.EpistemicNetwork(
         apply=lambda p, x, z: np.ones(1)[:, None],
-        init=lambda k, x, z: {'lin': {'w': np.ones(1), 'b': np.ones(1)}},
+        init=init_fn,
         indexer=indexer,
     )
     boot_fn = bootstrapping.make_boot_fn(fake_enn, distribution, seed=seed)

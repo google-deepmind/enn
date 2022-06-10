@@ -19,8 +19,8 @@
 import abc
 import dataclasses
 import enum
-from typing import Callable, Dict, Generator, List, Union, Sequence
-from enn import base as enn_base
+from typing import Callable, Dict, Generator, List, Sequence, Union
+from enn import base_legacy as enn_base
 import numpy as np
 import tensorflow.compat.v2 as tf
 
@@ -36,11 +36,13 @@ DatasetTransformer = Callable[[tf.data.Dataset], tf.data.Dataset]
 class Dataset(abc.ABC):
   """Abstract base class of a dataset."""
 
-  @abc.abstractproperty
+  @property
+  @abc.abstractmethod
   def num_classes(self) -> int:
     """Number of output classes."""
 
-  @abc.abstractproperty
+  @property
+  @abc.abstractmethod
   def eval_input_shape(self) -> Sequence[int]:
     """Returns the shape of a single eval input from the dataset."""
 
@@ -79,4 +81,3 @@ class OodVariant(enum.Enum):
 
 EVAL_TRANSFORMERS_DEFAULT = dataclasses.field(
     default_factory=lambda: {OodVariant.WHOLE.value: (lambda x: x)})
-

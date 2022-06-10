@@ -26,7 +26,7 @@ This is an implementation framing that network as an ENN.
 
 from typing import Callable, Sequence
 
-from enn import base
+from enn import base_legacy
 from enn.networks import indexers
 import haiku as hk
 import haiku.experimental as hke
@@ -66,7 +66,7 @@ def enn_getter(next_getter, value, context):
     return next_getter(value)
 
 
-class GaussianNoiseEnn(base.EpistemicNetwork):
+class GaussianNoiseEnn(base_legacy.EpistemicNetwork):
   """GaussianNoiseEnn from callable module."""
 
   def __init__(self,
@@ -74,7 +74,8 @@ class GaussianNoiseEnn(base.EpistemicNetwork):
                init_scale: float = 1.):
     """GaussianNoiseEnn from callable module."""
     enn_creator = make_enn_creator(init_scale=init_scale)
-    def net_fn(inputs: base.Array) -> base.Array:
+
+    def net_fn(inputs: base_legacy.Array) -> base_legacy.Array:
       with hke.custom_getter(enn_getter), hke.custom_creator(enn_creator):
         output = module_ctor()(inputs)  # pytype: disable=not-callable
         return output
@@ -89,7 +90,7 @@ class GaussianNoiseEnn(base.EpistemicNetwork):
     )
 
 
-class GaussianNoiseMLP(base.EpistemicNetwork):
+class GaussianNoiseMLP(base_legacy.EpistemicNetwork):
   """Gaussian Enn on a standard MLP."""
 
   def __init__(self, output_sizes: Sequence[int], init_scale: float = 1.):

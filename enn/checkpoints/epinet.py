@@ -17,7 +17,7 @@
 
 import dataclasses
 from typing import Callable, Optional
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import datasets
 from enn.checkpoints import base as checkpoint_base
 from enn.networks.epinet import base as epinet_base

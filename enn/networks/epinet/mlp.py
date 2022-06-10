@@ -20,7 +20,7 @@ Trying to fork out some reusable pieces for the code.
 
 from typing import Optional, Sequence
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn.networks import indexers
 from enn.networks import mlp
 import haiku as hk
@@ -56,4 +56,3 @@ def make_mlp_epinet(output_sizes: Sequence[int],
       init=transformed.init,
       indexer=indexers.GaussianIndexer(index_dim),
   )
-

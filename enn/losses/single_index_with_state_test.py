@@ -19,7 +19,7 @@ from typing import Dict, Text, Tuple
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base
+from enn import base_legacy
 from enn import networks
 from enn import utils
 from enn.losses import single_index_with_state
@@ -42,12 +42,12 @@ class DummyLossFn(single_index_with_state.SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: base.ApplyFn,
+      apply: base_legacy.ApplyFn,
       params: hk.Params,
       state: hk.State,
-      batch: base.Batch,
-      index: base.Index,
-  ) -> Tuple[base.Array, Tuple[hk.State, base.LossMetrics]]:
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> Tuple[base_legacy.Array, Tuple[hk.State, base_legacy.LossMetrics]]:
     """Computes a loss based on one batch of data and one index."""
     del apply, params, batch
     return ((2 * index + 1) / self._num_ensemble, (state, self._dummy_metrics))
@@ -67,7 +67,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     num_index_samples = 100
     loss_fn = single_index_with_state.average_single_index_loss_with_state(
         single_loss_fn, num_index_samples)
-    dummy_batch = base.Batch(np.ones([1, 1]), np.ones([1, 1]))
+    dummy_batch = base_legacy.Batch(np.ones([1, 1]), np.ones([1, 1]))
     enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=[1],
         num_ensemble=num_ensemble,
@@ -111,7 +111,7 @@ class XentLossTest(parameterized.TestCase):
     loss_fn = single_index_with_state.XentLossWithState(num_classes)
 
     batch_size = 4
-    batch = base.Batch(
+    batch = base_legacy.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -157,7 +157,7 @@ class XentLossTest(parameterized.TestCase):
 
     loss_fn = single_index_with_state.XentLossWithState(num_classes)
     batch_size = 4
-    batch = base.Batch(
+    batch = base_legacy.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),

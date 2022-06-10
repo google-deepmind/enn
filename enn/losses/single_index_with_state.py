@@ -18,7 +18,7 @@
 from typing import Callable
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn import data_noise
 from enn import utils
 import haiku as hk
@@ -27,8 +27,8 @@ import jax.numpy as jnp
 import typing_extensions
 
 
-class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Input,
-                                                                base.Data]):
+class SingleIndexLossFnWithStateBase(
+    typing_extensions.Protocol[base_legacy.Input, base_legacy.Data]):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFnWithState out of
@@ -37,24 +37,25 @@ class SingleIndexLossFnWithStateBase(typing_extensions.Protocol[base.Input,
 
   def __call__(
       self,
-      apply: base.ApplyFnWithStateBase[base.Input],
+      apply: base_legacy.ApplyFnWithStateBase[base_legacy.Input],
       params: hk.Params,
       state: hk.State,
-      batch: base.Data,
-      index: base.Index,
-  ) -> base.LossOutputWithState:
+      batch: base_legacy.Data,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
     """Computes a loss based on one batch of data and one index."""
 
 
 # Module specialized to work only with Array inputs and Batch data.
-SingleIndexLossFnWithState = SingleIndexLossFnWithStateBase[base.Array,
-                                                            base.Batch]
+SingleIndexLossFnWithState = SingleIndexLossFnWithStateBase[base_legacy.Array,
+                                                            base_legacy.Batch]
 
 
 def average_single_index_loss_with_state(
-    single_loss: SingleIndexLossFnWithStateBase[base.Input, base.Data],
+    single_loss: SingleIndexLossFnWithStateBase[base_legacy.Input,
+                                                base_legacy.Data],
     num_index_samples: int = 1,
-) -> base.LossFnWithStateBase[base.Input, base.Data]:
+) -> base_legacy.LossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
   """Average a single index loss over multiple index samples.
 
   Note that the *network state* is also averaged over indices. This is not going
@@ -69,12 +70,9 @@ def average_single_index_loss_with_state(
     LossFnWithState that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(
-      enn: base.EpistemicNetworkWithStateBase[base.Input],
-      params: hk.Params,
-      state: hk.State,
-      batch: base.Data,
-      key: base.RngKey) -> base.LossOutputWithState:
+  def loss_fn(enn: base_legacy.EpistemicNetworkWithStateBase[base_legacy.Input],
+              params: hk.Params, state: hk.State, batch: base_legacy.Data,
+              key: base_legacy.RngKey) -> base_legacy.LossOutputWithState:
     # Apply the loss in parallel over num_index_samples different indices.
     # This is the key logic to this loss function.
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
@@ -106,18 +104,19 @@ def average_single_index_loss_with_state(
 
 
 def add_data_noise_to_loss_with_state(
-    single_loss: SingleIndexLossFnWithStateBase[base.Input, base.Data],
-    noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> SingleIndexLossFnWithStateBase[base.Input, base.Data]:
+    single_loss: SingleIndexLossFnWithStateBase[base_legacy.Input,
+                                                base_legacy.Data],
+    noise_fn: data_noise.DataNoiseBase[base_legacy.Data],
+) -> SingleIndexLossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(
-      apply: base.ApplyFnWithStateBase[base.Input],
+      apply: base_legacy.ApplyFnWithStateBase[base_legacy.Input],
       params: hk.Params,
       state: hk.State,
-      batch: base.Data,
-      index: base.Index,
-  ) -> base.LossOutputWithState:
+      batch: base_legacy.Data,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, state, noisy_batch, index)
   return noisy_loss
@@ -135,12 +134,12 @@ class XentLossWithState(SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: base.ApplyFnWithState,
+      apply: base_legacy.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
-      batch: base.Batch,
-      index: base.Index,
-  ) -> base.LossOutputWithState:
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
     return self._loss(apply, params, state, batch, index)
 
 
@@ -149,12 +148,12 @@ def xent_loss_with_state_custom_labels(
   """Factory method to create a loss function with custom labelling."""
 
   def single_loss(
-      apply: base.ApplyFnWithState,
+      apply: base_legacy.ApplyFnWithState,
       params: hk.Params,
       state: hk.State,
-      batch: base.Batch,
-      index: base.Index,
-  ) -> base.LossOutputWithState:
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
     """Xent loss with custom labelling."""
     chex.assert_shape(batch.y, (None, 1))
     net_out, state = apply(params, state, batch.x, index)

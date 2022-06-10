@@ -19,7 +19,7 @@ import dataclasses
 from typing import Callable, Optional
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn import data_noise
 from enn import utils
 import haiku as hk
@@ -28,28 +28,28 @@ import jax.numpy as jnp
 import typing_extensions
 
 
-class SingleIndexLossFnBase(typing_extensions.Protocol[base.Input, base.Data]):
+class SingleIndexLossFnBase(typing_extensions.Protocol[base_legacy.Input,
+                                                       base_legacy.Data]):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFn out of the
   SingleIndexLossFn.
   """
 
-  def __call__(self,
-               apply: base.ApplyFnBase[base.Input],
-               params: hk.Params,
-               batch: base.Data,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFnBase[base_legacy.Input],
+               params: hk.Params, batch: base_legacy.Data,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     """Computes a loss based on one batch of data and one index."""
 
 
 # Module specialized to work only with Array inputs and Batch data.
-SingleIndexLossFn = SingleIndexLossFnBase[base.Array, base.Batch]
+SingleIndexLossFn = SingleIndexLossFnBase[base_legacy.Array, base_legacy.Batch]
 
 
 def average_single_index_loss(
-    single_loss: SingleIndexLossFnBase[base.Input, base.Data],
-    num_index_samples: int = 1) -> base.LossFnBase[base.Input, base.Data]:
+    single_loss: SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data],
+    num_index_samples: int = 1
+) -> base_legacy.LossFnBase[base_legacy.Input, base_legacy.Data]:
   """Average a single index loss over multiple index samples.
 
   Args:
@@ -60,10 +60,9 @@ def average_single_index_loss(
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetworkBase[base.Input],
-              params: hk.Params,
-              batch: base.Data,
-              key: base.RngKey) -> base.LossOutput:
+  def loss_fn(enn: base_legacy.EpistemicNetworkBase[base_legacy.Input],
+              params: hk.Params, batch: base_legacy.Data,
+              key: base_legacy.RngKey) -> base_legacy.LossOutput:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
@@ -73,15 +72,14 @@ def average_single_index_loss(
 
 
 def add_data_noise(
-    single_loss: SingleIndexLossFnBase[base.Input, base.Data],
-    noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> SingleIndexLossFnBase[base.Input, base.Data]:
+    single_loss: SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data],
+    noise_fn: data_noise.DataNoiseBase[base_legacy.Data],
+) -> SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data]:
   """Applies a DataNoise function to each batch of data."""
 
-  def noisy_loss(apply: base.ApplyFnBase[base.Input],
-                 params: hk.Params,
-                 batch: base.Data,
-                 index: base.Index) -> base.LossOutput:
+  def noisy_loss(apply: base_legacy.ApplyFnBase[base_legacy.Input],
+                 params: hk.Params, batch: base_legacy.Data,
+                 index: base_legacy.Index) -> base_legacy.LossOutput:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, noisy_batch, index)
   return noisy_loss
@@ -91,11 +89,9 @@ def add_data_noise(
 class L2Loss(SingleIndexLossFn):
   """L2 regression applied to a single epistemic index."""
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     """L2 regression applied to a single epistemic index."""
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
@@ -118,11 +114,9 @@ class XentLoss(SingleIndexLossFn):
   def __post_init__(self):
     chex.assert_scalar_non_negative(self.num_classes - 2.0)
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
     net_out = apply(params, batch.x, index)
@@ -144,11 +138,9 @@ class AccuracyErrorLoss(SingleIndexLossFn):
   """Evaluates the accuracy error of a greedy logit predictor."""
   num_classes: int
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     net_out = apply(params, batch.x, index)
     logits = utils.parse_net_output(net_out)
@@ -170,16 +162,15 @@ class ElboLoss(SingleIndexLossFn):
   distribution to be close to the latent prior as measured by KL.
   """
 
-  log_likelihood_fn: Callable[[base.Output, base.Batch], float]
-  model_prior_kl_fn: Callable[[base.Output, hk.Params, base.Index], float]
+  log_likelihood_fn: Callable[[base_legacy.Output, base_legacy.Batch], float]
+  model_prior_kl_fn: Callable[
+      [base_legacy.Output, hk.Params, base_legacy.Index], float]
   temperature: Optional[float] = None
   input_dim: Optional[int] = None
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     """This function returns a one-sample MC estimate of the ELBO."""
     out = apply(params, batch.x, index)
     log_likelihood = self.log_likelihood_fn(out, batch)
@@ -193,14 +184,13 @@ class ElboLoss(SingleIndexLossFn):
 @dataclasses.dataclass
 class VaeLoss(SingleIndexLossFn):
   """VAE loss."""
-  log_likelihood_fn: Callable[[base.OutputWithPrior, base.Batch], float]
-  latent_kl_fn: Callable[[base.OutputWithPrior], float]
+  log_likelihood_fn: Callable[[base_legacy.OutputWithPrior, base_legacy.Batch],
+                              float]
+  latent_kl_fn: Callable[[base_legacy.OutputWithPrior], float]
 
-  def __call__(self,
-               apply: base.ApplyFn,
-               params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> base.LossOutput:
+  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutput:
     net_out = apply(params, batch.x, index)
     kl_term = self.latent_kl_fn(net_out)
     log_likelihood = self.log_likelihood_fn(net_out, batch)

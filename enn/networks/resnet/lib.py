@@ -21,7 +21,7 @@ import functools
 from typing import Any, Optional, Sequence
 
 import chex
-from enn import base
+from enn import base_legacy
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -31,7 +31,7 @@ from typing_extensions import Protocol
 class ForwardFn(Protocol):
 
   def __call__(self,
-               inputs: base.Array,
+               inputs: base_legacy.Array,
                is_training: bool,
                test_local_stats: bool = False) -> Any:
     """Forwards a ResNet block with appropriate defaults."""
@@ -213,7 +213,7 @@ class ResNet(hk.Module):
   def __call__(self,
                inputs: chex.Array,
                is_training: bool,
-               test_local_stats: bool = False) -> base.OutputWithPrior:
+               test_local_stats: bool = False) -> base_legacy.OutputWithPrior:
     # Holds the output of hidden layers.
     extra = {}
 
@@ -239,7 +239,7 @@ class ResNet(hk.Module):
     extra['final_out'] = pool
 
     logits = self.final_fc(pool)
-    return base.OutputWithPrior(
+    return base_legacy.OutputWithPrior(
         train=logits, prior=jnp.zeros_like(logits), extra=extra)
 
 

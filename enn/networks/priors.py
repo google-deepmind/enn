@@ -20,20 +20,20 @@ from typing import Callable, Iterable, Optional, Tuple, Union
 
 from absl import logging
 import chex
-from enn import base
+from enn import base_legacy
 from enn import utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
 
-PriorFn = Callable[[base.Array, base.Index], base.Array]
+PriorFn = Callable[[base_legacy.Array, base_legacy.Index], base_legacy.Array]
 
 
-class EnnWithAdditivePrior(base.EpistemicNetwork):
+class EnnWithAdditivePrior(base_legacy.EpistemicNetwork):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
-               enn: base.EpistemicNetwork,
+               enn: base_legacy.EpistemicNetwork,
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
@@ -43,25 +43,25 @@ class EnnWithAdditivePrior(base.EpistemicNetwork):
     super().__init__(enn_prior.apply, enn_prior.init, enn_prior.indexer)
 
 
-class EnnStateWithAdditivePrior(base.EpistemicNetworkWithState):
+class EnnStateWithAdditivePrior(base_legacy.EpistemicNetworkWithState):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
-               enn: base.EpistemicNetworkWithState,
+               enn: base_legacy.EpistemicNetworkWithState,
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
-    def apply_fn(params: hk.Params,
-                 state: hk.State,
-                 inputs: base.Array,
-                 index: base.Index) -> Tuple[base.OutputWithPrior, hk.State]:
+    def apply_fn(
+        params: hk.Params, state: hk.State, inputs: base_legacy.Array,
+        index: base_legacy.Index
+    ) -> Tuple[base_legacy.OutputWithPrior, hk.State]:
       net_out, state_out = enn.apply(params, state, inputs, index)
       prior = prior_scale * prior_fn(inputs, index)
-      if isinstance(net_out, base.OutputWithPrior):
-        net_out: base.OutputWithPrior = net_out
+      if isinstance(net_out, base_legacy.OutputWithPrior):
+        net_out: base_legacy.OutputWithPrior = net_out
         out = net_out._replace(prior=net_out.prior + prior)
       else:
-        out = base.OutputWithPrior(train=net_out, prior=prior)
+        out = base_legacy.OutputWithPrior(train=net_out, prior=prior)
       return out, state_out
     super().__init__(
         apply=apply_fn,
@@ -70,19 +70,24 @@ class EnnStateWithAdditivePrior(base.EpistemicNetworkWithState):
     )
 
 
-def convert_enn_to_prior_fn(enn: base.EpistemicNetwork,
-                            dummy_input: base.Array,
-                            key: base.RngKey) -> PriorFn:
+def convert_enn_to_prior_fn(enn: base_legacy.EpistemicNetwork,
+                            dummy_input: base_legacy.Array,
+                            key: base_legacy.RngKey) -> PriorFn:
+  """Converts an ENN to prior function for fixed prior params."""
   index_key, init_key, _ = jax.random.split(key, 3)
   index = enn.indexer(index_key)
   prior_params = enn.init(init_key, dummy_input, index)
-  def prior_fn(x: base.Array, z: base.Index) -> base.Output:
+
+  def prior_fn(x: base_legacy.Array,
+               z: base_legacy.Index) -> base_legacy.Output:
     return enn.apply(prior_params, x, z)
   return prior_fn
 
 
-def make_null_prior(output_dim: int) -> Callable[[base.Array], base.Array]:
-  def null_prior(inputs: base.Array) -> base.Array:
+def make_null_prior(
+    output_dim: int) -> Callable[[base_legacy.Array], base_legacy.Array]:
+
+  def null_prior(inputs: base_legacy.Array) -> base_legacy.Array:
     return jnp.zeros([inputs.shape[0], output_dim], dtype=jnp.float32)
   return null_prior
 
@@ -90,9 +95,8 @@ def make_null_prior(output_dim: int) -> Callable[[base.Array], base.Array]:
 GpGamma = Union[float, Tuple[float, float]]
 
 
-def _parse_gamma(gamma: GpGamma,
-                 num_feat: int,
-                 key: base.RngKey) -> Union[float, base.Array]:
+def _parse_gamma(gamma: GpGamma, num_feat: int,
+                 key: base_legacy.RngKey) -> Union[float, base_legacy.Array]:
   if isinstance(gamma, float) or isinstance(gamma, int):
     return float(gamma)
   else:
@@ -105,10 +109,10 @@ def make_random_feat_gp(
     input_dim: int,
     output_dim: int,
     num_feat: int,
-    key: base.RngKey,
+    key: base_legacy.RngKey,
     gamma: GpGamma = 1.,
     scale: float = 1.,
-) -> Callable[[base.Array], base.Array]:
+) -> Callable[[base_legacy.Array], base_legacy.Array]:
   """Generate a random features GP realization via random features.
 
   This is based on the "random kitchen sink" approximation from Rahimi,Recht.
@@ -134,7 +138,7 @@ def make_random_feat_gp(
   alpha = jax.random.normal(alpha_key, shape=[num_feat]) / jnp.sqrt(num_feat)
   gamma = _parse_gamma(gamma, num_feat, gamma_key)
 
-  def gp_instance(inputs: base.Array) -> base.Array:
+  def gp_instance(inputs: base_legacy.Array) -> base_legacy.Array:
     """Assumes one batch dimension and flattens input to match that."""
     flat_inputs = jax.vmap(jnp.ravel)(inputs)
     input_embedding = jnp.einsum('bi,kio->bko', flat_inputs, weights)
@@ -144,14 +148,13 @@ def make_random_feat_gp(
   return gp_instance
 
 
-def get_random_mlp_with_index(
-    x_sample: base.Array,
-    z_sample: base.Array,
-    rng: chex.PRNGKey,
-    prior_output_sizes: Optional[Iterable[int]] = None,
-    prior_weight_std: float = 3,
-    prior_bias_std: float = 0.1
-) -> PriorFn:
+def get_random_mlp_with_index(x_sample: base_legacy.Array,
+                              z_sample: base_legacy.Array,
+                              rng: chex.PRNGKey,
+                              prior_output_sizes: Optional[
+                                  Iterable[int]] = None,
+                              prior_weight_std: float = 3,
+                              prior_bias_std: float = 0.1) -> PriorFn:
   """Construct a prior func f(x, z) based on a random MLP.
 
   The returned function assumes the data input, x, to include a batch dimension
@@ -173,7 +176,7 @@ def get_random_mlp_with_index(
   if prior_output_sizes is None:
     prior_output_sizes = [10, 10, 1]
 
-  def net_fn(x: base.Array, z: base.Array):
+  def net_fn(x: base_legacy.Array, z: base_legacy.Array):
     # repeat z along the batch dimension of x.
     z = jnp.tile(z, reps=(x.shape[0], 1))
     xz = jnp.concatenate([x, z], axis=1)
@@ -202,7 +205,7 @@ class NetworkWithAdditivePrior(hk.Module):
   prior_net: hk.Module
   prior_scale: float = 1.
 
-  def __call__(self, *args, **kwargs) -> base.Array:
+  def __call__(self, *args, **kwargs) -> base_legacy.Array:
     logging.warning(WARN)
     prior = jax.lax.stop_gradient(self.prior_net(*args, **kwargs))  # pytype:disable=not-callable
     net_out = self.net(*args, **kwargs)  # pytype:disable=not-callable

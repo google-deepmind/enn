@@ -15,7 +15,7 @@
 # ============================================================================
 """Entries on Cifar10."""
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import datasets
 from enn import networks
 from enn.checkpoints import base as checkpoint_base
@@ -152,4 +152,3 @@ def resnet_110_final_epinet() -> checkpoint_epinet.EpinetCheckpoint:
       load_fn=utils.load_from_file(file_name='resnet110_epinet_cifar10'),
       config=_make_epinet_config(resnet_110()),
   )
-

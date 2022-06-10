@@ -15,7 +15,7 @@
 # ============================================================================
 """Entries on ImageNet."""
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import datasets
 from enn import networks
 from enn.checkpoints import base as checkpoint_base

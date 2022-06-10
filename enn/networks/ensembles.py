@@ -18,7 +18,7 @@
 from typing import Callable, Optional, Sequence, Tuple
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
@@ -26,7 +26,7 @@ import jax
 import jax.numpy as jnp
 
 
-class Ensemble(base.EpistemicNetwork):
+class Ensemble(base_legacy.EpistemicNetwork):
   """Ensemble ENN that uses a dot product in param space.
 
   Repeats parameters by an additional *ensemble* dimension in axis=0.
@@ -44,7 +44,8 @@ class Ensemble(base.EpistemicNetwork):
       batched_init = jax.vmap(model.init, in_axes=[0, None], out_axes=0)
       return batched_init(jax.random.split(key, num_ensemble), inputs)
 
-    def apply(params: hk.Params, inputs: chex.Array, index: int) -> base.Output:
+    def apply(params: hk.Params, inputs: chex.Array,
+              index: int) -> base_legacy.Output:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(param_selector, params)
@@ -54,7 +55,7 @@ class Ensemble(base.EpistemicNetwork):
     super().__init__(apply, init, indexer)
 
 
-class EnsembleWithState(base.EpistemicNetworkWithState):
+class EnsembleWithState(base_legacy.EpistemicNetworkWithState):
   """Ensemble ENN that uses a dot product in param space.
 
   Per Ensemble but with added state variable.
@@ -74,10 +75,8 @@ class EnsembleWithState(base.EpistemicNetworkWithState):
       params, states = batched_init(jax.random.split(key, num_ensemble), inputs)
       return params, states
 
-    def apply(params: hk.Params,
-              states: hk.State,
-              inputs: chex.Array,
-              index: int) -> Tuple[base.Output, hk.State]:
+    def apply(params: hk.Params, states: hk.State, inputs: chex.Array,
+              index: int) -> Tuple[base_legacy.Output, hk.State]:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       particle_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(particle_selector, params)
@@ -93,12 +92,12 @@ class EnsembleWithState(base.EpistemicNetworkWithState):
 
 def make_mlp_ensemble_prior_fns(
     output_sizes: Sequence[int],
-    dummy_input: base.Array,
+    dummy_input: base_legacy.Array,
     num_ensemble: int,
     seed: int = 0,
     w_init: Optional[hk.initializers.Initializer] = None,
     b_init: Optional[hk.initializers.Initializer] = None
-) -> Sequence[Callable[[base.Array], base.Array]]:
+) -> Sequence[Callable[[base_legacy.Array], base_legacy.Array]]:
   """Factory method for creating ensemble of prior functions."""
   rng = hk.PRNGSequence(seed)
   def net_fn(x):
@@ -118,14 +117,14 @@ def make_mlp_ensemble_prior_fns(
 
 
 def combine_functions_choice_via_index(
-    prior_fns: Sequence[Callable[[base.Array], base.Array]],
+    prior_fns: Sequence[Callable[[base_legacy.Array], base_legacy.Array]],
 ) -> priors.PriorFn:
   """Combines functions to a PriorFn(x, z), selecting fn by ensemble index."""
   return lambda x, z: jax.lax.switch(z, prior_fns, x)
 
 
 def combine_functions_linear_in_index(
-    prior_fns: Sequence[Callable[[base.Array], base.Array]],
+    prior_fns: Sequence[Callable[[base_legacy.Array], base_legacy.Array]],
 ) -> priors.PriorFn:
   """Combines functions to a PriorFn(x, z), linear in epistemic index."""
   def enn_fn(x, z):
@@ -143,7 +142,7 @@ def make_random_gp_ensemble_prior_fns(
     gamma: priors.GpGamma,
     num_ensemble: int,
     seed: int = 0,
-) -> Sequence[Callable[[base.Array], base.Array]]:
+) -> Sequence[Callable[[base_legacy.Array], base_legacy.Array]]:
   """Factory method for creating an ensemble of random GPs."""
   rng = hk.PRNGSequence(seed)
   prior_fns = []
@@ -153,24 +152,22 @@ def make_random_gp_ensemble_prior_fns(
   return prior_fns
 
 
-class MLPEnsembleMatchedPrior(base.EpistemicNetwork):
+class MLPEnsembleMatchedPrior(base_legacy.EpistemicNetwork):
   """Ensemble of MLPs with matched prior functions."""
 
-  def __init__(
-      self,
-      output_sizes: Sequence[int],
-      dummy_input: base.Array,
-      num_ensemble: int,
-      prior_scale: float = 1.,
-      seed: int = 0,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None
-  ):
+  def __init__(self,
+               output_sizes: Sequence[int],
+               dummy_input: base_legacy.Array,
+               num_ensemble: int,
+               prior_scale: float = 1.,
+               seed: int = 0,
+               w_init: Optional[hk.initializers.Initializer] = None,
+               b_init: Optional[hk.initializers.Initializer] = None):
     """Ensemble of MLPs with matched prior functions."""
     mlp_priors = make_mlp_ensemble_prior_fns(
         output_sizes, dummy_input, num_ensemble, seed)
 
-    def net_fn(x: base.Array) -> base.Array:
+    def net_fn(x: base_legacy.Array) -> base_legacy.Array:
       x = hk.Flatten()(x)
       return hk.nets.MLP(output_sizes, w_init, b_init)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))

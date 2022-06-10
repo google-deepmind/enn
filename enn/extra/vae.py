@@ -19,7 +19,7 @@ import dataclasses
 from typing import Callable, NamedTuple, Sequence
 
 import chex
-from enn import base
+from enn import base_legacy
 from enn import losses
 from enn import networks
 from enn import supervised
@@ -99,12 +99,12 @@ def get_mlp_vae_encoder_decoder(
   )
 
 
-def make_vae_enn(encoder: PreTransformFn,
-                 decoder: PreTransformFn,
-                 latent_dim: int) -> base.EpistemicNetwork:
+def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
+                 latent_dim: int) -> base_legacy.EpistemicNetwork:
   """Factory method to create and transform ENN from encoder/decoder."""
 
-  def net_fn(x: base.Array, z: base.Index) -> base.OutputWithPrior:
+  def net_fn(x: base_legacy.Array,
+             z: base_legacy.Index) -> base_legacy.OutputWithPrior:
     # Encoder
     latent_mean, latent_log_var = encoder(x)
     chex.assert_shape([latent_mean, latent_log_var], [x.shape[0], latent_dim])
@@ -117,11 +117,12 @@ def make_vae_enn(encoder: PreTransformFn,
     out_mean, out_log_var = decoder(latent)
     vae_outputs = {'latent_mean': latent_mean, 'latent_log_var': latent_log_var,
                    'out_mean': out_mean, 'out_log_var': out_log_var}
-    return base.OutputWithPrior(train=out_mean, extra=vae_outputs)
+    return base_legacy.OutputWithPrior(train=out_mean, extra=vae_outputs)
 
   transformed = hk.without_apply_rng(hk.transform(net_fn))
   indexer = networks.GaussianIndexer(latent_dim)
-  return base.EpistemicNetwork(transformed.apply, transformed.init, indexer)
+  return base_legacy.EpistemicNetwork(transformed.apply, transformed.init,
+                                      indexer)
 
 
 def train_vae(encoder: PreTransformFn,
@@ -135,7 +136,8 @@ def train_vae(encoder: PreTransformFn,
   """Given a vae and data, this function outputs trained encoder, decoder."""
   num_train, input_dim = data_x.shape
   dummy_y = jnp.zeros(shape=(num_train,))
-  dataset = utils.make_batch_iterator(base.Batch(data_x, dummy_y), batch_size)
+  dataset = utils.make_batch_iterator(
+      base_legacy.Batch(data_x, dummy_y), batch_size)
 
   # Create loss function
   single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)

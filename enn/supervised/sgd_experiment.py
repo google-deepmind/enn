@@ -20,7 +20,7 @@ import functools
 from typing import Dict, NamedTuple, Optional, Tuple
 
 from acme.utils import loggers
-from enn import base
+from enn import base_legacy
 from enn.supervised import base as supervised_base
 import haiku as hk
 import jax
@@ -40,14 +40,15 @@ class Experiment(supervised_base.BaseExperiment):
   """
 
   def __init__(self,
-               enn: base.EpistemicNetwork,
-               loss_fn: base.LossFn,
+               enn: base_legacy.EpistemicNetwork,
+               loss_fn: base_legacy.LossFn,
                optimizer: optax.GradientTransformation,
-               dataset: base.BatchIterator,
+               dataset: base_legacy.BatchIterator,
                seed: int = 0,
                logger: Optional[loggers.Logger] = None,
                train_log_freq: int = 1,
-               eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
+               eval_datasets: Optional[Dict[str,
+                                            base_legacy.BatchIterator]] = None,
                eval_log_freq: int = 1):
     self.enn = enn
     self.dataset = dataset
@@ -61,8 +62,8 @@ class Experiment(supervised_base.BaseExperiment):
     self._eval_log_freq = eval_log_freq
 
     # Forward network at random index
-    def forward(
-        params: hk.Params, inputs: base.Array, key: base.RngKey) -> base.Array:
+    def forward(params: hk.Params, inputs: base_legacy.Array,
+                key: base_legacy.RngKey) -> base_legacy.Array:
       index = self.enn.indexer(key)
       return self.enn.apply(params, inputs, index)
     self._forward = jax.jit(forward)
@@ -70,9 +71,9 @@ class Experiment(supervised_base.BaseExperiment):
     # Define the SGD step on the loss
     def sgd_step(
         state: TrainingState,
-        batch: base.Batch,
-        key: base.RngKey,
-    ) -> Tuple[TrainingState, base.LossMetrics]:
+        batch: base_legacy.Batch,
+        key: base_legacy.RngKey,
+    ) -> Tuple[TrainingState, base_legacy.LossMetrics]:
       # Calculate the loss, metrics and gradients
       (loss, metrics), grads = jax.value_and_grad(self._loss, has_aux=True)(
           state.params, batch, key)
@@ -123,10 +124,12 @@ class Experiment(supervised_base.BaseExperiment):
           })
           self.logger.write(metrics)
 
-  def predict(self, inputs: base.Array, key: base.RngKey) -> base.Array:
+  def predict(self, inputs: base_legacy.Array,
+              key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the trained model at given inputs."""
     return self._forward(self.state.params, inputs, key)
 
-  def loss(self, batch: base.Batch, key: base.RngKey) -> base.Array:
+  def loss(self, batch: base_legacy.Batch,
+           key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the loss for one batch of data."""
     return self._loss(self.state.params, batch, key)

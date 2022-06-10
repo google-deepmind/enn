@@ -19,7 +19,7 @@ from absl import app
 from absl import flags
 from acme.utils import loggers
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
