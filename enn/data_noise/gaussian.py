@@ -40,7 +40,7 @@ class GaussianTargetNoise(data_noise_base.DataNoise):
     chex.assert_shape(data.y, (None, 1))  # Only implemented for 1D now.
     noise_fn = make_noise_fn(self.enn, self.noise_std, self.seed)
     y_noise = noise_fn(data.data_index, index)
-    return data._replace(y=data.y + y_noise)
+    return data.replace(y=data.y + y_noise)
 
 
 NoiseFn = Callable[[base_legacy.DataIndex, base_legacy.Index],
