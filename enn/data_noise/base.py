@@ -19,18 +19,18 @@ from enn import base_legacy
 import typing_extensions
 
 
-class DataNoiseBase(typing_extensions.Protocol[base_legacy.Input]):
+class DataNoiseBase(typing_extensions.Protocol[base_legacy.Data]):
 
   def __call__(
       self,
-      data: base_legacy.BatchBase[base_legacy.Input],
+      data: base_legacy.Data,
       index: base_legacy.Index,
-  ) -> base_legacy.BatchBase[base_legacy.Input]:
+  ) -> base_legacy.Data:
     """Apply some noise process to a batch of data based on epistemic index."""
 
 
-# DataNoiseBase specialized to work only with Array inputs.
-DataNoise = DataNoiseBase[base_legacy.Array]
+# DataNoiseBase specialized to work only with Batch data.
+DataNoise = DataNoiseBase[base_legacy.Batch]
 
 
 def get_indexer(indexer: base_legacy.EpistemicIndexer):

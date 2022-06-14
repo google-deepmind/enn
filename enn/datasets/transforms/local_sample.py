@@ -88,6 +88,6 @@ def make_dyadic_transform(
                                tf.image.ResizeMethod.BICUBIC)
     if flip:
       images = tf.image.random_flip_left_right(images)
-    return batch.replace(x=images)
+    return batch._replace(x=images)
 
   return make_repeat_sample_transform(num_repeat, perturb_fn, limit_data)

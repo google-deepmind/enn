@@ -21,10 +21,9 @@
 
 import abc
 import dataclasses
-from typing import Any, Dict, Generic, Iterator, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, Iterator, NamedTuple, Optional, Tuple, Union, TypeVar, Generic
 import warnings
 
-from flax import struct
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -43,19 +42,18 @@ RngKey = jnp.DeviceArray  # Integer pairs, see jax.random
 # methods and classes to work with different types of input data, not only Array
 # defined here.
 Input = TypeVar('Input')
-_default = lambda cls: dataclasses.field(default_factory=cls)
 
 
-@struct.dataclass
-class BatchBase(Generic[Input]):
-  x: Input  # Inputs
+# TODO(author3): Make Batch generic in input. This requires multiple
+# inheritance for NamedTuple which is not supported in Python 3.9 yet:
+# https://bugs.python.org/issue43923
+class Batch(NamedTuple):
+  x: Array  # Inputs
   y: Array  # Targets
   data_index: Optional[DataIndex] = None  # Integer identifiers for data
   weights: Optional[Array] = None  # None should default to weights = jnp.ones
-  extra: Dict[str, Array] = _default(dict)  # Extra info
+  extra: Dict[str, Array] = {}  # You can put other optional stuff here
 
-
-Batch = BatchBase[Array]
 BatchIterator = Iterator[Batch]  # Equivalent to the dataset we loop through
 LossMetrics = Dict[str, Array]
 # Defining Data as a generic type for a batch of data. This allows our base
@@ -125,18 +123,18 @@ EpistemicNetwork = EpistemicNetworkBase[Array]
 LossOutput = Tuple[Array, LossMetrics]
 
 
-class LossFnBase(typing_extensions.Protocol[Input]):
+class LossFnBase(typing_extensions.Protocol[Input, Data]):
   """Calculates a loss based on one batch of data per rng_key."""
 
   def __call__(self,
                enn: EpistemicNetworkBase[Input],
                params: hk.Params,
-               batch: BatchBase[Input],
+               batch: Data,
                key: RngKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
 
-# LossFnBase specialized to work only with Array inputs.
-LossFn = LossFnBase[Array]
+# LossFnBase specialized to work only with Array inputs and Batch data.
+LossFn = LossFnBase[Array, Batch]
 
 
 ################################################################################
@@ -183,17 +181,17 @@ EpistemicNetworkWithState = EpistemicNetworkWithStateBase[Array]
 LossOutputWithState = Tuple[Array, Tuple[hk.State, LossMetrics]]
 
 
-class LossFnWithStateBase(typing_extensions.Protocol[Input]):
+class LossFnWithStateBase(typing_extensions.Protocol[Input, Data]):
   """Calculates a loss based on one batch of data per rng_key."""
 
   def __call__(self,
                enn: EpistemicNetworkWithStateBase[Input],
                params: hk.Params,
                state: hk.State,
-               batch: BatchBase[Input],
+               batch: Data,
                key: RngKey) -> LossOutputWithState:
     """Computes a loss based on one batch of data and a random key."""
 
 
-# LossFnWithStateBase specialized to work only with Array inputs.
-LossFnWithState = LossFnWithStateBase[Array]
+# LossFnWithStateBase specialized to work only with Array inputs and Batch data.
+LossFnWithState = LossFnWithStateBase[Array, Batch]

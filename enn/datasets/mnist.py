@@ -72,7 +72,7 @@ class Mnist(ds_base.DatasetWithTransform):
             f'total number of devices {num_devices}')
 
       ds = tfds.load(name='mnist', split='train')
-      ds = ds.map(ds_utils.change_name_in_ds_dict)
+      ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
       ds = self.train_ds_transformer(ds)
       ds = ds_utils.add_data_index_to_dataset(ds)
       ds = ds.shard(jax.process_count(), jax.process_index())
@@ -86,11 +86,7 @@ class Mnist(ds_base.DatasetWithTransform):
       ds = ds.batch(per_device_batch_size, drop_remainder=True)
       ds = ds.batch(jax.local_device_count(), drop_remainder=True)
       ds = ds.prefetch(AUTOTUNE)
-      ds = tfds.as_numpy(ds)
-      # Convert data format from dictionary to Batch.
-      ds = map(lambda x: enn_base.Batch(**x), ds)
-
-      return ds
+      return iter(tfds.as_numpy(ds))
 
     train_input = utils.py_prefetch(build_train_input)
     return utils.double_buffer_on_gpu(train_input)
@@ -102,7 +98,7 @@ class Mnist(ds_base.DatasetWithTransform):
         eval_ds_transformer: ds_base.DatasetTransformer
     ) -> ds_base.DatasetGenerator:
       ds = tfds.load(name='mnist', split='test')
-      ds = ds.map(ds_utils.change_name_in_ds_dict)
+      ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
       ds = ds_utils.add_data_index_to_dataset(ds)
       # Preprocess
       eval_preprocess = functools.partial(
@@ -112,11 +108,7 @@ class Mnist(ds_base.DatasetWithTransform):
       ds = eval_ds_transformer(ds)
       ds = ds.batch(self.eval_batch, drop_remainder=True)
       ds = ds.prefetch(AUTOTUNE)
-      ds = tfds.as_numpy(ds)
-      # Convert data format from dictionary to Batch.
-      ds = map(lambda x: enn_base.Batch(**x), ds)
-
-      return ds
+      return iter(tfds.as_numpy(ds))
 
     return {
         dataset_type: build_eval_dataset(transformer) for
@@ -124,10 +116,10 @@ class Mnist(ds_base.DatasetWithTransform):
     }
 
 
-def preprocess_batch(batch: Dict[str, enn_base.Array],
-                     normalization_mode: str) -> Dict[str, enn_base.Array]:
+def preprocess_batch(batch: enn_base.Batch,
+                     normalization_mode: str) -> enn_base.Batch:
   """Pre-processing module."""
-  images = batch['x']
+  images = batch.x
 
   images = tf.image.convert_image_dtype(images, tf.float32)
 
@@ -139,5 +131,5 @@ def preprocess_batch(batch: Dict[str, enn_base.Array],
     raise ValueError(
         'Normalization mode should be one among custom, standard or identity.'
     )
-  batch['x'] = images
-  return batch
+
+  return batch._replace(x=images)

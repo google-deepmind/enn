@@ -19,7 +19,7 @@
 import abc
 import dataclasses
 import enum
-from typing import Callable, Dict, Iterator, List, Sequence, Union
+from typing import Callable, Dict, Generator, List, Sequence, Union
 from enn import base_legacy as enn_base
 import numpy as np
 import tensorflow.compat.v2 as tf
@@ -28,8 +28,8 @@ Array = Union[np.ndarray, tf.Tensor]
 # DatasetDict is a Dict with "images" and "labels" as keys
 DatasetDict = Dict[str, Array]
 
-# TODO(author3): Change DatasetGenerator name to DatasetIterator
-DatasetGenerator = Iterator[enn_base.Batch]
+# TODO(author3): Describe DatasetGenerator
+DatasetGenerator = Generator[enn_base.Batch, None, None]
 DatasetTransformer = Callable[[tf.data.Dataset], tf.data.Dataset]
 
 

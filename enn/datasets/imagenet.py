@@ -175,7 +175,7 @@ def load(
       'imagenet2012:5.*.*',
       split=tfds_split,
       decoders={'image': tfds.decode.SkipDecoding()})
-  ds = ds.map(ds_utils.change_name_in_ds_dict)
+  ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
   ds = ds_utils.add_data_index_to_dataset(ds)
 
   options = tf.data.Options()
@@ -200,18 +200,16 @@ def load(
     if split.num_examples % total_batch_size != 0:
       raise ValueError(f'Test/valid must be divisible by {total_batch_size}')
 
-  def _preprocess_fn(
-      batch: Dict[str, enn_base.Array],
-      example_rng: Optional[tf.Tensor] = None) -> Dict[str, enn_base.Array]:
-    batch['x'] = _preprocess_image(batch['x'], is_training, image_size,
-                                   example_rng)
-    return batch
+  def _preprocess_fn(batch: enn_base.Batch,
+                     example_rng: Optional[tf.Tensor] = None) -> enn_base.Batch:
+    image = _preprocess_image(batch.x, is_training, image_size,
+                              example_rng)
+    return batch._replace(x=image)
 
   def _preprocess_with_per_example_rng(
       ds: tf.data.Dataset, *, rng: Optional[np.ndarray]) -> tf.data.Dataset:
 
-    def _fn(example_index: int,
-            batch: Dict[str, enn_base.Array]) -> Dict[str, enn_base.Array]:
+    def _fn(example_index: int, batch: enn_base.Batch) -> enn_base.Batch:
       example_rng = None
       if rng is not None:
         example_index = tf.cast(example_index, tf.int32)
@@ -233,18 +231,17 @@ def load(
   # TODO(author2): This transform needs to come after processing.
   ds = ds_transform(ds)
 
-  def transpose_fn(
-      batch: Dict[str, enn_base.Array]) -> Dict[str, enn_base.Array]:
+  def transpose_fn(batch: enn_base.Batch) -> enn_base.Batch:
     # We use double-transpose-trick to improve performance for TPUs. Note
     # that this (typically) requires a matching HWCN->NHWC transpose in your
     # model code. The compiler cannot make this optimization for us since our
     # data pipeline and model are compiled separately.
-    batch['x'] = tf.transpose(batch['x'], (1, 2, 3, 0))
-    return batch
+    transposed_x = tf.transpose(batch.x, (1, 2, 3, 0))
+    return batch._replace(x=transposed_x)
 
-  def cast_fn(batch: Dict[str, enn_base.Array]) -> Dict[str, enn_base.Array]:
-    batch['x'] = tf.cast(batch['x'], tf.dtypes.as_dtype(dtype))
-    return batch
+  def cast_fn(batch: enn_base.Batch) -> enn_base.Batch:
+    x = tf.cast(batch.x, tf.dtypes.as_dtype(dtype))
+    return batch._replace(x=x)
 
   for i, batch_size in enumerate(reversed(batch_dims)):
     ds = ds.batch(batch_size, drop_remainder=True)
@@ -257,11 +254,8 @@ def load(
       ds = ds.map(cast_fn)
 
   ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
-  ds = tfds.as_numpy(ds)
-  # Convert data format from dictionary to Batch.
-  ds = map(lambda x: enn_base.Batch(**x), ds)
 
-  yield from ds
+  yield from tfds.as_numpy(ds)
 
 
 def _to_tfds_split(split: Split) -> tfds.Split:

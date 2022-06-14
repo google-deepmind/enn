@@ -28,28 +28,28 @@ import jax.numpy as jnp
 import typing_extensions
 
 
-class SingleIndexLossFnBase(typing_extensions.Protocol[base_legacy.Input]):
+class SingleIndexLossFnBase(typing_extensions.Protocol[base_legacy.Input,
+                                                       base_legacy.Data]):
   """Calculates a loss based on one batch of data per index.
 
   You can use utils.average_single_index_loss to make a LossFn out of the
   SingleIndexLossFn.
   """
 
-  def __call__(self,
-               apply: base_legacy.ApplyFnBase[base_legacy.Input],
-               params: hk.Params,
-               batch: base_legacy.BatchBase[base_legacy.Input],
+  def __call__(self, apply: base_legacy.ApplyFnBase[base_legacy.Input],
+               params: hk.Params, batch: base_legacy.Data,
                index: base_legacy.Index) -> base_legacy.LossOutput:
     """Computes a loss based on one batch of data and one index."""
 
 
-# Module specialized to work only with Array inputs.
-SingleIndexLossFn = SingleIndexLossFnBase[base_legacy.Array]
+# Module specialized to work only with Array inputs and Batch data.
+SingleIndexLossFn = SingleIndexLossFnBase[base_legacy.Array, base_legacy.Batch]
 
 
 def average_single_index_loss(
-    single_loss: SingleIndexLossFnBase[base_legacy.Input],
-    num_index_samples: int = 1) -> base_legacy.LossFnBase[base_legacy.Input]:
+    single_loss: SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data],
+    num_index_samples: int = 1
+) -> base_legacy.LossFnBase[base_legacy.Input, base_legacy.Data]:
   """Average a single index loss over multiple index samples.
 
   Args:
@@ -61,8 +61,7 @@ def average_single_index_loss(
   """
 
   def loss_fn(enn: base_legacy.EpistemicNetworkBase[base_legacy.Input],
-              params: hk.Params,
-              batch: base_legacy.BatchBase[base_legacy.Input],
+              params: hk.Params, batch: base_legacy.Data,
               key: base_legacy.RngKey) -> base_legacy.LossOutput:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
@@ -73,14 +72,13 @@ def average_single_index_loss(
 
 
 def add_data_noise(
-    single_loss: SingleIndexLossFnBase[base_legacy.Input],
-    noise_fn: data_noise.DataNoiseBase[base_legacy.Input],
-) -> SingleIndexLossFnBase[base_legacy.Input]:
+    single_loss: SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data],
+    noise_fn: data_noise.DataNoiseBase[base_legacy.Data],
+) -> SingleIndexLossFnBase[base_legacy.Input, base_legacy.Data]:
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(apply: base_legacy.ApplyFnBase[base_legacy.Input],
-                 params: hk.Params,
-                 batch: base_legacy.BatchBase[base_legacy.Input],
+                 params: hk.Params, batch: base_legacy.Data,
                  index: base_legacy.Index) -> base_legacy.LossOutput:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, noisy_batch, index)

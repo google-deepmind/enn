@@ -14,7 +14,6 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
-import dataclasses
 from typing import Callable, Optional, Tuple
 
 from absl import flags
@@ -182,15 +181,15 @@ def _clean_batch_data(data: base_legacy.Batch) -> base_legacy.Batch:
   """Checks some of the common shape/index issues for dummy data.."""
   # Make sure that the data has a separate batch dimension
   if data.y.ndim == 1:
-    data = data.replace(y=data.y[:, None])
+    data = data._replace(y=data.y[:, None])
 
   # Data index to identify each instance
   if data.data_index is None:
-    data = data.replace(data_index=np.arange(len(data.y))[:, None])
+    data = data._replace(data_index=np.arange(len(data.y))[:, None])
 
   # Weights to say how much each data.point is work
   if data.weights is None:
-    data = data.replace(weights=np.ones(len(data.y))[:, None])
+    data = data._replace(weights=np.ones(len(data.y))[:, None])
   return data
 
 
@@ -203,17 +202,11 @@ def make_batch_iterator(data: base_legacy.Batch,
   if not batch_size:
     batch_size = n_data
 
-  # tf.data.Dataset.from_tensor_slices does not work with dataclass. We convert
-  # data to a dictionary and then convert it back to a dataclass.
-  data_dict = dataclasses.asdict(data)
-  ds = tf.data.Dataset.from_tensor_slices(data_dict).cache()
+  ds = tf.data.Dataset.from_tensor_slices(data).cache()
   ds = ds.shuffle(min(n_data, 50 * batch_size), seed=seed)
   ds = ds.repeat().batch(batch_size)
-  ds = tfds.as_numpy(ds)
-  # Convert data format from dictionary to Batch.
-  ds = map(lambda x: base_legacy.Batch(**x), ds)
 
-  return ds
+  return iter(tfds.as_numpy(ds))
 
 
 def make_test_data(n_samples: int = 20) -> base_legacy.BatchIterator:
