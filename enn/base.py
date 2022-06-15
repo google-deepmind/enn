@@ -100,7 +100,9 @@ class Batch(tp.NamedTuple):
 
 BatchIterator = tp.Iterator[Batch]  # Equivalent to the dataset we loop through
 LossMetrics = tp.Dict[str, chex.Array]  # Metrics reported in training.
-LossOutput = tp.Tuple[chex.Array, LossMetrics]  # Output of loss function
+
+# Output of loss function includes (loss, (state, metrics))
+LossOutput = tp.Tuple[chex.Array, tp.Tuple[hk.State, LossMetrics]]
 
 
 class LossFn(typing_extensions.Protocol[Input, Data]):
