@@ -55,11 +55,17 @@ from enn.losses.single_index_with_state import XentLossWithState
 
 # Utils
 from enn.losses.utils import add_l2_weight_decay
+from enn.losses.utils import add_l2_weight_decay_with_state
 from enn.losses.utils import combine_losses
 from enn.losses.utils import combine_losses_as_metric
+from enn.losses.utils import combine_losses_with_state
+from enn.losses.utils import combine_losses_with_state_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
+from enn.losses.utils import combine_single_index_losses_with_state_as_metric
 from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import CombineLossConfigBase
+from enn.losses.utils import CombineLossWithStateConfig
+from enn.losses.utils import CombineLossWithStateConfigBase
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
 
