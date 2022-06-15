@@ -109,6 +109,8 @@ class LossFn(typing_extensions.Protocol[Input, Data]):
   def __call__(self,
                enn: EpistemicNetwork[Input],
                params: hk.Params,
+               state: hk.State,
                batch: Data,
                key: chex.PRNGKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
+
