@@ -70,6 +70,7 @@ def variance_kl(var: base_legacy.Array,
   return 0.5 * (pred_log_var - log_var + var / pred_var - 1)
 
 
+# TODO(author3): Remove and use generate_batched_forward_at_data_with_state.
 def generate_batched_forward_at_data(
     num_index_sample: int, x: base_legacy.Array,
     enn: base_legacy.EpistemicNetwork, params: hk.Params,
@@ -78,6 +79,19 @@ def generate_batched_forward_at_data(
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, 0])
   batched_out = batched_forward(params, x, batched_indexer(key))
+  return batched_out
+
+
+def generate_batched_forward_at_data_with_state(
+    num_index_sample: int, x: base_legacy.Array,
+    enn: base_legacy.EpistemicNetworkWithState, params: hk.Params,
+    key: base_legacy.RngKey) -> base_legacy.Output:
+  """Generate enn output for batch of data with indices based on random key."""
+  batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
+  batched_forward = jax.vmap(enn.apply, in_axes=[None, None, None, 0])
+  unused_state = {}
+  batched_out, unused_state = batched_forward(params, unused_state, x,
+                                              batched_indexer(key))
   return batched_out
 
 
@@ -130,6 +144,7 @@ def distill_var_classification(
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))
 
 
+# TODO(author3): Remove this module. Use RegressionPriorLossWithState.
 @dataclasses.dataclass
 class RegressionPriorLoss(base_legacy.LossFn):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
@@ -159,6 +174,40 @@ class RegressionPriorLoss(base_legacy.LossFn):
 
 
 @dataclasses.dataclass
+class RegressionPriorLossWithState(base_legacy.LossFnWithState):
+  """Regress fake data back to prior, and distill mean/var to mean_index."""
+  num_index_sample: int
+  input_generator: FakeInputGenerator = MatchingGaussianData()
+  scale: float = 1.
+  distill_index: bool = False
+
+  def __call__(self, enn: base_legacy.EpistemicNetworkWithState,
+               params: hk.Params, state: hk.State, batch: base_legacy.Batch,
+               key: base_legacy.RngKey) -> base_legacy.Array:
+    index_key, data_key = jax.random.split(key)
+    fake_x = self.input_generator(batch, data_key)
+    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
+    batched_out = generate_batched_forward_at_data_with_state(
+        self.num_index_sample,
+        fake_x,
+        enn,
+        params,
+        index_key,
+    )
+
+    # Regularize towards prior output
+    loss = self.scale * l2_training_penalty(batched_out)
+
+    # Distill aggregate stats to the "mean_index"
+    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
+      distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
+      loss += distill_mean_regression(batched_out, distill_out)
+      loss += distill_var_regression(batched_out, distill_out)
+    return loss, (state, {})
+
+
+# TODO(author3): Remove this module. Use ClassificationPriorLossWithState.
+@dataclasses.dataclass
 class ClassificationPriorLoss(base_legacy.LossFn):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
@@ -185,3 +234,36 @@ class ClassificationPriorLoss(base_legacy.LossFn):
       loss += distill_mean_classification(batched_out, distill_out)
       loss += distill_var_classification(batched_out, distill_out)
     return loss, {}
+
+
+@dataclasses.dataclass
+class ClassificationPriorLossWithState(base_legacy.LossFnWithState):
+  """Penalize fake data back to prior, and distill mean/var to mean_index."""
+  num_index_sample: int
+  input_generator: FakeInputGenerator = MatchingGaussianData()
+  scale: float = 1.
+  distill_index: bool = False
+
+  def __call__(
+      self,
+      enn: base_legacy.EpistemicNetworkWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: base_legacy.Batch,
+      key: base_legacy.RngKey,
+  ) -> base_legacy.LossOutputWithState:
+    index_key, data_key = jax.random.split(key)
+    fake_x = self.input_generator(batch, data_key)
+    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
+    batched_out = generate_batched_forward_at_data_with_state(
+        self.num_index_sample, fake_x, enn, params, index_key)
+
+    # Regularize towards prior output
+    loss = self.scale * l2_training_penalty(batched_out)
+
+    # Distill aggregate stats to the "mean_index"
+    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
+      distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
+      loss += distill_mean_classification(batched_out, distill_out)
+      loss += distill_var_classification(batched_out, distill_out)
+    return loss, (state, {})

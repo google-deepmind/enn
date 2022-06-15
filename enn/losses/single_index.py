@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
 """Collection of simple losses applied to one single index."""
+
+# TODO(author3): Remove this file. We should use single_index_with_state.py.
 import dataclasses
 from typing import Callable, Optional
 

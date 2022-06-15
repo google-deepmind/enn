@@ -15,7 +15,11 @@
 # ============================================================================
 """Single index loss functions *with state* (e.g. BatchNorm)."""
 
-from typing import Callable
+# TODO(author3): Rename this file to single_index.py and remove WithState from
+# all module names.
+
+import dataclasses
+from typing import Callable, Optional
 
 import chex
 from enn import base_legacy
@@ -122,6 +126,31 @@ def add_data_noise_to_loss_with_state(
   return noisy_loss
 
 
+@dataclasses.dataclass
+class L2LossWithState(SingleIndexLossFnWithState):
+  """L2 regression applied to a single epistemic index."""
+
+  def __call__(self,
+               apply: base_legacy.ApplyFnWithState,
+               params: hk.Params,
+               state: hk.State,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index,) -> base_legacy.LossOutputWithState:
+    """L2 regression applied to a single epistemic index."""
+    chex.assert_shape(batch.y, (None, 1))
+    chex.assert_shape(batch.data_index, (None, 1))
+    net_out, state = apply(params, state, batch.x, index)
+    net_out = utils.parse_net_output(net_out)
+    chex.assert_equal_shape([net_out, batch.y])
+    sq_loss = jnp.square(utils.parse_net_output(net_out) - batch.y)
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.data_index)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, sq_loss])
+    return jnp.mean(batch_weights * sq_loss), (state, {})
+
+
 class XentLossWithState(SingleIndexLossFnWithState):
   """Cross-entropy single index loss with network state as auxiliary."""
 
@@ -172,3 +201,82 @@ def xent_loss_with_state_custom_labels(
     loss = jnp.mean(batch_weights * softmax_xent)
     return loss, (state, {'loss': loss})
   return single_loss
+
+
+@dataclasses.dataclass
+class AccuracyErrorLossWithState(SingleIndexLossFnWithState):
+  """Evaluates the accuracy error of a greedy logit predictor."""
+  num_classes: int
+
+  def single_loss(
+      self,
+      apply: base_legacy.ApplyFnWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
+    chex.assert_shape(batch.y, (None, 1))
+    net_out, state = apply(params, state, batch.x, index)
+    logits = utils.parse_net_output(net_out)
+    preds = jnp.argmax(logits, axis=1)
+    correct = (preds == batch.y[:, 0])
+    accuracy = jnp.mean(correct)
+    return 1 - accuracy, (state, {'accuracy': accuracy})
+
+
+@dataclasses.dataclass
+class ElboLossWithState(SingleIndexLossFnWithState):
+  """Standard VI loss (negative of evidence lower bound).
+
+  Given latent variable u with model density q(u), prior density p_0(u)
+  and likelihood function p(D|u) the evidence lower bound is defined as
+      ELBO(q) = E[log(p(D|u))] - KL(q(u)||p_0(u))
+  In other words, maximizing ELBO is equivalent to regularized log likelihood
+  maximization where regularization is encouraging the learned latent
+  distribution to be close to the latent prior as measured by KL.
+  """
+
+  log_likelihood_fn: Callable[[base_legacy.Output, base_legacy.Batch], float]
+  model_prior_kl_fn: Callable[
+      [base_legacy.Output, hk.Params, base_legacy.Index], float]
+  temperature: Optional[float] = None
+  input_dim: Optional[int] = None
+
+  def __call__(
+      self,
+      apply: base_legacy.ApplyFnWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
+    """This function returns a one-sample MC estimate of the ELBO."""
+    out, state = apply(params, state, batch.x, index)
+    log_likelihood = self.log_likelihood_fn(out, batch)
+    model_prior_kl = self.model_prior_kl_fn(out, params, index)
+    chex.assert_equal_shape([log_likelihood, model_prior_kl])
+    if self.temperature and self.input_dim:
+      model_prior_kl *= jnp.sqrt(self.temperature) * self.input_dim
+    return model_prior_kl - log_likelihood, (state, {})
+
+
+@dataclasses.dataclass
+class VaeLossWithState(SingleIndexLossFnWithState):
+  """VAE loss."""
+  log_likelihood_fn: Callable[[base_legacy.OutputWithPrior, base_legacy.Batch],
+                              float]
+  latent_kl_fn: Callable[[base_legacy.OutputWithPrior], float]
+
+  def __call__(
+      self,
+      apply: base_legacy.ApplyFnWithState,
+      params: hk.Params,
+      state: hk.State,
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
+    net_out, state = apply(params, state, batch.x, index)
+    kl_term = self.latent_kl_fn(net_out)
+    log_likelihood = self.log_likelihood_fn(net_out, batch)
+    return kl_term - log_likelihood, (state, {})

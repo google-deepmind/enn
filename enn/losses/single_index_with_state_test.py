@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Tests for ENN single index losses with state."""
+"""Tests for ENN single index losses."""
 
 from typing import Dict, Text, Tuple
 
@@ -21,14 +21,15 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from enn import base_legacy
 from enn import networks
-from enn import utils
 from enn.losses import single_index_with_state
+from enn.losses.single_index_with_state import ElboLossWithState
 import haiku as hk
 import jax
 import numpy as np
 
 
-class DummyLossFn(single_index_with_state.SingleIndexLossFnWithState):
+class DummySingleIndexLossFn(
+    single_index_with_state.SingleIndexLossFnWithState):
   """A dummy loss fn that returns the normalized index as loss.
 
   It also returns a constant dummy metrics. It is meant to be used with an
@@ -62,7 +63,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     dummy_metrics = {'a': 0, 'b': 1}
     # A dummy loss fn that returns the normalized index as loss and two constant
     # metrics. Index is random but normalized such that its mean is 1.
-    single_loss_fn = DummyLossFn(num_ensemble, dummy_metrics)
+    single_loss_fn = DummySingleIndexLossFn(num_ensemble, dummy_metrics)
 
     num_index_samples = 100
     loss_fn = single_index_with_state.average_single_index_loss_with_state(
@@ -73,7 +74,6 @@ class AvgSingleIndexLossTest(absltest.TestCase):
         num_ensemble=num_ensemble,
         dummy_input=dummy_batch.x,
     )
-    enn = utils.wrap_enn_as_enn_with_state(enn)
 
     loss, (unused_new_state, metrics) = loss_fn(
         enn=enn,
@@ -93,6 +93,48 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     self.assertDictEqual(
         metrics, dummy_metrics,
         f'expected metrics to be {dummy_metrics} but it is {metrics}')
+
+
+class L2LossTest(absltest.TestCase):
+
+  @classmethod
+  def setUpClass(cls):
+    super().setUpClass()
+    batch_size = 4
+    cls._batch = base_legacy.Batch(
+        x=np.expand_dims(np.arange(batch_size), 1),
+        y=np.zeros(shape=(batch_size, 1)),
+        data_index=np.expand_dims(np.arange(batch_size), 1),
+    )
+    cls._params = dict()
+    cls._state = dict()
+    cls._index = np.array([])
+
+  def test_null_bootstrapping(self):
+    """Test computed loss is correct when there is no bootstrapping."""
+
+    apply = lambda p, s, x, i: (x[:, :1], s)
+    output, unused_state = apply(
+        self._params,
+        self._state,
+        self._batch.x,
+        self._index,
+    )
+    # y is zero, hence the loss is just the mean square of the output.
+    expected_loss = np.mean(np.square(output))
+
+    loss_fn = single_index_with_state.L2LossWithState()
+    loss, (unused_new_state, unused_metrics) = loss_fn(
+        apply=apply,
+        params=self._params,
+        state=self._state,
+        batch=self._batch,
+        index=self._index,
+    )
+    self.assertEqual(
+        loss, expected_loss,
+        (f'expected loss with null bootstrapping is {expected_loss}, '
+         f'but it is {loss}'))
 
 
 class XentLossTest(parameterized.TestCase):
@@ -121,7 +163,7 @@ class XentLossTest(parameterized.TestCase):
     apply = lambda p, s, x, i: (np.ones(shape=(x.shape[0], num_classes)), s)
     # Since the output is uniform the log loss is always log(1/num_classes).
     expected_loss = -np.log(1.0 / num_classes)
-    loss, unused_metrics = loss_fn(
+    loss, (unused_state, unused_metrics) = loss_fn(
         apply=apply,
         params=self._params,
         state=self._state,
@@ -139,7 +181,7 @@ class XentLossTest(parameterized.TestCase):
     # Compute the expected log loss.
     expected_loss = (
         jax.nn.logsumexp(logits) - np.mean(batch.y == 0) * logits[0])
-    loss, unused_metrics = loss_fn(
+    loss, (unused_state, unused_metrics) = loss_fn(
         apply=apply,
         params=self._params,
         state=self._state,
@@ -166,7 +208,7 @@ class XentLossTest(parameterized.TestCase):
 
     # Test when apply always return a uniform distribution over labels
     apply = lambda p, s, x, i: (np.ones(shape=(x.shape[0], num_classes)), s)
-    loss, unused_metrics = loss_fn(
+    loss, (unused_state, unused_metrics) = loss_fn(
         apply=apply,
         params=self._params,
         state=self._state,
@@ -176,6 +218,40 @@ class XentLossTest(parameterized.TestCase):
     self.assertEqual(
         loss, 0.0, ('expected loss with zero bootstrapping weights to be zero, '
                     f'but it is {loss}'))
+
+
+class ElboLossTest(absltest.TestCase):
+
+  def test_elbo_loss(self):
+    """Compute the ELBO for some trivial loglikelihood and prior kl.
+
+    There is a dummy log_likelihood_fn that just returns the first argument
+    (out). and a dummy model_prior_kl_fn that returns 0. The elbo loss is equal
+    to model_prior_kl minus log_likelihood and hence should be -out.
+    """
+
+    batch_size = 4
+    batch = base_legacy.Batch(
+        x=np.expand_dims(np.arange(batch_size), 1),
+        y=np.arange(batch_size),
+    )
+    params = dict()
+    state = dict()
+    apply = lambda p, s, x, i: (x[:, 0], s)
+    index = np.array([])
+    output, unused_state = apply(params, state, batch.x, index)
+
+    log_likelihood_fn = lambda out, batch: out
+    model_prior_kl_fn = lambda out, params, index: np.zeros_like(out)
+
+    elbo_loss = ElboLossWithState(
+        log_likelihood_fn=log_likelihood_fn,
+        model_prior_kl_fn=model_prior_kl_fn)
+
+    loss, (unused_state, unused_metrics) = elbo_loss(
+        apply=apply, params=params, state=state, batch=batch, index=index)
+    self.assertTrue((loss == -output).all(),
+                    f'expected elbo loss to be {-output} but it is {loss}')
 
 
 if __name__ == '__main__':

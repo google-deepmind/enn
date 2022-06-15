@@ -21,6 +21,7 @@ import chex
 from enn import base_legacy
 from enn import networks
 from enn.losses import single_index
+from enn.losses import single_index_with_state
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -44,6 +45,7 @@ def transform_to_2hot(target: base_legacy.Array,
   return  lower_one_hot + upper_one_hot
 
 
+# TODO(author3): Remove this module. We should use Cat2HotRegressionWithState.
 @dataclasses.dataclass
 class Cat2HotRegression(single_index.SingleIndexLossFn):
   """Apply categorical loss to 2-hot regression target."""
@@ -72,3 +74,35 @@ class Cat2HotRegression(single_index.SingleIndexLossFn):
       batch_weights = batch.weights
     chex.assert_equal_shape([batch_weights, xent_loss])
     return jnp.mean(batch_weights * xent_loss), {}
+
+
+@dataclasses.dataclass
+class Cat2HotRegressionWithState(
+    single_index_with_state.SingleIndexLossFnWithState):
+  """Apply categorical loss to 2-hot regression target."""
+
+  def __call__(self, apply: base_legacy.ApplyFnWithState, params: hk.Params,
+               state: hk.State,
+               batch: base_legacy.Batch,
+               index: base_legacy.Index) -> base_legacy.LossOutputWithState:
+    chex.assert_shape(batch.y, (None, 1))
+    chex.assert_shape(batch.data_index, (None, 1))
+
+    # Forward network and check type
+    net_out, state = apply(params, state, batch.x, index)
+    assert isinstance(net_out, networks.CatOutputWithPrior)
+
+    # Form the target values in real space
+    target_val = batch.y - net_out.prior
+
+    # Convert values to 2-hot target probabilities
+    probs = jax.vmap(transform_to_2hot, in_axes=[0, None])(
+        jnp.squeeze(target_val), net_out.extra['atoms'])
+    probs = jnp.expand_dims(probs, 1)
+    xent_loss = -jnp.sum(probs * jax.nn.log_softmax(net_out.train), axis=-1)
+    if batch.weights is None:
+      batch_weights = jnp.ones_like(batch.data_index)
+    else:
+      batch_weights = batch.weights
+    chex.assert_equal_shape([batch_weights, xent_loss])
+    return jnp.mean(batch_weights * xent_loss), (state, {})

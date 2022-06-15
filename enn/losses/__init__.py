@@ -17,14 +17,18 @@
 """Exposing the public methods of the losses."""
 # Categorical regression
 from enn.losses.categorical_regression import Cat2HotRegression
+from enn.losses.categorical_regression import Cat2HotRegressionWithState
 from enn.losses.categorical_regression import transform_to_2hot
 
 # Prior losses
 from enn.losses.prior_losses import ClassificationPriorLoss
+from enn.losses.prior_losses import ClassificationPriorLossWithState
 from enn.losses.prior_losses import generate_batched_forward_at_data
+from enn.losses.prior_losses import generate_batched_forward_at_data_with_state
 from enn.losses.prior_losses import make_gaussian_dataset
 from enn.losses.prior_losses import MatchingGaussianData
 from enn.losses.prior_losses import RegressionPriorLoss
+from enn.losses.prior_losses import RegressionPriorLossWithState
 
 # Single Index
 from enn.losses.single_index import AccuracyErrorLoss
@@ -38,10 +42,14 @@ from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
 # Single Index With State
+from enn.losses.single_index_with_state import AccuracyErrorLossWithState
 from enn.losses.single_index_with_state import add_data_noise_to_loss_with_state
 from enn.losses.single_index_with_state import average_single_index_loss_with_state
+from enn.losses.single_index_with_state import ElboLossWithState
+from enn.losses.single_index_with_state import L2LossWithState
 from enn.losses.single_index_with_state import SingleIndexLossFnWithState
 from enn.losses.single_index_with_state import SingleIndexLossFnWithStateBase
+from enn.losses.single_index_with_state import VaeLossWithState
 from enn.losses.single_index_with_state import xent_loss_with_state_custom_labels
 from enn.losses.single_index_with_state import XentLossWithState
 
