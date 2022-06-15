@@ -17,7 +17,7 @@
 """Utilities for perturbing data with Gaussian noise."""
 
 import dataclasses
-from typing import Callable
+from typing import Callable, Union
 
 import chex
 from enn import base_legacy
@@ -26,11 +26,14 @@ from enn.data_noise import base as data_noise_base
 import jax
 import jax.numpy as jnp
 
+_ENN = Union[base_legacy.EpistemicNetwork,
+             base_legacy.EpistemicNetworkWithState]
+
 
 @dataclasses.dataclass
 class GaussianTargetNoise(data_noise_base.DataNoise):
   """Apply Gaussian noise to the target y."""
-  enn: base_legacy.EpistemicNetwork
+  enn: _ENN
   noise_std: float
   seed: int = 0
 
@@ -47,7 +50,7 @@ NoiseFn = Callable[[base_legacy.DataIndex, base_legacy.Index],
                    base_legacy.Array]
 
 
-def make_noise_fn(enn: base_legacy.EpistemicNetwork,
+def make_noise_fn(enn: _ENN,
                   noise_std: float,
                   seed: int = 0) -> NoiseFn:
   """Factory method to create noise_fn for given ENN."""
