@@ -44,8 +44,6 @@ class ExperimentTest(parameterized.TestCase):
         dummy_input=next(dataset).x,
     )
 
-    enn = utils.wrap_enn_with_state_as_enn(enn)
-
     optimizer = optax.adam(1e-3)
     if num_outputs == 1:
       single_loss = losses.L2Loss()
@@ -55,6 +53,7 @@ class ExperimentTest(parameterized.TestCase):
       raise ValueError(f'num_outputs should be >= 1. It is {num_outputs}.')
     loss_fn = losses.average_single_index_loss(single_loss,
                                                num_index_samples=10)
+    loss_fn = utils.wrap_loss_as_loss_with_state(loss_fn)
     experiment = Experiment(enn, loss_fn, optimizer, dataset, seed)
     init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
     initial_loss = experiment.loss(next(dataset), init_key)

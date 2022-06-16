@@ -144,7 +144,7 @@ def train_vae(encoder: PreTransformFn,
   loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
 
   # Train VAE by gradient descent for num_batches and extract parameters.
-  experiment = supervised.Experiment(
+  experiment = supervised.ExperimentLegacy(
       enn=make_vae_enn(encoder, decoder, latent_dim),
       loss_fn=loss_fn,
       optimizer=optimizer,

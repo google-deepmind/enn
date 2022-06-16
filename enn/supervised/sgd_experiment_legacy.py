@@ -29,7 +29,6 @@ import optax
 
 class TrainingState(NamedTuple):
   params: hk.Params
-  network_state: hk.State
   opt_state: optax.OptState
 
 
@@ -41,8 +40,8 @@ class Experiment(supervised_base.BaseExperiment):
   """
 
   def __init__(self,
-               enn: base_legacy.EpistemicNetworkWithState,
-               loss_fn: base_legacy.LossFnWithState,
+               enn: base_legacy.EpistemicNetwork,
+               loss_fn: base_legacy.LossFn,
                optimizer: optax.GradientTransformation,
                dataset: base_legacy.BatchIterator,
                seed: int = 0,
@@ -63,11 +62,10 @@ class Experiment(supervised_base.BaseExperiment):
     self._eval_log_freq = eval_log_freq
 
     # Forward network at random index
-    def forward(params: hk.Params, state: hk.State, inputs: base_legacy.Array,
+    def forward(params: hk.Params, inputs: base_legacy.Array,
                 key: base_legacy.RngKey) -> base_legacy.Array:
       index = self.enn.indexer(key)
-      out, state = self.enn.apply(params, state, inputs, index)
-      return out
+      return self.enn.apply(params, inputs, index)
     self._forward = jax.jit(forward)
 
     # Define the SGD step on the loss
@@ -77,15 +75,13 @@ class Experiment(supervised_base.BaseExperiment):
         key: base_legacy.RngKey,
     ) -> Tuple[TrainingState, base_legacy.LossMetrics]:
       # Calculate the loss, metrics and gradients
-      loss_output, grads = jax.value_and_grad(self._loss, has_aux=True)(
-          state.params, state.network_state, batch, key)
-      loss, (network_state, metrics) = loss_output
+      (loss, metrics), grads = jax.value_and_grad(self._loss, has_aux=True)(
+          state.params, batch, key)
       metrics.update({'loss': loss})
       updates, new_opt_state = optimizer.update(grads, state.opt_state)
       new_params = optax.apply_updates(state.params, updates)
       new_state = TrainingState(
           params=new_params,
-          network_state=network_state,
           opt_state=new_opt_state,
       )
       return new_state, metrics
@@ -94,9 +90,9 @@ class Experiment(supervised_base.BaseExperiment):
     # Initialize networks
     batch = next(self.dataset)
     index = self.enn.indexer(next(self.rng))
-    params, network_state = self.enn.init(next(self.rng), batch.x, index)
+    params = self.enn.init(next(self.rng), batch.x, index)
     opt_state = optimizer.init(params)
-    self.state = TrainingState(params, network_state, opt_state)
+    self.state = TrainingState(params, opt_state)
     self.step = 0
     self.logger = logger or loggers.make_default_logger(
         'experiment', time_delta=0)
@@ -118,7 +114,7 @@ class Experiment(supervised_base.BaseExperiment):
       # Periodically evaluate the other datasets.
       if self._eval_datasets and self.step % self._eval_log_freq == 0:
         for name, dataset in self._eval_datasets.items():
-          loss, (unused_network_state, metrics) = self._loss(
+          loss, metrics = self._loss(
               self.state.params, next(dataset), next(self.rng))
           metrics.update({
               'dataset': name,
@@ -131,20 +127,9 @@ class Experiment(supervised_base.BaseExperiment):
   def predict(self, inputs: base_legacy.Array,
               key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the trained model at given inputs."""
-    return self._forward(
-        self.state.params,
-        self.state.network_state,
-        inputs,
-        key,
-    )
+    return self._forward(self.state.params, inputs, key)
 
   def loss(self, batch: base_legacy.Batch,
            key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the loss for one batch of data."""
-    loss, (unused_network_state, unused_metrics) = self._loss(
-        self.state.params,
-        self.state.network_state,
-        batch,
-        key,
-    )
-    return loss
+    return self._loss(self.state.params, batch, key)

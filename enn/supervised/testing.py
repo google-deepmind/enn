@@ -37,12 +37,13 @@ def make_test_experiment(regression: bool) -> TestExperiment:
   optimizer = optax.adam(1e-3)
   if regression:
     num_outputs = 1
-    single_loss = losses.L2Loss()
+    single_loss = losses.L2LossWithState()
   else:
     num_outputs = 2
-    single_loss = losses.XentLoss(num_outputs)
+    single_loss = losses.XentLossWithState(num_outputs)
 
-  loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
+  loss_fn = losses.average_single_index_loss_with_state(
+      single_loss, num_index_samples=1)
   return TestExperiment(
       num_outputs=num_outputs,
       experiment_ctor=lambda enn: sgd_experiment.Experiment(  # pylint:disable=g-long-lambda

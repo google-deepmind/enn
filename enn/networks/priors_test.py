@@ -40,7 +40,7 @@ class PriorsTest(parameterized.TestCase):
       return net(x)
 
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = utils.wrap_transformed_as_enn(transformed)
+    enn = utils.wrap_transformed_as_enn_with_state(transformed)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
@@ -52,12 +52,12 @@ class PriorsTest(parameterized.TestCase):
       net = hk.nets.MLP(hiddens + [test_experiment.num_outputs])
       return net(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    train_enn = utils.wrap_transformed_as_enn(transformed)
+    train_enn = utils.wrap_transformed_as_enn_with_state(transformed)
 
     prior_params = transformed.init(
         jax.random.PRNGKey(0), test_experiment.dummy_input)
     prior_fn = lambda x, z: transformed.apply(prior_params, x)
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn=train_enn,
         prior_fn=prior_fn,
         prior_scale=1.,
@@ -90,7 +90,7 @@ class PriorsTest(parameterized.TestCase):
       net = hk.nets.MLP(output_sizes)
       return net(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    train_enn = utils.wrap_transformed_as_enn(transformed)
+    train_enn = utils.wrap_transformed_as_enn_with_state(transformed)
 
     dummy_x = test_experiment.dummy_input
     dummy_z = train_enn.indexer(jax.random.PRNGKey(0))
@@ -99,7 +99,7 @@ class PriorsTest(parameterized.TestCase):
         x_sample=dummy_x, z_sample=dummy_z, rng=next(rng_seq),
         prior_output_sizes=output_sizes)
 
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn=train_enn,
         prior_fn=prior_fn,
         prior_scale=1.,

@@ -40,7 +40,7 @@ class EpinetTest(parameterized.TestCase):
     def net_fn(x):
       return mlp.ExposedMLP(output_sizes)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = utils.wrap_transformed_as_enn(transformed)
+    enn = utils.wrap_transformed_as_enn_with_state(transformed)
 
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
@@ -65,7 +65,6 @@ class EpinetTest(parameterized.TestCase):
       )
     enn = utils.epistemic_network_from_module(
         enn_ctor, indexers.GaussianIndexer(index_dim))
-    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

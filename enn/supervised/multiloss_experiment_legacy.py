@@ -30,7 +30,6 @@ import optax
 
 class TrainingState(NamedTuple):
   params: hk.Params
-  network_state: hk.State
   opt_state: optax.OptState
 
 
@@ -42,16 +41,15 @@ class MultilossTrainer:
     If should_train(step):
       Apply one step of loss_fn on a batch = next(dataset).
   """
-  loss_fn: base_legacy.LossFnWithState  # Loss function
+  loss_fn: base_legacy.LossFn  # Loss function
   dataset: base_legacy.BatchIterator  # Dataset to pull batch from
   should_train: Callable[[int], bool] = lambda _: True  # Which steps to train
   name: str = 'loss'  # Name used for logging
 
 
 # Type definition for loss function after internalizing the ENN
-PureLoss = Callable[
-    [hk.Params, hk.State, base_legacy.Batch, base_legacy.RngKey],
-    base_legacy.LossOutputWithState]
+PureLoss = Callable[[hk.Params, base_legacy.Batch, base_legacy.RngKey],
+                    base_legacy.Array]
 
 
 class MultilossExperiment(supervised_base.BaseExperiment):
@@ -69,7 +67,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
   """
 
   def __init__(self,
-               enn: base_legacy.EpistemicNetworkWithState,
+               enn: base_legacy.EpistemicNetwork,
                trainers: Sequence[MultilossTrainer],
                optimizer: optax.GradientTransformation,
                seed: int = 0,
@@ -87,11 +85,10 @@ class MultilossExperiment(supervised_base.BaseExperiment):
     self._eval_log_freq = eval_log_freq
 
     # Forward network at random index
-    def forward(params: hk.Params, state: hk.State, inputs: base_legacy.Array,
+    def forward(params: hk.Params, inputs: base_legacy.Array,
                 key: base_legacy.RngKey) -> base_legacy.Array:
       index = self.enn.indexer(key)
-      out, state = self.enn.apply(params, state, inputs, index)
-      return out
+      return self.enn.apply(params, inputs, index)
     self._forward = jax.jit(forward)
 
     # Define the SGD step on the loss
@@ -102,27 +99,24 @@ class MultilossExperiment(supervised_base.BaseExperiment):
         key: base_legacy.RngKey,
     ) -> Tuple[TrainingState, base_legacy.LossMetrics]:
       # Calculate the loss, metrics and gradients
-      loss_output, grads = jax.value_and_grad(pure_loss, has_aux=True)(
-          state.params, state.network_state, batch, key)
-      loss, (network_state, metrics) = loss_output
+      (loss, metrics), grads = jax.value_and_grad(pure_loss, has_aux=True)(
+          state.params, batch, key)
       metrics.update({'loss': loss})
       updates, new_opt_state = optimizer.update(grads, state.opt_state)
       new_params = optax.apply_updates(state.params, updates)
       new_state = TrainingState(
           params=new_params,
-          network_state=network_state,
           opt_state=new_opt_state,
       )
       return new_state, metrics
-
     self._sgd_step = jax.jit(sgd_step, static_argnums=0)
 
     # Initialize networks
     batch = next(self.pure_trainers[0].dataset)
     index = self.enn.indexer(next(self.rng))
-    params, network_state = self.enn.init(next(self.rng), batch.x, index)
+    params = self.enn.init(next(self.rng), batch.x, index)
     opt_state = optimizer.init(params)
-    self.state = TrainingState(params, network_state, opt_state)
+    self.state = TrainingState(params, opt_state)
     self.step = 0
     self.logger = logger or loggers.make_default_logger(
         'experiment', time_delta=0)
@@ -151,12 +145,8 @@ class MultilossExperiment(supervised_base.BaseExperiment):
       if self._eval_datasets and self.step % self._eval_log_freq == 0:
         for name, dataset in self._eval_datasets.items():
           for t in self.pure_trainers:
-            loss, (unused_network_state, metrics) = t.pure_loss(
-                self.state.params,
-                self.state.network_state,
-                next(dataset),
-                next(self.rng),
-            )
+            loss, metrics = t.pure_loss(
+                self.state.params, next(dataset), next(self.rng))
             metrics.update({
                 'dataset': name,
                 'step': self.step,
@@ -169,19 +159,13 @@ class MultilossExperiment(supervised_base.BaseExperiment):
   def predict(self, inputs: base_legacy.Array,
               key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the trained model at given inputs."""
-    return self._forward(
-        self.state.params,
-        self.state.network_state,
-        inputs,
-        key,
-    )
+    return self._forward(self.state.params, inputs, key)
 
   def loss(self, batch: base_legacy.Batch,
            key: base_legacy.RngKey) -> base_legacy.Array:
     """Evaluate the first loss for one batch of data."""
     pure_loss = self.pure_trainers[0].pure_loss
-    loss, _ = pure_loss(self.state.params, self.state.network_state, batch, key)
-    return loss
+    return pure_loss(self.state.params, batch, key)
 
 
 @dataclasses.dataclass
@@ -195,7 +179,7 @@ class _PureTrainer:
 
 def _purify_trainers(
     trainers: Sequence[MultilossTrainer],
-    enn: base_legacy.EpistemicNetworkWithState) -> Sequence[_PureTrainer]:
+    enn: base_legacy.EpistemicNetwork) -> Sequence[_PureTrainer]:
   """Converts MultilossTrainer to have *pure* loss function including enn."""
   pure_trainers = []
   for t in trainers:
