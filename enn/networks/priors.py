@@ -20,7 +20,6 @@ from typing import Callable, Iterable, Optional, Tuple, Union
 
 from absl import logging
 import chex
-from enn import base
 from enn import base_legacy
 from enn import utils
 import haiku as hk
@@ -59,19 +58,9 @@ class EnnStateWithAdditivePrior(base_legacy.EpistemicNetworkWithState):
         index: base_legacy.Index
     ) -> Tuple[base_legacy.OutputWithPrior, hk.State]:
       net_out, state_out = enn.apply(params, state, inputs, index)
+      net_out = utils.parse_to_output_with_prior(net_out)
       prior = prior_scale * prior_fn(inputs, index)
-      if isinstance(net_out, base_legacy.OutputWithPrior):
-        net_out: base_legacy.OutputWithPrior = net_out
-        out = net_out._replace(prior=net_out.prior + prior)
-      elif isinstance(net_out, base.Output):
-        net_out: base.Output = net_out
-        out = base_legacy.OutputWithPrior(
-            train=net_out.train,
-            prior=net_out.prior + prior,
-            extra=net_out.extra,
-        )
-      else:
-        out = base_legacy.OutputWithPrior(train=net_out, prior=prior)
+      out = net_out._replace(prior=net_out.prior + prior)
       return out, state_out
     super().__init__(
         apply=apply_fn,

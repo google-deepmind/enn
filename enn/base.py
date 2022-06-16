@@ -35,7 +35,8 @@ Input = tp.TypeVar('Input')  # Inputs to neural network
 Index = tp.Any  # Epistemic index
 
 
-class Output(tp.NamedTuple):
+# TODO(author3): Change Output interface to be only OutputWithPrior.
+class OutputWithPrior(tp.NamedTuple):
   """Output wrapper for networks with prior functions."""
   train: chex.Array
   prior: chex.Array = np.zeros(1)
@@ -44,6 +45,8 @@ class Output(tp.NamedTuple):
   @property
   def preds(self) -> chex.Array:
     return self.train + jax.lax.stop_gradient(self.prior)
+
+Output = tp.Union[chex.Array, OutputWithPrior]
 
 
 class EpistemicIndexer(typing_extensions.Protocol):

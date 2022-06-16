@@ -21,58 +21,31 @@
 
 import abc
 import dataclasses
-from typing import Any, Dict, Iterator, NamedTuple, Optional, Tuple, Union, TypeVar, Generic
+from typing import Generic, Tuple
 import warnings
 
+import chex
+from enn import base
 import haiku as hk
-import jax
-import jax.numpy as jnp
-import numpy as np
 import typing_extensions
 
 # WARNING: THIS FILE IS DEPRECATED, PLEASE MIGRATE TO base.py
 warnings.warn('Legacy interface is deprecated, please move to base.py',
               DeprecationWarning, stacklevel=2)
 
-Array = Union[np.ndarray, jnp.DeviceArray]
-DataIndex = Array  # Always integer elements
-Index = Any  # Epistemic index, paired with network
-RngKey = jnp.DeviceArray  # Integer pairs, see jax.random
-# Defining Input as a generic type for the input data. This allows our base
-# methods and classes to work with different types of input data, not only Array
-# defined here.
-Input = TypeVar('Input')
+Array = chex.Array
+DataIndex = base.DataIndex  # Always integer elements
+Index = base.Index  # Epistemic index, paired with network
+RngKey = chex.PRNGKey  # Integer pairs, see jax.random
+Input = base.Input
 
+Batch = base.Batch
+BatchIterator = base.BatchIterator
+LossMetrics = base.LossMetrics
+Data = base.Data
 
-# TODO(author3): Make Batch generic in input. This requires multiple
-# inheritance for NamedTuple which is not supported in Python 3.9 yet:
-# https://bugs.python.org/issue43923
-class Batch(NamedTuple):
-  x: Array  # Inputs
-  y: Array  # Targets
-  data_index: Optional[DataIndex] = None  # Integer identifiers for data
-  weights: Optional[Array] = None  # None should default to weights = jnp.ones
-  extra: Dict[str, Array] = {}  # You can put other optional stuff here
-
-BatchIterator = Iterator[Batch]  # Equivalent to the dataset we loop through
-LossMetrics = Dict[str, Array]
-# Defining Data as a generic type for a batch of data. This allows our base
-# methods and classes to work with different types of data batch, not only Batch
-# defined here.
-Data = TypeVar('Data')
-
-
-class OutputWithPrior(NamedTuple):
-  """Output wrapper for networks with prior functions."""
-  train: Array
-  prior: Array = np.zeros(1)
-  extra: Dict[str, Array] = {}
-
-  @property
-  def preds(self) -> Array:
-    return self.train + jax.lax.stop_gradient(self.prior)
-
-Output = Union[Array, OutputWithPrior]
+OutputWithPrior = base.OutputWithPrior
+Output = base.Output
 
 
 class EpistemicModule(abc.ABC, hk.Module):
@@ -140,58 +113,16 @@ LossFn = LossFnBase[Array, Batch]
 ################################################################################
 # Definitions for networks with "state" e.g. BatchNorm.
 ################################################################################
-class ApplyFnWithStateBase(typing_extensions.Protocol[Input]):
-  """Applies the ENN at given parameters, state, inputs, index."""
-
-  def __call__(
-      self,
-      params: hk.Params,
-      state: hk.State,
-      inputs: Input,
-      index: Index,
-  ) -> Tuple[Output, hk.State]:
-    """Applies the ENN at given parameters, state, inputs, index."""
-
-
-class InitFnWithStateBase(typing_extensions.Protocol[Input]):
-  """Initializes the ENN with state at given rng_key, inputs, index."""
-
-  def __call__(
-      self,
-      rng_key: RngKey,
-      inputs: Input,
-      index: Index,
-  ) -> Tuple[hk.Params, hk.State]:
-    """Initializes the ENN with state at given rng_key, inputs, index."""
-
-
-@dataclasses.dataclass
-class EpistemicNetworkWithStateBase(Generic[Input]):
-  """Convenient pairing of Haiku transformed function and index sampler."""
-  apply: ApplyFnWithStateBase[Input]
-  init: InitFnWithStateBase[Input]
-  indexer: EpistemicIndexer
-
+ApplyFnWithStateBase = base.ApplyFn
+InitFnWithStateBase = base.InitFn
+EpistemicNetworkWithStateBase = base.EpistemicNetwork
+LossFnWithStateBase = base.LossFn
+LossOutputWithState = base.LossOutput
 
 # Modules specialized to work only with Array inputs.
 ApplyFnWithState = ApplyFnWithStateBase[Array]
 InitFnWithState = InitFnWithStateBase[Array]
 EpistemicNetworkWithState = EpistemicNetworkWithStateBase[Array]
-
-LossOutputWithState = Tuple[Array, Tuple[hk.State, LossMetrics]]
-
-
-class LossFnWithStateBase(typing_extensions.Protocol[Input, Data]):
-  """Calculates a loss based on one batch of data per rng_key."""
-
-  def __call__(self,
-               enn: EpistemicNetworkWithStateBase[Input],
-               params: hk.Params,
-               state: hk.State,
-               batch: Data,
-               key: RngKey) -> LossOutputWithState:
-    """Computes a loss based on one batch of data and a random key."""
-
 
 # LossFnWithStateBase specialized to work only with Array inputs and Batch data.
 LossFnWithState = LossFnWithStateBase[Array, Batch]
