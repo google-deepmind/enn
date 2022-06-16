@@ -44,6 +44,8 @@ class ExperimentTest(parameterized.TestCase):
         dummy_input=next(dataset).x,
     )
 
+    enn = utils.wrap_enn_with_state_as_enn(enn)
+
     optimizer = optax.adam(1e-3)
     if num_outputs == 1:
       single_loss = losses.L2Loss()

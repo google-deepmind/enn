@@ -45,6 +45,7 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
         num_ensemble=num_ensemble,
         num_feat=10,
     )
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
@@ -57,6 +58,7 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
         dummy_input=next(dataset).x,
         num_ensemble=3,
     )
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     single_loss = losses.Cat2HotRegression()
     loss_fn = losses.average_single_index_loss(single_loss, 1)
     experiment = supervised.Experiment(enn, loss_fn, optax.adam(1e-3), dataset)

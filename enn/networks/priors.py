@@ -80,17 +80,18 @@ class EnnStateWithAdditivePrior(base_legacy.EpistemicNetworkWithState):
     )
 
 
-def convert_enn_to_prior_fn(enn: base_legacy.EpistemicNetwork,
+def convert_enn_to_prior_fn(enn: base_legacy.EpistemicNetworkWithState,
                             dummy_input: base_legacy.Array,
                             key: base_legacy.RngKey) -> PriorFn:
   """Converts an ENN to prior function for fixed prior params."""
   index_key, init_key, _ = jax.random.split(key, 3)
   index = enn.indexer(index_key)
-  prior_params = enn.init(init_key, dummy_input, index)
+  prior_params, prior_state = enn.init(init_key, dummy_input, index)
 
   def prior_fn(x: base_legacy.Array,
                z: base_legacy.Index) -> base_legacy.Output:
-    return enn.apply(prior_params, x, z)
+    output, unused_state = enn.apply(prior_params, prior_state, x, z)
+    return output
   return prior_fn
 
 

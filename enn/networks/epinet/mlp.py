@@ -26,11 +26,12 @@ from enn.networks import mlp
 import haiku as hk
 
 
-def make_mlp_epinet(output_sizes: Sequence[int],
-                    epinet_hiddens: Sequence[int],
-                    index_dim: int,
-                    expose_layers: Optional[Sequence[bool]] = None,
-                    prior_scale: float = 1.) -> enn_base.EpistemicNetwork:
+def make_mlp_epinet(
+    output_sizes: Sequence[int],
+    epinet_hiddens: Sequence[int],
+    index_dim: int,
+    expose_layers: Optional[Sequence[bool]] = None,
+    prior_scale: float = 1.) -> enn_base.EpistemicNetworkWithState:
   """Factory method to create a standard MLP epinet."""
 
   def net_fn(x: enn_base.Array, z: enn_base.Index) -> enn_base.OutputWithPrior:
@@ -50,8 +51,8 @@ def make_mlp_epinet(output_sizes: Sequence[int],
         prior=prior_scale * epi_prior,
     )
 
-  transformed = hk.without_apply_rng(hk.transform(net_fn))
-  return enn_base.EpistemicNetwork(
+  transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
+  return enn_base.EpistemicNetworkWithState(
       apply=transformed.apply,
       init=transformed.init,
       indexer=indexers.GaussianIndexer(index_dim),

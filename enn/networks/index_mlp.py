@@ -66,7 +66,7 @@ class ConcatIndexMLP(base_legacy.EpistemicModule):
     )
 
 
-class IndexMLPWithGpPrior(base_legacy.EpistemicNetwork):
+class IndexMLPWithGpPrior(base_legacy.EpistemicNetworkWithState):
   """An Index MLP with GP prior as an ENN."""
 
   def __init__(self,
@@ -103,14 +103,18 @@ class IndexMLPWithGpPrior(base_legacy.EpistemicNetwork):
       prior_fn = jnp.sum(jnp.stack(all_priors, axis=-1) * index, axis=-1)
       return net_out._replace(prior=prior_scale * prior_fn)
 
+    # TODO(author3): Change transformed above to work with state.
+    apply = utils.wrap_apply_as_apply_with_state(apply)
+    init = utils.wrap_init_as_init_with_state(transformed.init)
+
     super().__init__(
         apply=apply,
-        init=transformed.init,
+        init=init,
         indexer=indexers.GaussianWithUnitIndexer(num_prior + 1),
     )
 
 
-class IndexMLPEnn(base_legacy.EpistemicNetwork):
+class IndexMLPEnn(base_legacy.EpistemicNetworkWithState):
   """An MLP with index appended to each layer as ENN."""
 
   def __init__(self,

@@ -20,6 +20,7 @@ from typing import List
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
+from enn import utils
 from enn.networks import hypermodels
 from enn.networks import indexers
 import haiku as hk
@@ -52,6 +53,7 @@ class MLPHypermodelTest(parameterized.TestCase):
         indexer=indexer,
         hidden_sizes=hyper_hiddens,
     )
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
@@ -82,7 +84,7 @@ class MLPHypermodelTest(parameterized.TestCase):
         [test_experiment.num_outputs],
         hyper_hidden_sizes=hyper_hiddens,
         prior_hyper_hidden_sizes=prior_hyper_hiddens)
-
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
@@ -113,7 +115,7 @@ class MLPHypermodelTest(parameterized.TestCase):
         prior_base_output_sizes=prior_hiddens +
         [test_experiment.num_outputs],
         hyper_hidden_sizes=hyper_hiddens,)
-
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

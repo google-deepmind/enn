@@ -33,7 +33,7 @@ import numpy as np
 # this can easily be converted into a form that works with batched index.
 
 
-class MLPHypermodel(base_legacy.EpistemicNetwork):
+class MLPHypermodel(base_legacy.EpistemicNetworkWithState):
   """MLP hypermodel for transformed_base as EpistemicNetwork."""
 
   def __init__(
@@ -182,7 +182,7 @@ def hypermodel_module(
 # pytype: enable=bad-return-type
 
 
-class MLPHypermodelWithHypermodelPrior(base_legacy.EpistemicNetwork):
+class MLPHypermodelWithHypermodelPrior(base_legacy.EpistemicNetworkWithState):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(
@@ -239,7 +239,7 @@ class MLPHypermodelWithHypermodelPrior(base_legacy.EpistemicNetwork):
         scale=scale)
 
     # Defining the ENN with the prior `prior_fn`
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn_wo_prior, prior_fn, prior_scale=prior_scale)
 
     super().__init__(enn.apply, enn.init, enn.indexer)
@@ -352,7 +352,8 @@ class PriorMLPIndependentLayers(hk.Module):
     return out
 
 
-class MLPHypermodelPriorIndependentLayers(base_legacy.EpistemicNetwork):
+class MLPHypermodelPriorIndependentLayers(base_legacy.EpistemicNetworkWithState
+                                         ):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(self,
@@ -419,7 +420,7 @@ class MLPHypermodelPriorIndependentLayers(base_legacy.EpistemicNetwork):
         scale=scale)
 
     # Defining the ENN with the prior `prior_fn`
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn_wo_prior, prior_fn, prior_scale=prior_scale)
 
     super().__init__(enn.apply, enn.init, enn.indexer)

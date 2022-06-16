@@ -14,12 +14,13 @@
 # limitations under the License.
 # ============================================================================
 """Efficient ensemble implementations for JAX/Haiku via einsum."""
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
 
 # TODO(author2): Delete this implementation, base ensemble is fast enough.
 
 import chex
 from enn import base_legacy
+from enn import utils
 from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
@@ -32,7 +33,7 @@ def make_einsum_ensemble_mlp_enn(
     num_ensemble: int,
     nonzero_bias: bool = True,
     activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
-) -> base_legacy.EpistemicNetwork:
+) -> base_legacy.EpistemicNetworkWithState:
   """Factory method to create fast einsum MLP ensemble ENN.
 
   This is a specialized implementation for ReLU MLP without a prior network.
@@ -67,7 +68,10 @@ def make_einsum_ensemble_mlp_enn(
 
   indexer = indexers.EnsembleIndexer(num_ensemble)
 
-  return base_legacy.EpistemicNetwork(apply, init, indexer)
+  # TODO(author3): Change apply and init fns above to work with state.
+  apply = utils.wrap_apply_as_apply_with_state(apply)
+  init = utils.wrap_init_as_init_with_state(init)
+  return base_legacy.EpistemicNetworkWithState(apply, init, indexer)
 
 
 def make_ensemble_mlp_with_prior_enn(
@@ -77,7 +81,7 @@ def make_ensemble_mlp_with_prior_enn(
     prior_scale: float = 1.,
     nonzero_bias: bool = True,
     seed: int = 999,
-) -> base_legacy.EpistemicNetwork:
+) -> base_legacy.EpistemicNetworkWithState:
   """Factory method to create fast einsum MLP ensemble with matched prior.
 
   Args:
@@ -94,17 +98,23 @@ def make_ensemble_mlp_with_prior_enn(
 
   enn = make_einsum_ensemble_mlp_enn(output_sizes, num_ensemble, nonzero_bias)
   init_key, _ = jax.random.split(jax.random.PRNGKey(seed))
-  prior_params = enn.init(init_key, dummy_input, jnp.array([]))
+  prior_params, prior_state = enn.init(init_key, dummy_input, jnp.array([]))
 
   # Apply function selects the appropriate index of the ensemble output.
-  def apply_with_prior(params: hk.Params, x: base_legacy.Array,
-                       z: base_legacy.Index) -> base_legacy.OutputWithPrior:
-    ensemble_train = enn.apply(params, x, z)
-    ensemble_prior = enn.apply(prior_params, x, z) * prior_scale
-    return base_legacy.OutputWithPrior(
-        train=ensemble_train, prior=ensemble_prior)
+  def apply_with_prior(
+      params: hk.Params,
+      state: hk.State,
+      x: base_legacy.Array,
+      z: base_legacy.Index,
+  ) -> Tuple[base_legacy.OutputWithPrior, hk.State]:
+    ensemble_train, state = enn.apply(params, state, x, z)
+    ensemble_prior, _ = enn.apply(prior_params, prior_state, x, z)
+    output = base_legacy.OutputWithPrior(
+        train=ensemble_train, prior=ensemble_prior * prior_scale)
+    return output, state
 
-  return base_legacy.EpistemicNetwork(apply_with_prior, enn.init, enn.indexer)
+  return base_legacy.EpistemicNetworkWithState(apply_with_prior, enn.init,
+                                               enn.indexer)
 
 
 # TODO(author3): Come up with a better name and use ensembles.py instead.

@@ -20,6 +20,7 @@ from typing import List
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
+from enn import utils
 from enn.networks import gaussian_enn
 
 
@@ -40,6 +41,7 @@ class GaussianEnnTest(parameterized.TestCase):
         output_sizes=hiddens+[test_experiment.num_outputs],
         init_scale=init_scale,
     )
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

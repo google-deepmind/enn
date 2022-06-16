@@ -19,6 +19,7 @@ from typing import Sequence
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
+from enn import utils
 from enn.networks import dropout
 
 
@@ -38,6 +39,7 @@ class NetworkTest(parameterized.TestCase):
         dropout_rate=dropout_rate,
         dropout_input=dropout_input
     )
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

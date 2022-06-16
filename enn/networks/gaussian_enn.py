@@ -27,6 +27,7 @@ This is an implementation framing that network as an ENN.
 from typing import Callable, Sequence
 
 from enn import base_legacy
+from enn import utils
 from enn.networks import indexers
 import haiku as hk
 import haiku.experimental as hke
@@ -66,7 +67,7 @@ def enn_getter(next_getter, value, context):
     return next_getter(value)
 
 
-class GaussianNoiseEnn(base_legacy.EpistemicNetwork):
+class GaussianNoiseEnn(base_legacy.EpistemicNetworkWithState):
   """GaussianNoiseEnn from callable module."""
 
   def __init__(self,
@@ -83,14 +84,17 @@ class GaussianNoiseEnn(base_legacy.EpistemicNetwork):
     # TODO(author2): Note that the GaussianENN requires a rng_key in place of an
     # index. Therefore we do *not* hk.without_apply_rng.
     transformed = hk.transform(net_fn)
-    super().__init__(
-        apply=lambda params, x, z: transformed.apply(params, z, x),
-        init=lambda rng, x, z: transformed.init(rng, x),
-        indexer=indexers.PrngIndexer(),
-    )
+    apply = lambda params, x, z: transformed.apply(params, z, x)
+    init = lambda rng, x, z: transformed.init(rng, x)
+
+    # TODO(author3): Change apply and init fns above to work with state.
+    apply = utils.wrap_apply_as_apply_with_state(apply)
+    init = utils.wrap_init_as_init_with_state(init)
+
+    super().__init__(apply, init, indexer=indexers.PrngIndexer(),)
 
 
-class GaussianNoiseMLP(base_legacy.EpistemicNetwork):
+class GaussianNoiseMLP(base_legacy.EpistemicNetworkWithState):
   """Gaussian Enn on a standard MLP."""
 
   def __init__(self, output_sizes: Sequence[int], init_scale: float = 1.):

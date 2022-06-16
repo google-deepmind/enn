@@ -65,7 +65,7 @@ class EpinetTest(parameterized.TestCase):
       )
     enn = utils.epistemic_network_from_module(
         enn_ctor, indexers.GaussianIndexer(index_dim))
-
+    enn = utils.wrap_enn_with_state_as_enn(enn)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 

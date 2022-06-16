@@ -152,7 +152,7 @@ def make_random_gp_ensemble_prior_fns(
   return prior_fns
 
 
-class MLPEnsembleMatchedPrior(base_legacy.EpistemicNetwork):
+class MLPEnsembleMatchedPrior(base_legacy.EpistemicNetworkWithState):
   """Ensemble of MLPs with matched prior functions."""
 
   def __init__(self,
@@ -170,10 +170,10 @@ class MLPEnsembleMatchedPrior(base_legacy.EpistemicNetwork):
     def net_fn(x: base_legacy.Array) -> base_legacy.Array:
       x = hk.Flatten()(x)
       return hk.nets.MLP(output_sizes, w_init, b_init)(x)
-    transformed = hk.without_apply_rng(hk.transform(net_fn))
+    transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
 
-    ensemble = Ensemble(transformed, num_ensemble)
-    enn = priors.EnnWithAdditivePrior(
+    ensemble = EnsembleWithState(transformed, num_ensemble)
+    enn = priors.EnnStateWithAdditivePrior(
         enn=ensemble,
         prior_fn=combine_functions_choice_via_index(mlp_priors),
         prior_scale=prior_scale,

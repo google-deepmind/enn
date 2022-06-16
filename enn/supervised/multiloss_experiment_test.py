@@ -62,6 +62,8 @@ class ExperimentTest(parameterized.TestCase):
         dummy_input=next(train_dataset).x,
     )
 
+    enn = utils.wrap_enn_with_state_as_enn(enn)
+
     experiment = multiloss_experiment.MultilossExperiment(
         enn=enn,
         trainers=[base_trainer, prior_trainer],

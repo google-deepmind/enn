@@ -57,7 +57,7 @@ class CategoricalRegressionMLP(hk.Module):
     )
 
 
-class CatMLPEnsemble(base_legacy.EpistemicNetwork):
+class CatMLPEnsemble(base_legacy.EpistemicNetworkWithState):
   """An ensemble of categorical MLP for regression."""
 
   def __init__(self, output_sizes: Sequence[int], atoms: base_legacy.Array,
@@ -66,12 +66,12 @@ class CatMLPEnsemble(base_legacy.EpistemicNetwork):
 
     def net_fn(x: base_legacy.Array) -> base_legacy.Array:
       return CategoricalRegressionMLP(output_sizes, atoms)(x)
-    transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = ensembles.Ensemble(transformed, num_ensemble)
+    transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
+    enn = ensembles.EnsembleWithState(transformed, num_ensemble)
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetwork):
+class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetworkWithState):
   """An ensemble of categorical MLP with a real-valued GP prior."""
 
   def __init__(self,
@@ -86,7 +86,7 @@ class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetwork):
     """An ensemble of categorical MLP with a real-valued GP prior."""
     gp_priors = ensembles.make_random_gp_ensemble_prior_fns(
         input_dim, 1, num_feat, gamma, num_ensemble, seed)
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
         prior_fn=ensembles.combine_functions_choice_via_index(gp_priors),
         prior_scale=prior_scale,
@@ -94,7 +94,7 @@ class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetwork):
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleMlpPrior(base_legacy.EpistemicNetwork):
+class CatMLPEnsembleMlpPrior(base_legacy.EpistemicNetworkWithState):
   """An ensemble of categorical MLP with real-valued MLP prior."""
 
   def __init__(self,
@@ -107,7 +107,7 @@ class CatMLPEnsembleMlpPrior(base_legacy.EpistemicNetwork):
     """An ensemble of categorical MLP with real-valued MLP prior."""
     mlp_priors = ensembles.make_mlp_ensemble_prior_fns(
         output_sizes, dummy_input, num_ensemble, seed)
-    enn = priors.EnnWithAdditivePrior(
+    enn = priors.EnnStateWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
         prior_fn=ensembles.combine_functions_choice_via_index(mlp_priors),
         prior_scale=prior_scale,

@@ -19,6 +19,7 @@
 from typing import Sequence
 
 import chex
+from enn import base_legacy
 from enn import utils
 from enn.networks import hypermodels
 from enn.networks import indexers
@@ -33,9 +34,10 @@ import jax.numpy as jnp
 # that works with batched index.
 
 
-def make_bbb_enn(base_output_sizes: Sequence[int],
-                 dummy_input: chex.Array,
-                 temperature: float = 1.):
+def make_bbb_enn(
+    base_output_sizes: Sequence[int],
+    dummy_input: chex.Array,
+    temperature: float = 1.) -> base_legacy.EpistemicNetworkWithState:
   """Makes a Bayes-by-backprop (BBB) aganet."""
 
   def make_transformed_base(output_sizes: Sequence[int]) -> hk.Transformed:

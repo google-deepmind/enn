@@ -32,16 +32,16 @@ FLAGS = flags.FLAGS
 def epistemic_network_from_module(
     enn_ctor: Callable[[], base_legacy.EpistemicModule],
     indexer: base_legacy.EpistemicIndexer,
-) -> base_legacy.EpistemicNetwork:
+) -> base_legacy.EpistemicNetworkWithState:
   """Convert an Enn module to epistemic network with paired index."""
 
   def enn_fn(inputs: base_legacy.Array,
              index: base_legacy.Index) -> base_legacy.Output:
     return enn_ctor()(inputs, index)
 
-  transformed = hk.without_apply_rng(hk.transform(enn_fn))
-  return base_legacy.EpistemicNetwork(transformed.apply, transformed.init,
-                                      indexer)
+  transformed = hk.without_apply_rng(hk.transform_with_state(enn_fn))
+  return base_legacy.EpistemicNetworkWithState(transformed.apply,
+                                               transformed.init, indexer)
 
 
 def wrap_transformed_as_enn(

@@ -17,6 +17,7 @@
 from typing import List, Optional, Sequence
 
 from enn import base_legacy
+from enn import utils
 from enn.networks import indexers
 import haiku as hk
 import jax
@@ -51,7 +52,7 @@ def generate_masks(key: base_legacy.RngKey, input_size: int,
   return masks
 
 
-class MLPDropoutENN(base_legacy.EpistemicNetwork):
+class MLPDropoutENN(base_legacy.EpistemicNetworkWithStateBase):
   """MLP with dropout as an ENN."""
 
   def __init__(
@@ -121,4 +122,7 @@ class MLPDropoutENN(base_legacy.EpistemicNetwork):
       net_out = transformed.apply(params, x, z)
       return net_out
 
-    super().__init__(apply, transformed.init, indexer)
+    apply = utils.wrap_apply_as_apply_with_state(apply)
+    init = utils.wrap_init_as_init_with_state(transformed.init)
+
+    super().__init__(apply, init, indexer)
