@@ -54,28 +54,28 @@ def wrap_transformed_as_enn(
   )
 
 
+def wrap_transformed_as_enn_with_state(
+    transformed: hk.Transformed
+) -> base_legacy.EpistemicNetworkWithState:
+  """Wraps a simple transformed function y = f(x) as an ENN."""
+  apply = lambda params, x, z: transformed.apply(params, x)
+  apply = wrap_apply_as_apply_with_state(apply)
+  init = lambda key, x, z: transformed.init(key, x)
+  init = wrap_init_as_init_with_state(init)
+  return base_legacy.EpistemicNetworkWithState(
+      apply=apply,
+      init=init,
+      indexer=lambda key: key,
+  )
+
+
 def wrap_enn_as_enn_with_state(
     enn: base_legacy.EpistemicNetwork) -> base_legacy.EpistemicNetworkWithState:
   """Wraps a standard ENN as an ENN with a dummy network state."""
 
-  def init(
-      key: base_legacy.RngKey,
-      inputs: base_legacy.Array,
-      index: base_legacy.Array,
-  ) -> Tuple[hk.Params, hk.State]:
-    return (enn.init(key, inputs, index), {})
-
-  def apply(
-      params: hk.Params,
-      unused_state: hk.State,
-      inputs: base_legacy.Array,
-      index: base_legacy.Array,
-  ) -> Tuple[base_legacy.Output, hk.State]:
-    return (enn.apply(params, inputs, index), {})
-
   return base_legacy.EpistemicNetworkWithState(
-      apply=apply,
-      init=init,
+      apply=wrap_apply_as_apply_with_state(enn.apply),
+      init=wrap_init_as_init_with_state(enn.init),
       indexer=enn.indexer,
   )
 
@@ -103,6 +103,51 @@ def wrap_enn_with_state_as_enn(
       init=init,
       indexer=enn.indexer,
   )
+
+
+def wrap_apply_as_apply_with_state(
+    apply: base_legacy.ApplyFn,) -> base_legacy.ApplyFnWithState:
+  """Wraps a legacy enn apply as an apply for enn with state."""
+  def new_apply(
+      params: hk.Params,
+      unused_state: hk.State,
+      inputs: base_legacy.Array,
+      index: base_legacy.Array,
+  ) -> Tuple[base_legacy.Output, hk.State]:
+    return (apply(params, inputs, index), {})
+  return new_apply
+
+
+def wrap_init_as_init_with_state(
+    init: base_legacy.InitFn) -> base_legacy.InitFnWithState:
+  """Wraps a legacy enn init as an init for enn with state."""
+
+  def new_init(
+      key: base_legacy.RngKey,
+      inputs: base_legacy.Array,
+      index: base_legacy.Array,
+  ) -> Tuple[hk.Params, hk.State]:
+    return (init(key, inputs, index), {})
+  return new_init
+
+
+def wrap_loss_as_loss_with_state(
+    loss_fn: base_legacy.LossFn
+) -> base_legacy.LossFnWithState:
+  """Wraps a legacy enn loss as a loss for enn with state."""
+
+  def new_loss(
+      enn: base_legacy.EpistemicNetworkWithState,
+      params: hk.Params,
+      unused_state: hk.State,
+      batch: base_legacy.Batch,
+      index: base_legacy.Index,
+  ) -> base_legacy.LossOutputWithState:
+    enn = wrap_enn_with_state_as_enn(enn)
+    loss, metrics = loss_fn(enn, params, batch, index)
+    return loss, ({}, metrics)
+
+  return new_loss
 
 
 def scale_enn_output(
