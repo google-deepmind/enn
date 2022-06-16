@@ -191,6 +191,22 @@ def make_centered_enn(
   return base_legacy.EpistemicNetwork(centered_apply, enn.init, enn.indexer)
 
 
+def make_centered_enn_with_state(
+    enn: base_legacy.EpistemicNetworkWithState,
+    x_train: base_legacy.Array) -> base_legacy.EpistemicNetworkWithState:
+  """Returns an ENN that centers input according to x_train."""
+  assert x_train.ndim > 1  # need to include a batch dimension
+  x_mean = jnp.mean(x_train, axis=0)
+  x_std = jnp.std(x_train, axis=0)
+  def centered_apply(params: hk.Params, state: hk.State, x: base_legacy.Array,
+                     z: base_legacy.Index) -> base_legacy.Output:
+    normalized_x = (x - x_mean) / (x_std + 1e-9)
+    return enn.apply(params, state, normalized_x, z)
+
+  return base_legacy.EpistemicNetworkWithState(centered_apply, enn.init,
+                                               enn.indexer)
+
+
 def parse_net_output(net_out: base_legacy.Output) -> base_legacy.Array:
   """Convert network output to scalar prediction value."""
   if isinstance(net_out, base_legacy.OutputWithPrior):
