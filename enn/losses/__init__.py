@@ -37,7 +37,6 @@ from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
 from enn.losses.single_index import L2Loss
 from enn.losses.single_index import SingleIndexLossFn
-from enn.losses.single_index import SingleIndexLossFnBase
 from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
@@ -63,7 +62,6 @@ from enn.losses.utils import combine_losses_with_state_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_with_state_as_metric
 from enn.losses.utils import CombineLossConfig
-from enn.losses.utils import CombineLossConfigBase
 from enn.losses.utils import CombineLossWithStateConfig
 from enn.losses.utils import CombineLossWithStateConfigBase
 from enn.losses.utils import l2_weights_with_predicate

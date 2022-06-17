@@ -96,19 +96,15 @@ EpistemicNetwork = EpistemicNetworkBase[Array]
 LossOutput = Tuple[Array, LossMetrics]
 
 
-class LossFnBase(typing_extensions.Protocol[Input, Data]):
+class LossFn(typing_extensions.Protocol):
   """Calculates a loss based on one batch of data per rng_key."""
 
   def __call__(self,
-               enn: EpistemicNetworkBase[Input],
+               enn: EpistemicNetwork,
                params: hk.Params,
-               batch: Data,
+               batch: Batch,
                key: RngKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
-
-# LossFnBase specialized to work only with Array inputs and Batch data.
-LossFn = LossFnBase[Array, Batch]
-
 
 ################################################################################
 # Definitions for networks with "state" e.g. BatchNorm.
