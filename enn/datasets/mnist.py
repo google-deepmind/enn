@@ -20,7 +20,7 @@ import enum
 import functools
 from typing import Dict, Sequence
 
-from enn import base_legacy as enn_base
+from enn import base
 from enn.datasets import base as ds_base
 from enn.datasets import utils as ds_utils
 import jax
@@ -116,8 +116,8 @@ class Mnist(ds_base.DatasetWithTransform):
     }
 
 
-def preprocess_batch(batch: enn_base.Batch,
-                     normalization_mode: str) -> enn_base.Batch:
+def preprocess_batch(batch: base.Batch,
+                     normalization_mode: str) -> base.Batch:
   """Pre-processing module."""
   images = batch.x
 

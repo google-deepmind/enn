@@ -21,14 +21,14 @@ https://arxiv.org/abs/1312.6114 (Kingma & Welling, 2014).
 from typing import Callable
 
 import chex
-from enn import base_legacy
+from enn import base
 import jax.numpy as jnp
 from tensorflow_probability.substrates import jax as tfp
 tfd = tfp.distributions
 
 
-def binary_log_likelihood(x: base_legacy.Array,
-                          output: base_legacy.Array) -> float:
+def binary_log_likelihood(x: chex.Array,
+                          output: chex.Array) -> float:
   """Computes the binary log likelihood loss.
 
   Args:
@@ -48,8 +48,8 @@ def binary_log_likelihood(x: base_legacy.Array,
   return jnp.mean(log_likelihood)
 
 
-def gaussian_log_likelihood(x: base_legacy.Array, mean: base_legacy.Array,
-                            log_var: base_legacy.Array) -> float:
+def gaussian_log_likelihood(x: chex.Array, mean: chex.Array,
+                            log_var: chex.Array) -> float:
   """Computes the gaussian log likelihood loss.
 
   Args:
@@ -77,8 +77,8 @@ def gaussian_log_likelihood(x: base_legacy.Array, mean: base_legacy.Array,
   return jnp.mean(log_likelihood)
 
 
-def latent_kl_divergence(mean: base_legacy.Array,
-                         log_var: base_legacy.Array) -> float:
+def latent_kl_divergence(mean: chex.Array,
+                         log_var: chex.Array) -> float:
   """Computes the KL divergence of latent distribution w.r.t. Normal(0, I).
 
   Args:
@@ -97,7 +97,7 @@ def latent_kl_divergence(mean: base_legacy.Array,
   return jnp.mean(kl)
 
 
-def latent_kl_fn(net_out: base_legacy.OutputWithPrior) -> float:
+def latent_kl_fn(net_out: base.OutputWithPrior) -> float:
   """Thin wrapper around latent_kl_divergence with input validation."""
   extra = net_out.extra
   assert 'latent_mean' in extra
@@ -105,7 +105,7 @@ def latent_kl_fn(net_out: base_legacy.OutputWithPrior) -> float:
   return latent_kl_divergence(extra['latent_mean'], extra['latent_log_var'])
 
 
-LogLikelihoodFn = Callable[[base_legacy.OutputWithPrior, base_legacy.Batch],
+LogLikelihoodFn = Callable[[base.OutputWithPrior, base.Batch],
                            float]
 
 
@@ -119,8 +119,8 @@ def get_log_likelihood_fn(bernoulli_decoder: bool) -> LogLikelihoodFn:
     log_likelihood_fn mapping OutputWithPrior, Batch -> float.
   """
 
-  def log_likelihood_fn(net_out: base_legacy.OutputWithPrior,
-                        batch: base_legacy.Batch) -> float:
+  def log_likelihood_fn(net_out: base.OutputWithPrior,
+                        batch: base.Batch) -> float:
     extra = net_out.extra
     assert 'out_mean' in extra
     assert 'out_log_var' in extra

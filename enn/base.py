@@ -109,7 +109,7 @@ LossOutput = tp.Tuple[chex.Array, tp.Tuple[hk.State, LossMetrics]]
 
 
 class LossFn(typing_extensions.Protocol[Input, Data]):
-  """Calculates a loss based on one batch of data per rng_key."""
+  """Calculates a loss based on one batch of data per random key."""
 
   def __call__(self,
                enn: EpistemicNetwork[Input],

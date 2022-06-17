@@ -17,11 +17,12 @@
 
 import dataclasses
 from typing import Callable, Optional, Tuple
-from enn import base_legacy as enn_base
+
 from enn import datasets
+from enn import networks
 import haiku as hk
 
-EnnCtor = Callable[[], enn_base.EpistemicNetworkWithState]
+EnnCtor = Callable[[], networks.EpistemicNetworkWithState]
 ParamsStateLoadFn = Callable[[], Tuple[hk.Params, hk.State]]
 
 

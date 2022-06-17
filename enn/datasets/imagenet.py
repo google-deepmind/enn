@@ -20,7 +20,7 @@ import enum
 import itertools as it
 from typing import Dict, Optional, Sequence, Tuple
 
-from enn import base_legacy as enn_base
+from enn import base
 from enn.datasets import base as ds_base
 from enn.datasets import utils as ds_utils
 import jax
@@ -162,7 +162,7 @@ def load(
       axes = tuple(range(images.ndim))
       axes = axes[:-4] + axes[-3:] + (axes[-4],)  # NHWC -> HWCN
       images = np.transpose(images, axes)
-    batch = enn_base.Batch(x=images, y=labels)
+    batch = base.Batch(x=images, y=labels)
     yield from it.repeat(batch, end - start)
     return
 
@@ -200,8 +200,8 @@ def load(
     if split.num_examples % total_batch_size != 0:
       raise ValueError(f'Test/valid must be divisible by {total_batch_size}')
 
-  def _preprocess_fn(batch: enn_base.Batch,
-                     example_rng: Optional[tf.Tensor] = None) -> enn_base.Batch:
+  def _preprocess_fn(batch: base.Batch,
+                     example_rng: Optional[tf.Tensor] = None) -> base.Batch:
     image = _preprocess_image(batch.x, is_training, image_size,
                               example_rng)
     return batch._replace(x=image)
@@ -209,7 +209,7 @@ def load(
   def _preprocess_with_per_example_rng(
       ds: tf.data.Dataset, *, rng: Optional[np.ndarray]) -> tf.data.Dataset:
 
-    def _fn(example_index: int, batch: enn_base.Batch) -> enn_base.Batch:
+    def _fn(example_index: int, batch: base.Batch) -> base.Batch:
       example_rng = None
       if rng is not None:
         example_index = tf.cast(example_index, tf.int32)
@@ -231,7 +231,7 @@ def load(
   # TODO(author2): This transform needs to come after processing.
   ds = ds_transform(ds)
 
-  def transpose_fn(batch: enn_base.Batch) -> enn_base.Batch:
+  def transpose_fn(batch: base.Batch) -> base.Batch:
     # We use double-transpose-trick to improve performance for TPUs. Note
     # that this (typically) requires a matching HWCN->NHWC transpose in your
     # model code. The compiler cannot make this optimization for us since our
@@ -239,7 +239,7 @@ def load(
     transposed_x = tf.transpose(batch.x, (1, 2, 3, 0))
     return batch._replace(x=transposed_x)
 
-  def cast_fn(batch: enn_base.Batch) -> enn_base.Batch:
+  def cast_fn(batch: base.Batch) -> base.Batch:
     x = tf.cast(batch.x, tf.dtypes.as_dtype(dtype))
     return batch._replace(x=x)
 

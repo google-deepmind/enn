@@ -16,9 +16,10 @@
 """Network definitions for ResNet."""
 
 import chex
-from enn import base_legacy
-from enn import utils
+from enn import base
+from enn.networks import base as networks_base
 from enn.networks import ensembles
+from enn.networks import utils as networks_utils
 from enn.networks.resnet import lib
 import haiku as hk
 import jax
@@ -35,20 +36,20 @@ def resnet_model(
   should_transpose_images = (
       enable_double_transpose and jax.local_devices()[0].platform == 'tpu')
 
-  def forward_fn(inputs: base_legacy.Array,
+  def forward_fn(inputs: chex.Array,
                  is_training: bool,
-                 test_local_stats: bool = False) -> base_legacy.OutputWithPrior:
+                 test_local_stats: bool = False) -> base.OutputWithPrior:
     # If enabled, there should be a matching NHWC->HWCN transpose in the data.
     if should_transpose_images:
       inputs = jnp.transpose(inputs, (3, 0, 1, 2))  # HWCN -> NHWC
 
     net_out = model(inputs, is_training, test_local_stats)
-    return utils.parse_to_output_with_prior(net_out)
+    return networks_utils.parse_to_output_with_prior(net_out)
 
   return forward_fn
 
 
-class EnsembleResNetENN(base_legacy.EpistemicNetworkWithState):
+class EnsembleResNetENN(networks_base.EpistemicNetworkWithState):
   """Ensemble of ResNet Networks created using einsum ensemble."""
 
   def __init__(self,
@@ -59,12 +60,12 @@ class EnsembleResNetENN(base_legacy.EpistemicNetworkWithState):
                enable_double_transpose: bool = True,
                config: lib.ResNetConfig = lib.CanonicalResNets.RESNET_50.value):
 
-    def net_fn(x: chex.Array) -> base_legacy.OutputWithPrior:
+    def net_fn(x: chex.Array) -> base.OutputWithPrior:
       forward_fn = resnet_model(num_output_classes=num_output_classes,
                                 enable_double_transpose=enable_double_transpose,
                                 config=config)
       net_out = forward_fn(x, is_training, test_local_stats)
-      return utils.parse_to_output_with_prior(net_out)
+      return networks_utils.parse_to_output_with_prior(net_out)
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
 
     enn = ensembles.EnsembleWithState(transformed, num_ensemble)

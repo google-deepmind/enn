@@ -21,8 +21,8 @@ from typing import Callable, Tuple
 
 import chex
 import dill
-from enn import base_legacy as enn_base
-from enn import utils as enn_utils
+from enn import base
+from enn import networks
 from enn.checkpoints import base as checkpoint_base
 from enn.checkpoints import epinet as checkpoint_epinet
 import haiku as hk
@@ -124,7 +124,7 @@ def make_enn_sampler_from_checkpoint(
     index_fwd = lambda z: enn.apply(params, state, inputs, z)
     indices = jax.vmap(enn.indexer)(jax.random.split(key, num_enn_samples))
     enn_out, _ = jax.lax.map(index_fwd, indices)
-    logits = enn_utils.parse_net_output(enn_out)
+    logits = networks.parse_net_output(enn_out)
     chex.assert_shape(logits, [num_enn_samples, None, None])
     return logits / temperature
 
@@ -136,7 +136,7 @@ def load_checkpoint_as_logit_fn(
     num_enn_samples: int = 1,
     temperature_rescale: bool = False,
     seed: int = 0,
-) -> Callable[[chex.Array], enn_base.OutputWithPrior]:
+) -> Callable[[chex.Array], base.OutputWithPrior]:
   """Loads an ENN as a simple forward function: images --> logits."""
   enn_sampler = make_enn_sampler_from_checkpoint(
       checkpoint, num_enn_samples, temperature_rescale)
@@ -145,7 +145,7 @@ def load_checkpoint_as_logit_fn(
     logits = enn_sampler(inputs, jax.random.PRNGKey(seed))
     ave_logits = average_logits(logits)
     # Wrap the output with prior
-    return enn_base.OutputWithPrior(ave_logits)
+    return base.OutputWithPrior(ave_logits)
 
   return jax.jit(forward_fn)
 
@@ -183,17 +183,17 @@ def make_epinet_sampler_from_checkpoint(
     base_out, unused_base_state = base_enn.apply(
         base_params, base_state, inputs, base_index)
     hidden = epinet_cpt.parse_hidden(base_out)
-    base_logits = enn_utils.parse_net_output(base_out) * epinet_cpt.base_scale
+    base_logits = networks.parse_net_output(base_out) * epinet_cpt.base_scale
 
     # Forward the enn over all the different indices
     keys = jax.random.split(key, num_enn_samples)
     indices = jax.vmap(epinet.indexer)(keys)
 
-    def index_fwd(index: enn_base.Index) -> enn_base.Array:
+    def index_fwd(index: base.Index) -> chex.Array:
       return epinet.apply(epi_params, epi_state, inputs, index, hidden)
 
     enn_out, unused_epi_state = jax.lax.map(index_fwd, indices)
-    enn_logits = enn_utils.parse_net_output(enn_out)
+    enn_logits = networks.parse_net_output(enn_out)
 
     # Combined logits
     combined_logits = jnp.expand_dims(base_logits, 0) + enn_logits

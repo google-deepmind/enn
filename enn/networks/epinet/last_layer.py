@@ -18,7 +18,7 @@
 from typing import Optional, Sequence
 
 import chex
-from enn import base_legacy as enn_base
+from enn import base
 from enn import networks
 from enn.networks.epinet import base as epinet_base
 import haiku as hk
@@ -39,9 +39,9 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
     if prior_epinet_hiddens is None:
       prior_epinet_hiddens = epinet_hiddens
 
-    def epinet_fn(inputs: enn_base.Array,
-                  index: enn_base.Index,
-                  hidden: enn_base.Array) -> enn_base.OutputWithPrior:
+    def epinet_fn(inputs: chex.Array,
+                  index: base.Index,
+                  hidden: chex.Array) -> base.OutputWithPrior:
       # Creating networks
       train_epinet = networks.ProjectedMLP(
           epinet_hiddens, num_classes, index_dim, name='train_epinet')
@@ -57,7 +57,7 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
       # Wiring networks: add linear epinet (+ prior) from final output layer.
       epi_train = train_epinet(epi_inputs, index)
       epi_prior = prior_epinet(epi_inputs, index)
-      return enn_base.OutputWithPrior(
+      return base.OutputWithPrior(
           train=epi_train,
           prior=prior_scale * epi_prior,
       )
@@ -69,11 +69,11 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
 
 
 def parse_base_hidden(
-    base_out: enn_base.Output,
+    base_out: base.Output,
     hidden_name: str = 'final_out',
 ) -> chex.Array:
   """Parses the final hidden layer from the base network output."""
   # TODO(author2): improve type checking on base_out
-  assert isinstance(base_out, enn_base.OutputWithPrior)
+  assert isinstance(base_out, base.OutputWithPrior)
   assert hidden_name in base_out.extra
   return base_out.extra[hidden_name]

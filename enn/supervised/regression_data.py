@@ -16,9 +16,10 @@
 
 """Functions for 1D regression data."""
 import chex
-from enn import base_legacy as enn_base
-from enn import supervised
+from enn import base
+from enn import networks
 from enn import utils
+from enn.supervised import base as supervised_base
 import haiku as hk
 import jax
 import numpy as np
@@ -36,10 +37,10 @@ def make_regression_df() -> pd.DataFrame:
   return pd.DataFrame({'x': x, 'y': y}).reset_index()
 
 
-def make_dataset(extra_input_dim: int = 1) -> enn_base.BatchIterator:
+def make_dataset(extra_input_dim: int = 1) -> base.BatchIterator:
   """Factory method to produce an iterator of Batches."""
   df = make_regression_df()
-  data = enn_base.Batch(
+  data = base.Batch(
       x=np.vstack([df['x'].values, np.ones((extra_input_dim, len(df)))]).T,
       y=df['y'].values[:, None],
   )
@@ -47,7 +48,7 @@ def make_dataset(extra_input_dim: int = 1) -> enn_base.BatchIterator:
   return utils.make_batch_iterator(data)
 
 
-def make_plot(experiment: supervised.BaseExperiment,
+def make_plot(experiment: supervised_base.BaseExperiment,
               num_sample: int = 20,
               extra_input_dim: int = 1) -> gg.ggplot:
   """Generate a regression plot with sampled predictions."""
@@ -63,7 +64,7 @@ def make_plot(experiment: supervised.BaseExperiment,
   return p
 
 
-def make_plot_data(experiment: supervised.BaseExperiment,
+def make_plot_data(experiment: supervised_base.BaseExperiment,
                    num_sample: int = 20,
                    extra_input_dim: int = 1) -> pd.DataFrame:
   """Generate a panda dataframe with sampled predictions."""
@@ -73,7 +74,7 @@ def make_plot_data(experiment: supervised.BaseExperiment,
   rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for k in range(num_sample):
     net_out = experiment.predict(preds_x, key=next(rng))
-    preds_y = utils.parse_net_output(net_out)
+    preds_y = networks.parse_net_output(net_out)
     data.append(pd.DataFrame({'x': preds_x[:, 0], 'y': preds_y[:, 0], 'k': k}))
   plot_df = pd.concat(data)
 

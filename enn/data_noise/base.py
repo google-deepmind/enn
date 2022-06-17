@@ -15,25 +15,25 @@
 # ============================================================================
 """Base classes for data noise process."""
 
-from enn import base_legacy
+from enn import base
 import typing_extensions
 
 
-class DataNoiseBase(typing_extensions.Protocol[base_legacy.Data]):
+class DataNoiseBase(typing_extensions.Protocol[base.Data]):
 
   def __call__(
       self,
-      data: base_legacy.Data,
-      index: base_legacy.Index,
-  ) -> base_legacy.Data:
+      data: base.Data,
+      index: base.Index,
+  ) -> base.Data:
     """Apply some noise process to a batch of data based on epistemic index."""
 
 
 # DataNoiseBase specialized to work only with Batch data.
-DataNoise = DataNoiseBase[base_legacy.Batch]
+DataNoise = DataNoiseBase[base.Batch]
 
 
-def get_indexer(indexer: base_legacy.EpistemicIndexer):
+def get_indexer(indexer: base.EpistemicIndexer):
   while hasattr(indexer, 'indexer'):
     indexer = indexer.indexer
   return indexer

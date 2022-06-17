@@ -17,9 +17,11 @@
 import dataclasses
 from typing import Callable, Optional, Tuple
 
-from enn import base_legacy as enn_base
-from enn import utils
+import chex
+from enn import base
 from enn.checkpoints import base as checkpoint_base
+from enn.networks import base as networks_base
+from enn.networks import utils as networks_utils
 import haiku as hk
 import jax
 from typing_extensions import Protocol
@@ -32,10 +34,10 @@ class EpinetApplyWithState(Protocol):
       self,
       params: hk.Params,  # Epinet parameters
       state: hk.State,  # Epinet state
-      inputs: enn_base.Array,  # ENN inputs = x
-      index: enn_base.Index,  # ENN index = z
-      hidden: enn_base.Array,  # Base net hiddens = phi(x)
-  ) -> Tuple[enn_base.OutputWithPrior, hk.State]:
+      inputs: chex.Array,  # ENN inputs = x
+      index: base.Index,  # ENN index = z
+      hidden: chex.Array,  # Base net hiddens = phi(x)
+  ) -> Tuple[base.OutputWithPrior, hk.State]:
     """Applies the epinet at given parameters and state."""
 
 
@@ -44,10 +46,10 @@ class EpinetInitWithState(Protocol):
 
   def __call__(
       self,
-      key: enn_base.RngKey,  # Random key
-      inputs: enn_base.Array,  # ENN inputs = x
-      index: enn_base.Index,  # ENN index = z
-      hidden: enn_base.Array,  # Base net hiddens = phi(x)
+      key: chex.PRNGKey,  # Random key
+      inputs: chex.Array,  # ENN inputs = x
+      index: base.Index,  # ENN index = z
+      hidden: chex.Array,  # Base net hiddens = phi(x)
   ) -> Tuple[hk.Params, hk.State]:
     """Initializes epinet parameters and state."""
 
@@ -57,20 +59,20 @@ class EpinetWithState:
   """Convenient pairing of Haiku transformed function and index sampler."""
   apply: EpinetApplyWithState
   init: EpinetInitWithState
-  indexer: enn_base.EpistemicIndexer
+  indexer: base.EpistemicIndexer
 
 
-BaseHiddenParser = Callable[[enn_base.Output], enn_base.Array]
+BaseHiddenParser = Callable[[base.Output], chex.Array]
 
 
 def combine_base_epinet_as_enn(
     base_checkpoint: checkpoint_base.EnnCheckpoint,
     epinet: EpinetWithState,
     parse_hidden: BaseHiddenParser,
-    base_index: Optional[enn_base.Index] = None,
+    base_index: Optional[base.Index] = None,
     base_scale: float = 1,
     freeze_base: bool = True,
-) -> enn_base.EpistemicNetworkWithState:
+) -> networks_base.EpistemicNetworkWithState:
   """Returns a combined ENN from a base network and an epinet.
 
   Args:
@@ -93,8 +95,8 @@ def combine_base_epinet_as_enn(
 
   def apply(params: hk.Params,
             state: hk.State,
-            inputs: enn_base.Array,
-            index: enn_base.Index) -> Tuple[enn_base.OutputWithPrior, hk.State]:
+            inputs: chex.Array,
+            index: base.Index) -> Tuple[base.OutputWithPrior, hk.State]:
     """Applies the base network and epinet."""
     if freeze_base:
       base_params, base_state = base_params_init, base_state_init
@@ -104,22 +106,22 @@ def combine_base_epinet_as_enn(
     # Forward the base network
     base_out, base_state = base_enn.apply(
         base_params, base_state, inputs, base_index)
-    base_out = utils.parse_to_output_with_prior(base_out)
+    base_out = networks_utils.parse_to_output_with_prior(base_out)
 
     # Forward the epinet and combine their outputs
     epi_out, epi_state = epinet.apply(
         params, state, inputs, index, parse_hidden(base_out))
 
-    output = enn_base.OutputWithPrior(
+    output = base.OutputWithPrior(
         train=base_out.train * base_scale + epi_out.train,
         prior=base_out.prior * base_scale + epi_out.prior,
     )
     state = epi_state if freeze_base else {**base_state, **epi_state}
     return output, state
 
-  def init(key: enn_base.RngKey,
-           inputs: enn_base.Array,
-           index: enn_base.Index) -> Tuple[hk.Params, hk.State]:
+  def init(key: chex.PRNGKey,
+           inputs: chex.Array,
+           index: base.Index) -> Tuple[hk.Params, hk.State]:
     """Initializes the epinet."""
     base_out, unused_base_state = base_enn.apply(
         base_params_init, base_state_init, inputs, base_index)
@@ -131,4 +133,4 @@ def combine_base_epinet_as_enn(
     else:
       return {**params, **base_params_init}, {**state, **base_state_init}
 
-  return enn_base.EpistemicNetworkWithState(apply, init, epinet.indexer)
+  return networks_base.EpistemicNetworkWithState(apply, init, epinet.indexer)

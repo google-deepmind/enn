@@ -15,12 +15,13 @@
 # ============================================================================
 """Tests for ENN single index losses."""
 
-from typing import Dict, Text, Tuple
+from typing import Dict, Text
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base_legacy
+from enn import base
 from enn import networks
+from enn.losses import base as losses_base
 from enn.losses import single_index_with_state
 from enn.losses.single_index_with_state import ElboLossWithState
 import haiku as hk
@@ -28,8 +29,7 @@ import jax
 import numpy as np
 
 
-class DummySingleIndexLossFn(
-    single_index_with_state.SingleIndexLossFnWithState):
+class DummySingleIndexLossFn(losses_base.SingleIndexLossFnWithState):
   """A dummy loss fn that returns the normalized index as loss.
 
   It also returns a constant dummy metrics. It is meant to be used with an
@@ -43,12 +43,12 @@ class DummySingleIndexLossFn(
 
   def __call__(
       self,
-      apply: base_legacy.ApplyFn,
+      apply: networks.ApplyFn,
       params: hk.Params,
       state: hk.State,
-      batch: base_legacy.Batch,
-      index: base_legacy.Index,
-  ) -> Tuple[base_legacy.Array, Tuple[hk.State, base_legacy.LossMetrics]]:
+      batch: base.Batch,
+      index: base.Index,
+  ) -> base.LossOutput:
     """Computes a loss based on one batch of data and one index."""
     del apply, params, batch
     return ((2 * index + 1) / self._num_ensemble, (state, self._dummy_metrics))
@@ -68,7 +68,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     num_index_samples = 100
     loss_fn = single_index_with_state.average_single_index_loss_with_state(
         single_loss_fn, num_index_samples)
-    dummy_batch = base_legacy.Batch(np.ones([1, 1]), np.ones([1, 1]))
+    dummy_batch = base.Batch(np.ones([1, 1]), np.ones([1, 1]))
     enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=[1],
         num_ensemble=num_ensemble,
@@ -101,7 +101,7 @@ class L2LossTest(absltest.TestCase):
   def setUpClass(cls):
     super().setUpClass()
     batch_size = 4
-    cls._batch = base_legacy.Batch(
+    cls._batch = base.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.zeros(shape=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -153,7 +153,7 @@ class XentLossTest(parameterized.TestCase):
     loss_fn = single_index_with_state.XentLossWithState(num_classes)
 
     batch_size = 4
-    batch = base_legacy.Batch(
+    batch = base.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -199,7 +199,7 @@ class XentLossTest(parameterized.TestCase):
 
     loss_fn = single_index_with_state.XentLossWithState(num_classes)
     batch_size = 4
-    batch = base_legacy.Batch(
+    batch = base.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -231,7 +231,7 @@ class ElboLossTest(absltest.TestCase):
     """
 
     batch_size = 4
-    batch = base_legacy.Batch(
+    batch = base.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.arange(batch_size),
     )

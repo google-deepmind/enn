@@ -20,7 +20,9 @@ Next step is to integrate more with the rest of the ENN code.
 """
 from typing import Sequence
 
-from enn import base_legacy
+import chex
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import ensembles
 from enn.networks import priors
 import haiku as hk
@@ -28,11 +30,11 @@ import jax
 import jax.numpy as jnp
 
 
-class CatOutputWithPrior(base_legacy.OutputWithPrior):
+class CatOutputWithPrior(base.OutputWithPrior):
   """Categorical outputs with a real-valued prior."""
 
   @property
-  def preds(self) -> base_legacy.Array:
+  def preds(self) -> chex.Array:
     train = jnp.sum(jax.nn.softmax(self.train) * self.extra['atoms'], axis=-1)
     return train + jax.lax.stop_gradient(self.prior)
 
@@ -40,14 +42,14 @@ class CatOutputWithPrior(base_legacy.OutputWithPrior):
 class CategoricalRegressionMLP(hk.Module):
   """Categorical MLP designed for regression ala MuZero value."""
 
-  def __init__(self, output_sizes: Sequence[int], atoms: base_legacy.Array):
+  def __init__(self, output_sizes: Sequence[int], atoms: chex.Array):
     """Categorical MLP designed for regression ala MuZero value."""
     super().__init__(name='categorical_regression_mlp')
     self.dim_out = output_sizes[-1]
     self.atoms = jnp.array(atoms)
     self.output_sizes = list(output_sizes[:-1]) + [self.dim_out * len(atoms)]
 
-  def __call__(self, inputs: base_legacy.Array) -> base_legacy.Array:
+  def __call__(self, inputs: chex.Array) -> chex.Array:
     """Apply MLP and wrap outputs appropriately."""
     out = hk.Flatten()(inputs)
     out = hk.nets.MLP(self.output_sizes)(out)
@@ -57,26 +59,26 @@ class CategoricalRegressionMLP(hk.Module):
     )
 
 
-class CatMLPEnsemble(base_legacy.EpistemicNetworkWithState):
+class CatMLPEnsemble(network_base.EpistemicNetworkWithState):
   """An ensemble of categorical MLP for regression."""
 
-  def __init__(self, output_sizes: Sequence[int], atoms: base_legacy.Array,
+  def __init__(self, output_sizes: Sequence[int], atoms: chex.Array,
                num_ensemble: int):
     """An ensemble of categorical MLP for regression."""
 
-    def net_fn(x: base_legacy.Array) -> base_legacy.Array:
+    def net_fn(x: chex.Array) -> chex.Array:
       return CategoricalRegressionMLP(output_sizes, atoms)(x)
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
     enn = ensembles.EnsembleWithState(transformed, num_ensemble)
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetworkWithState):
+class CatMLPEnsembleGpPrior(network_base.EpistemicNetworkWithState):
   """An ensemble of categorical MLP with a real-valued GP prior."""
 
   def __init__(self,
                output_sizes: Sequence[int],
-               atoms: base_legacy.Array,
+               atoms: chex.Array,
                input_dim: int,
                num_ensemble: int,
                num_feat: int,
@@ -94,13 +96,13 @@ class CatMLPEnsembleGpPrior(base_legacy.EpistemicNetworkWithState):
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleMlpPrior(base_legacy.EpistemicNetworkWithState):
+class CatMLPEnsembleMlpPrior(network_base.EpistemicNetworkWithState):
   """An ensemble of categorical MLP with real-valued MLP prior."""
 
   def __init__(self,
                output_sizes: Sequence[int],
-               atoms: base_legacy.Array,
-               dummy_input: base_legacy.Array,
+               atoms: chex.Array,
+               dummy_input: chex.Array,
                num_ensemble: int,
                prior_scale: float = 1,
                seed: int = 0):

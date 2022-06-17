@@ -18,8 +18,8 @@
 from typing import Callable
 
 import chex
-from enn import base_legacy
-from enn import utils
+from enn import base
+from enn import networks
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -30,7 +30,7 @@ tfd = tfp.distributions
 
 
 def get_awgn_loglike_fn(
-    sigma_w: float) -> Callable[[base_legacy.Output, base_legacy.Batch], float]:
+    sigma_w: float) -> Callable[[base.Output, base.Batch], float]:
   """Returns a function that computes the simple unnormalized log likelihood.
 
   It assumes response variable is perturbed with additive iid Gaussian noise.
@@ -42,9 +42,9 @@ def get_awgn_loglike_fn(
     A function that computes the log likelihood given data and output.
   """
 
-  def log_likelihood_fn(out: base_legacy.Output, batch: base_legacy.Batch):
+  def log_likelihood_fn(out: base.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
-    err_sq = jnp.mean(jnp.square(utils.parse_net_output(out) - batch.y))
+    err_sq = jnp.mean(jnp.square(networks.parse_net_output(out) - batch.y))
     return -0.5 * err_sq / sigma_w**2
 
   return log_likelihood_fn
@@ -52,7 +52,7 @@ def get_awgn_loglike_fn(
 
 def get_categorical_loglike_fn(
     num_classes: int
-) -> Callable[[base_legacy.Output, base_legacy.Batch], float]:
+) -> Callable[[base.Output, base.Batch], float]:
   """Returns a function that computes the unnormalized log likelihood.
 
   It assumes response variable has a categorical distribution.
@@ -64,9 +64,9 @@ def get_categorical_loglike_fn(
     A function that computes the log likelihood given data and prediction.
   """
 
-  def log_likelihood_fn(out: base_legacy.Output, batch: base_legacy.Batch):
+  def log_likelihood_fn(out: base.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
-    logits = utils.parse_net_output(out)
+    logits = networks.parse_net_output(out)
     labels = jax.nn.one_hot(batch.y[:, 0], num_classes)
     return jnp.mean(
         jnp.sum(labels * jax.nn.log_softmax(logits), axis=1))
@@ -81,7 +81,7 @@ def log_normal_prob(x: float, mu: float = 0, sigma: float = 1):
 
 
 def sum_log_scale_mixture_normal(
-    x: base_legacy.Array,
+    x: chex.Array,
     sigma_1: float,
     sigma_2: float,
     mu_1: float = 0.,
@@ -111,7 +111,7 @@ def sum_log_scale_mixture_normal(
   return jnp.sum(log_probs)
 
 
-def normal_log_prob(latent: base_legacy.Array, sigma: float = 1, mu: float = 0):
+def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
   """Compute un-normalized log probability of a normal RV."""
   latent, _ = jax.tree_flatten(latent)
   latent = jax.tree_map(lambda x: x.flatten(), latent)
@@ -127,9 +127,9 @@ class _KlLossFn(typing_extensions.Protocol):
 
   def __call__(
       self,
-      out: base_legacy.Output,
+      out: base.Output,
       params: hk.Params,
-      index: base_legacy.Index,
+      index: base.Index,
   ) -> float:
     """Computes a loss based on model output, params, and one index."""
 
@@ -149,8 +149,8 @@ def get_sample_based_model_prior_kl_fn(
       scale * Normal(0, sigma_1) + (1 - scale) * Normal(0, sigma_2)
   """
 
-  def model_prior_kl_fn(out: base_legacy.Output, params: hk.Params,
-                        index: base_legacy.Index) -> float:
+  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+                        index: base.Index) -> float:
     """Compute the KL distance between model and prior densities using samples."""
     del index
     latent = out.extra['hyper_index']
@@ -195,8 +195,8 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     model_prior_kl_fn
   """
 
-  def model_prior_kl_fn(out: base_legacy.Output, params: hk.Params,
-                        index: base_legacy.Index) -> float:
+  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+                        index: base.Index) -> float:
     """Compute the KL distance between model and prior densities in a linear HM.
 
     weights `w` and biases `b` are assumed included in `params`. The latent
@@ -247,8 +247,8 @@ def get_analytical_linear_model_prior_kl_fn(
     num_samples: effective number of samples.
     sigma_0: Standard deviation of the Gaussian latent (params) prior.
   """
-  def model_prior_kl_fn(out: base_legacy.Output, params: hk.Params,
-                        index: base_legacy.Index) -> float:
+  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+                        index: base.Index) -> float:
     """Compute the KL distance between model and prior densities in a linear HM.
 
     weights `w` and biases `b` are assumed included in `params`. The latent

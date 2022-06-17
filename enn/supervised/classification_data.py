@@ -17,9 +17,10 @@
 """Functions for 2D classification."""
 from typing import Optional, Tuple
 
-from enn import base_legacy as enn_base
-from enn import supervised
+from enn import base
+from enn import networks
 from enn import utils
+from enn.supervised import base as supervised_base
 import haiku as hk
 import jax
 import numpy as np
@@ -30,7 +31,7 @@ from sklearn import datasets
 
 def make_dataset(num_sample: int = 10,
                  prob_swap: float = 0.,
-                 seed: int = 0) -> enn_base.BatchIterator:
+                 seed: int = 0) -> base.BatchIterator:
   """Make a 2 moons dataset with num_sample per class and prob_swap label."""
   x, y = datasets.make_moons(2 * num_sample, noise=0.1, random_state=seed)
 
@@ -39,11 +40,11 @@ def make_dataset(num_sample: int = 10,
   swap_locs = np.where(swaps)[0]
   y[swap_locs] = 1 - y[swap_locs]
 
-  return utils.make_batch_iterator(enn_base.Batch(x, y))
+  return utils.make_batch_iterator(base.Batch(x, y))
 
 
 def make_dataframe(
-    dataset: Optional[enn_base.BatchIterator] = None) -> pd.DataFrame:
+    dataset: Optional[base.BatchIterator] = None) -> pd.DataFrame:
   dataset = dataset or make_dataset()
   batch = next(dataset)
   vals = np.hstack([batch.x, batch.y])
@@ -60,7 +61,7 @@ def gen_2d_grid(plot_range: float) -> np.ndarray:
   return np.vstack(data)
 
 
-def make_plot_data(experiment: supervised.BaseExperiment,
+def make_plot_data(experiment: supervised_base.BaseExperiment,
                    num_sample: int) -> pd.DataFrame:
   """Generate a classification plot with sampled predictions."""
   preds_x = gen_2d_grid(plot_range=3)
@@ -69,7 +70,7 @@ def make_plot_data(experiment: supervised.BaseExperiment,
   rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for k in range(num_sample):
     net_out = experiment.predict(preds_x, key=next(rng))
-    logits = utils.parse_net_output(net_out)
+    logits = networks.parse_net_output(net_out)
     preds_y = jax.nn.softmax(logits)
     data.append(pd.DataFrame({
         'x1': preds_x[:, 0], 'x2': preds_x[:, 1], 'label': preds_y[:, 1],
@@ -113,7 +114,8 @@ def make_mean_plot(plot_df: pd.DataFrame,
 
 
 def make_mean_plot_data(
-    experiment: supervised.BaseExperiment) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    experiment: supervised_base.BaseExperiment
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
   plot_df = make_plot_data(experiment, num_sample=100)
   dataframe = make_dataframe(experiment.dataset)
   mean_df = plot_df.groupby(['x1', 'x2'])['label'].mean().reset_index()
@@ -121,7 +123,7 @@ def make_mean_plot_data(
   return mean_df, dataframe
 
 
-def colab_plots(experiment: supervised.BaseExperiment):
+def colab_plots(experiment: supervised_base.BaseExperiment):
   plot_df = make_plot_data(experiment, num_sample=100)
   dataframe = make_dataframe(experiment.dataset)
   make_mean_plot(plot_df, dataframe).draw()

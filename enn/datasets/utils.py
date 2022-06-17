@@ -18,17 +18,18 @@
 
 from typing import Dict, Sequence
 
-from enn import base_legacy as enn_base
+import chex
+from enn import base
 from enn.datasets import base as ds_base
 import tensorflow.compat.v2 as tf
 
 
 def change_ds_dict_to_enn_batch(
-    ds_dict: Dict[str, enn_base.Array]) -> enn_base.Batch:
+    ds_dict: Dict[str, chex.Array]) -> base.Batch:
   """Changes a dictionary of (image, label) to an enn batch."""
   assert 'image' in ds_dict
   assert 'label' in ds_dict
-  return enn_base.Batch(x=ds_dict['image'], y=ds_dict['label'])
+  return base.Batch(x=ds_dict['image'], y=ds_dict['label'])
 
 
 def add_data_index_to_dataset(ds: tf.data.Dataset) -> tf.data.Dataset:
@@ -37,9 +38,9 @@ def add_data_index_to_dataset(ds: tf.data.Dataset) -> tf.data.Dataset:
   return ds.map(_add_data_index)
 
 
-def _add_data_index(data_index: int, batch: enn_base.Batch) -> enn_base.Batch:
+def _add_data_index(data_index: int, batch: base.Batch) -> base.Batch:
   """Adds data_index into the batch."""
-  return enn_base.Batch(x=batch.x, y=batch.y, data_index=data_index)
+  return base.Batch(x=batch.x, y=batch.y, data_index=data_index)
 
 
 class OverrideTrainDataset(ds_base.DatasetWithTransform):

@@ -20,7 +20,9 @@ Trying to fork out some reusable pieces for the code.
 
 from typing import Optional, Sequence
 
-from enn import base_legacy as enn_base
+import chex
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import indexers
 from enn.networks import mlp
 import haiku as hk
@@ -31,10 +33,10 @@ def make_mlp_epinet(
     epinet_hiddens: Sequence[int],
     index_dim: int,
     expose_layers: Optional[Sequence[bool]] = None,
-    prior_scale: float = 1.) -> enn_base.EpistemicNetworkWithState:
+    prior_scale: float = 1.) -> network_base.EpistemicNetworkWithState:
   """Factory method to create a standard MLP epinet."""
 
-  def net_fn(x: enn_base.Array, z: enn_base.Index) -> enn_base.OutputWithPrior:
+  def net_fn(x: chex.Array, z: base.Index) -> base.OutputWithPrior:
     base_mlp = mlp.ExposedMLP(output_sizes, expose_layers, name='base_mlp')
     num_classes = output_sizes[-1]
     train_epinet = mlp.ProjectedMLP(
@@ -46,13 +48,13 @@ def make_mlp_epinet(
     features = base_out.extra['exposed_features']
     epi_train = train_epinet(features, z)
     epi_prior = prior_epinet(features, z)
-    return enn_base.OutputWithPrior(
+    return base.OutputWithPrior(
         train=base_out.train + epi_train,
         prior=prior_scale * epi_prior,
     )
 
   transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-  return enn_base.EpistemicNetworkWithState(
+  return network_base.EpistemicNetworkWithState(
       apply=transformed.apply,
       init=transformed.init,
       indexer=indexers.GaussianIndexer(index_dim),

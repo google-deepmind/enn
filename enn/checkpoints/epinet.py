@@ -17,7 +17,7 @@
 
 import dataclasses
 from typing import Callable, Optional
-from enn import base_legacy as enn_base
+from enn import base
 from enn import datasets
 from enn.checkpoints import base as checkpoint_base
 from enn.networks.epinet import base as epinet_base
@@ -37,7 +37,7 @@ class EpinetCheckpoint:
   epinet_ctor: Callable[[], epinet_base.EpinetWithState]  # Epinet model
   parse_hidden: epinet_base.BaseHiddenParser  # Parse the hidden representation.
   base_cpt: checkpoint_base.EnnCheckpoint  # Checkpoint for the base model
-  base_index: Optional[enn_base.Index] = None  # Optional specify base_index.
+  base_index: Optional[base.Index] = None  # Optional specify base_index.
   base_scale: float = 1.  # Scaling of base net output.
 
   # Optionally rescale ENN outputs by 1/ temperature.

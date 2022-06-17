@@ -18,9 +18,10 @@
 import dataclasses
 from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, Union
 
-from enn import base_legacy
-from enn.losses.single_index import SingleIndexLossFn
-from enn.losses.single_index_with_state import SingleIndexLossFnWithStateBase
+import chex
+from enn import base
+from enn import networks
+from enn.losses import base as losses_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -39,12 +40,31 @@ def l2_weights_with_predicate(
   return sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
 
 
+def wrap_loss_as_loss_with_state(
+    loss_fn: losses_base.LossFn
+) -> losses_base.LossFnWithState:
+  """Wraps a legacy enn loss as a loss for enn with state."""
+
+  def new_loss(
+      enn: networks.EpistemicNetworkWithState,
+      params: hk.Params,
+      unused_state: hk.State,
+      batch: base.Batch,
+      index: base.Index,
+  ) -> base.LossOutput:
+    enn = networks.wrap_enn_with_state_as_enn(enn)
+    loss, metrics = loss_fn(enn, params, batch, index)
+    return loss, ({}, metrics)
+
+  return new_loss
+
+
 # TODO(author3): Remove this module and use the one with state instead.
 def add_l2_weight_decay(
-    loss_fn: base_legacy.LossFn,
+    loss_fn: losses_base.LossFn,
     scale: Union[float, Callable[[hk.Params], hk.Params]],
     predicate: Optional[PredicateFn] = None
-) -> base_legacy.LossFn:
+) -> losses_base.LossFn:
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
     scale = jnp.sqrt(scale)
@@ -52,9 +72,9 @@ def add_l2_weight_decay(
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
 
-  def new_loss(enn: base_legacy.EpistemicNetwork,
-               params: hk.Params, batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def new_loss(enn: networks.EpistemicNetwork,
+               params: hk.Params, batch: base.Batch,
+               key: chex.PRNGKey) -> chex.Array:
     loss, metrics = loss_fn(enn, params, batch, key)
     decay = l2_weights_with_predicate(scale_fn(params), predicate)
     total_loss = loss +  decay
@@ -65,11 +85,10 @@ def add_l2_weight_decay(
 
 
 def add_l2_weight_decay_with_state(
-    loss_fn: base_legacy.LossFnWithStateBase[base_legacy.Input,
-                                             base_legacy.Data],
+    loss_fn: base.LossFn[base.Input, base.Data],
     scale: Union[float, Callable[[hk.Params], hk.Params]],
     predicate: Optional[PredicateFn] = None
-) -> base_legacy.LossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
+) -> base.LossFn[base.Input, base.Data]:
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
     scale = jnp.sqrt(scale)
@@ -78,9 +97,9 @@ def add_l2_weight_decay_with_state(
     scale_fn = scale  # Assuming scale is a Callable.
 
   def new_loss(
-      enn: base_legacy.EpistemicNetworkWithStateBase[base_legacy.Input],
-      params: hk.Params, state: hk.State, batch: base_legacy.Data,
-      key: base_legacy.RngKey) -> base_legacy.LossOutputWithState:
+      enn: base.EpistemicNetwork[base.Input],
+      params: hk.Params, state: hk.State, batch: base.Data,
+      key: chex.PRNGKey) -> base.LossOutput:
     loss, (state, metrics) = loss_fn(enn, params, state, batch, key)
     decay = l2_weights_with_predicate(scale_fn(params), predicate)
     total_loss = loss +  decay
@@ -92,14 +111,14 @@ def add_l2_weight_decay_with_state(
 
 # TODO(author3): Remove this module and use the one with state instead.
 def combine_single_index_losses_as_metric(
-    train_loss: SingleIndexLossFn,
-    extra_losses: Dict[str, SingleIndexLossFn],
-) -> SingleIndexLossFn:
+    train_loss: losses_base.SingleIndexLossFn,
+    extra_losses: Dict[str, losses_base.SingleIndexLossFn],
+) -> losses_base.SingleIndexLossFn:
   """Combines train_loss for training with extra_losses in metrics."""
 
-  def combined_loss(apply: base_legacy.ApplyFn,
-                    params: hk.Params, batch: base_legacy.Batch,
-                    index: base_legacy.Index) -> base_legacy.LossOutput:
+  def combined_loss(apply: networks.ApplyFn,
+                    params: hk.Params, batch: base.Batch,
+                    index: base.Index) -> losses_base.LossOutput:
     loss, metrics = train_loss(apply, params, batch, index)
     for name, loss_fn in extra_losses.items():
       extra_loss, extra_metrics = loss_fn(apply, params, batch, index)
@@ -112,17 +131,18 @@ def combine_single_index_losses_as_metric(
 
 
 def combine_single_index_losses_with_state_as_metric(
-    train_loss: SingleIndexLossFnWithStateBase[base_legacy.Input,
-                                               base_legacy.Data],
-    extra_losses: Dict[str, SingleIndexLossFnWithStateBase[base_legacy.Input,
-                                                           base_legacy.Data]],
-) -> SingleIndexLossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
+    train_loss: losses_base.SingleIndexLossFnWithStateBase[base.Input,
+                                                           base.Data],
+    extra_losses: Dict[str,
+                       losses_base.SingleIndexLossFnWithStateBase[base.Input,
+                                                                  base.Data]],
+) -> losses_base.SingleIndexLossFnWithStateBase[base.Input, base.Data]:
   """Combines train_loss for training with extra_losses in metrics."""
 
   def combined_loss(
-      apply: base_legacy.ApplyFnWithStateBase[base_legacy.Input],
-      params: hk.Params, state: hk.State, batch: base_legacy.Data,
-      index: base_legacy.Index) -> base_legacy.LossOutputWithState:
+      apply: base.ApplyFn[base.Input],
+      params: hk.Params, state: hk.State, batch: base.Data,
+      index: base.Index) -> base.LossOutput:
     loss, (state, metrics) = train_loss(apply, params, state, batch, index)
     for name, loss_fn in extra_losses.items():
       extra_loss, (unused_state,
@@ -137,14 +157,14 @@ def combine_single_index_losses_with_state_as_metric(
 
 # TODO(author3): Remove this module and use the one with state instead.
 def combine_losses_as_metric(
-    train_loss: base_legacy.LossFn,
-    extra_losses: Dict[str, base_legacy.LossFn],
-) -> base_legacy.LossFn:
+    train_loss: losses_base.LossFn,
+    extra_losses: Dict[str, losses_base.LossFn],
+) -> losses_base.LossFn:
   """Combines train_loss for training with extra_losses in metrics."""
 
-  def combined_loss(enn: base_legacy.EpistemicNetwork,
-                    params: hk.Params, batch: base_legacy.Batch,
-                    key: base_legacy.RngKey) -> base_legacy.LossOutput:
+  def combined_loss(enn: networks.EpistemicNetwork,
+                    params: hk.Params, batch: base.Batch,
+                    key: chex.PRNGKey) -> losses_base.LossOutput:
     loss, metrics = train_loss(enn, params, batch, key)
     for name, loss_fn in extra_losses.items():
       extra_loss, extra_metrics = loss_fn(enn, params, batch, key)
@@ -157,17 +177,15 @@ def combine_losses_as_metric(
 
 
 def combine_losses_with_state_as_metric(
-    train_loss: base_legacy.LossFnWithStateBase[base_legacy.Input,
-                                                base_legacy.Data],
-    extra_losses: Dict[str, base_legacy.LossFnWithStateBase[base_legacy.Input,
-                                                            base_legacy.Data]],
-) -> base_legacy.LossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
+    train_loss: base.LossFn[base.Input, base.Data],
+    extra_losses: Dict[str, base.LossFn[base.Input, base.Data]],
+) -> base.LossFn[base.Input, base.Data]:
   """Combines train_loss for training with extra_losses in metrics."""
 
   def combined_loss(
-      enn: base_legacy.EpistemicNetworkWithStateBase[base_legacy.Input],
-      params: hk.Params, state: hk.State, batch: base_legacy.Data,
-      key: base_legacy.RngKey) -> base_legacy.LossOutputWithState:
+      enn: base.EpistemicNetwork[base.Input],
+      params: hk.Params, state: hk.State, batch: base.Data,
+      key: chex.PRNGKey) -> base.LossOutput:
     loss, (state, metrics) = train_loss(enn, params, state, batch, key)
     for name, loss_fn in extra_losses.items():
       extra_loss, (unused_state,
@@ -182,15 +200,14 @@ def combine_losses_with_state_as_metric(
 
 @dataclasses.dataclass
 class CombineLossConfig:
-  loss_fn: base_legacy.LossFn
+  loss_fn: losses_base.LossFn
   name: str = 'unnamed'  # Name for the loss function
   weight: float = 1.  # Weight to scale the loss by
 
 
 def combine_losses(
-    losses: Sequence[Union[CombineLossConfig,
-                           base_legacy.LossFn]]
-) -> base_legacy.LossFn:
+    losses: Sequence[Union[CombineLossConfig, losses_base.LossFn]]
+) -> losses_base.LossFn:
   """Combines multiple losses into a single loss."""
   clean_losses: List[CombineLossConfig] = []
   for i, loss in enumerate(losses):
@@ -198,9 +215,9 @@ def combine_losses(
       loss = CombineLossConfig(loss, name=f'loss_{i}')
     clean_losses.append(loss)
 
-  def loss_fn(enn: base_legacy.EpistemicNetwork,
-              params: hk.Params, batch: base_legacy.Batch,
-              key: base_legacy.RngKey) -> base_legacy.LossOutput:
+  def loss_fn(enn: networks.EpistemicNetwork,
+              params: hk.Params, batch: base.Batch,
+              key: chex.PRNGKey) -> losses_base.LossOutput:
     combined_loss = 0.
     combined_metrics = {}
     for loss_config in clean_losses:
@@ -216,24 +233,23 @@ def combine_losses(
 
 
 @dataclasses.dataclass
-class CombineLossWithStateConfigBase(Generic[base_legacy.Input,
-                                             base_legacy.Data]):
-  loss_fn: base_legacy.LossFnWithStateBase[base_legacy.Input, base_legacy.Data]
+class CombineLossWithStateConfigBase(Generic[base.Input,
+                                             base.Data]):
+  loss_fn: base.LossFn[base.Input, base.Data]
   name: str = 'unnamed'  # Name for the loss function
   weight: float = 1.  # Weight to scale the loss by
 
 
 # Module specialized to work only with Array inputs and Batch data.
-CombineLossWithStateConfig = CombineLossWithStateConfigBase[base_legacy.Array,
-                                                            base_legacy.Data]
+CombineLossWithStateConfig = CombineLossWithStateConfigBase[chex.Array,
+                                                            base.Data]
 
 
 def combine_losses_with_state(
-    losses: Sequence[Union[CombineLossWithStateConfigBase[base_legacy.Input,
-                                                          base_legacy.Data],
-                           base_legacy.LossFnWithStateBase[base_legacy.Input,
-                                                           base_legacy.Data]]]
-) -> base_legacy.LossFnWithStateBase[base_legacy.Input, base_legacy.Data]:
+    losses: Sequence[Union[CombineLossWithStateConfigBase[base.Input,
+                                                          base.Data],
+                           base.LossFn[base.Input, base.Data]]]
+) -> base.LossFn[base.Input, base.Data]:
   """Combines multiple losses into a single loss."""
   clean_losses: List[CombineLossWithStateConfigBase] = []
   for i, loss in enumerate(losses):
@@ -241,9 +257,9 @@ def combine_losses_with_state(
       loss = CombineLossWithStateConfigBase(loss, name=f'loss_{i}')
     clean_losses.append(loss)
 
-  def loss_fn(enn: base_legacy.EpistemicNetworkWithState[base_legacy.Input],
-              params: hk.Params, state: hk.State, batch: base_legacy.Data,
-              key: base_legacy.RngKey) -> base_legacy.LossOutputWithState:
+  def loss_fn(enn: base.EpistemicNetwork[base.Input],
+              params: hk.Params, state: hk.State, batch: base.Data,
+              key: chex.PRNGKey) -> base.LossOutput:
     combined_loss = 0.
     combined_metrics = {}
     for loss_config in clean_losses:

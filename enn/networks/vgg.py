@@ -19,7 +19,7 @@ from typing import Any, Sequence, Tuple
 
 from absl import logging
 import chex
-from enn import base_legacy
+from enn.networks import base as network_base
 from enn.networks import ensembles
 import haiku as hk
 import jax
@@ -79,7 +79,7 @@ class VGG(hk.Module):
     return self._logits_module(net)
 
 
-class EnsembleVGGENN(base_legacy.EpistemicNetworkWithState):
+class EnsembleVGGENN(network_base.EpistemicNetworkWithState):
   """Ensemble of VGG Networks created using einsum ensemble."""
 
   def __init__(self,

@@ -15,7 +15,6 @@
 # ============================================================================
 """Entries on ImageNet."""
 
-from enn import base_legacy as enn_base
 from enn import datasets
 from enn import networks
 from enn.checkpoints import base as checkpoint_base
@@ -29,7 +28,7 @@ def _make_resnet_ctor(
     config: networks.ResNetConfig,
 ) -> checkpoint_base.EnnCtor:
   """Creates a resnet constructor for appropriate config."""
-  def enn_ctor() -> enn_base.EpistemicNetworkWithState:
+  def enn_ctor() -> networks.EpistemicNetworkWithState:
     return networks.EnsembleResNetENN(
         num_output_classes=datasets.Imagenet().num_classes,
         num_ensemble=1,

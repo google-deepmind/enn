@@ -18,7 +18,8 @@
 from typing import Sequence
 
 import chex
-from enn import base_legacy
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import indexers
 from enn.networks.resnet import base as resnet_base
 import haiku as hk
@@ -26,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class ResnetMlpPrior(base_legacy.EpistemicNetworkWithState):
+class ResnetMlpPrior(network_base.EpistemicNetworkWithState):
   """Resnet Network with MLP Prior."""
 
   def __init__(self,
@@ -36,7 +37,7 @@ class ResnetMlpPrior(base_legacy.EpistemicNetworkWithState):
                is_training: bool = True):
 
     def net_fn(x: chex.Array,
-               index: base_legacy.Index) -> base_legacy.OutputWithPrior:
+               index: base.Index) -> base.OutputWithPrior:
       del index
       output = resnet_base.resnet_model(num_classes)(x, is_training=is_training)
 
@@ -45,18 +46,18 @@ class ResnetMlpPrior(base_legacy.EpistemicNetworkWithState):
         x = jnp.transpose(x, (3, 0, 1, 2))  # HWCN -> NHWC
       x = hk.Flatten()(x)
       prior = hk.nets.MLP(list(hidden_sizes) + [num_classes,], name='prior')(x)
-      return base_legacy.OutputWithPrior(
+      return base.OutputWithPrior(
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-    enn = base_legacy.EpistemicNetworkWithState(
+    enn = network_base.EpistemicNetworkWithState(
         apply=transformed.apply,
         init=transformed.init,
         indexer=indexers.EnsembleIndexer(1))
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class ResnetCnnPrior(base_legacy.EpistemicNetworkWithState):
+class ResnetCnnPrior(network_base.EpistemicNetworkWithState):
   """VGG Network with ConvNet Prior."""
 
   def __init__(self,
@@ -70,7 +71,7 @@ class ResnetCnnPrior(base_legacy.EpistemicNetworkWithState):
     assert len(output_channels) == len(kernel_sizes) == len(strides)
 
     def net_fn(x: chex.Array,
-               index: base_legacy.Index) -> base_legacy.OutputWithPrior:
+               index: base.Index) -> base.OutputWithPrior:
       del index
       output = resnet_base.resnet_model(num_classes)(x, is_training=is_training)
 
@@ -88,11 +89,11 @@ class ResnetCnnPrior(base_legacy.EpistemicNetworkWithState):
         x = jax.nn.relu(x)
       x = hk.Flatten()(x)
       prior = hk.nets.MLP([num_classes], name='prior')(x)
-      return base_legacy.OutputWithPrior(
+      return base.OutputWithPrior(
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-    enn = base_legacy.EpistemicNetworkWithState(
+    enn = network_base.EpistemicNetworkWithState(
         apply=transformed.apply,
         init=transformed.init,
         indexer=indexers.EnsembleIndexer(1))

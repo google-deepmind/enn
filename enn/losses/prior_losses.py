@@ -21,9 +21,13 @@ These prior_losses are used in e.g. supervised/prior_experiment.py.
 """
 
 import dataclasses
+
 from absl import logging
-from enn import base_legacy
+import chex
+from enn import base
+from enn import networks
 from enn import utils
+from enn.losses import base as losses_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -32,8 +36,8 @@ import typing_extensions
 
 class FakeInputGenerator(typing_extensions.Protocol):
 
-  def __call__(self, batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def __call__(self, batch: base.Batch,
+               key: chex.PRNGKey) -> chex.Array:
     """Generates a fake batch of input=x for use in prior regularization."""
 
 
@@ -43,27 +47,27 @@ class MatchingGaussianData(FakeInputGenerator):
 
   scale: float = 1.
 
-  def __call__(self, batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def __call__(self, batch: base.Batch,
+               key: chex.PRNGKey) -> chex.Array:
     """Generates a fake batch of input=x for use in prior regularization."""
     return jax.random.normal(key, batch.x.shape) * self.scale
 
 
 def make_gaussian_dataset(batch_size: int,
                           input_dim: int,
-                          seed: int = 0) -> base_legacy.BatchIterator:
+                          seed: int = 0) -> base.BatchIterator:
   """Returns a batch iterator over random Gaussian data."""
   sample_fn = jax.jit(lambda x: jax.random.normal(x, [batch_size, input_dim]))
   def batch_iterator():
     rng = hk.PRNGSequence(seed)
     while True:
       x = sample_fn(next(rng))
-      yield base_legacy.Batch(x, y=jnp.ones([x.shape[0], 1]))
+      yield base.Batch(x, y=jnp.ones([x.shape[0], 1]))
   return batch_iterator()
 
 
-def variance_kl(var: base_legacy.Array,
-                pred_log_var: base_legacy.Array) -> base_legacy.Array:
+def variance_kl(var: chex.Array,
+                pred_log_var: chex.Array) -> chex.Array:
   """Compute the KL divergence between Gaussian variance with matched means."""
   log_var = jnp.log(var)
   pred_var = jnp.exp(pred_log_var)
@@ -72,9 +76,9 @@ def variance_kl(var: base_legacy.Array,
 
 # TODO(author3): Remove and use generate_batched_forward_at_data_with_state.
 def generate_batched_forward_at_data(
-    num_index_sample: int, x: base_legacy.Array,
-    enn: base_legacy.EpistemicNetwork, params: hk.Params,
-    key: base_legacy.RngKey) -> base_legacy.Output:
+    num_index_sample: int, x: chex.Array,
+    enn: networks.EpistemicNetwork, params: hk.Params,
+    key: chex.PRNGKey) -> base.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, 0])
@@ -83,9 +87,9 @@ def generate_batched_forward_at_data(
 
 
 def generate_batched_forward_at_data_with_state(
-    num_index_sample: int, x: base_legacy.Array,
-    enn: base_legacy.EpistemicNetworkWithState, params: hk.Params,
-    key: base_legacy.RngKey) -> base_legacy.Output:
+    num_index_sample: int, x: chex.Array,
+    enn: networks.EpistemicNetworkWithState, params: hk.Params,
+    key: chex.PRNGKey) -> base.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, None, 0])
@@ -95,9 +99,9 @@ def generate_batched_forward_at_data_with_state(
   return batched_out
 
 
-def l2_training_penalty(batched_out: base_legacy.Output):
+def l2_training_penalty(batched_out: base.Output):
   """Penalize the L2 magnitude of the training network."""
-  if isinstance(batched_out, base_legacy.OutputWithPrior):
+  if isinstance(batched_out, base.OutputWithPrior):
     return 0.5 * jnp.mean(jnp.square(batched_out.train))
   else:
     logging.warning('L2 weight penalty only works for OutputWithPrior.')
@@ -105,57 +109,57 @@ def l2_training_penalty(batched_out: base_legacy.Output):
 
 
 def distill_mean_regression(
-    batched_out: base_legacy.Output,
-    distill_out: base_legacy.Output) -> base_legacy.Array:
+    batched_out: base.Output,
+    distill_out: base.Output) -> chex.Array:
   """Train the mean of the regression to the distill network."""
-  observed_mean = jnp.mean(utils.parse_net_output(batched_out), axis=0)
-  distill_mean = jnp.squeeze(utils.parse_net_output(distill_out))
+  observed_mean = jnp.mean(networks.parse_net_output(batched_out), axis=0)
+  distill_mean = jnp.squeeze(networks.parse_net_output(distill_out))
   return jnp.mean(jnp.square(distill_mean - observed_mean))
 
 
 def distill_mean_classification(
-    batched_out: base_legacy.Output,
-    distill_out: base_legacy.Output) -> base_legacy.Array:
+    batched_out: base.Output,
+    distill_out: base.Output) -> chex.Array:
   """Train the mean of the classification to the distill network."""
-  batched_logits = utils.parse_net_output(batched_out)
+  batched_logits = networks.parse_net_output(batched_out)
   batched_probs = jax.nn.softmax(batched_logits, axis=-1)
   mean_probs = jnp.mean(batched_probs, axis=0)
-  distill_probs = jax.nn.softmax(utils.parse_net_output(distill_out), axis=-1)
-  return jnp.mean(jnp.sum(
-      mean_probs * jnp.log(mean_probs / distill_probs), axis=1))
+  distill_probs = jax.nn.softmax(
+      networks.parse_net_output(distill_out), axis=-1)
+  return jnp.mean(
+      jnp.sum(mean_probs * jnp.log(mean_probs / distill_probs), axis=1))
 
 
-def distill_var_regression(
-    batched_out: base_legacy.Output,
-    distill_out: base_legacy.Output) -> base_legacy.Array:
+def distill_var_regression(batched_out: base.Output,
+                           distill_out: base.Output) -> chex.Array:
   """Train the variance of the regression to the distill network."""
-  assert isinstance(distill_out, base_legacy.OutputWithPrior)
-  observed_var = jnp.var(utils.parse_net_output(batched_out), axis=0)
+  assert isinstance(distill_out, base.OutputWithPrior)
+  observed_var = jnp.var(networks.parse_net_output(batched_out), axis=0)
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))
 
 
 def distill_var_classification(
-    batched_out: base_legacy.Output,
-    distill_out: base_legacy.Output) -> base_legacy.Array:
+    batched_out: base.Output,
+    distill_out: base.Output) -> chex.Array:
   """Train the variance of the classification to the distill network."""
-  assert isinstance(distill_out, base_legacy.OutputWithPrior)
-  batched_logits = utils.parse_net_output(batched_out)
+  assert isinstance(distill_out, base.OutputWithPrior)
+  batched_logits = networks.parse_net_output(batched_out)
   observed_var = jnp.var(jax.nn.softmax(batched_logits, axis=-1))
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))
 
 
 # TODO(author3): Remove this module. Use RegressionPriorLossWithState.
 @dataclasses.dataclass
-class RegressionPriorLoss(base_legacy.LossFn):
+class RegressionPriorLoss(losses_base.LossFn):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: base_legacy.EpistemicNetwork, params: hk.Params,
-               batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def __call__(self, enn: networks.EpistemicNetwork, params: hk.Params,
+               batch: base.Batch,
+               key: chex.PRNGKey) -> chex.Array:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
@@ -174,16 +178,16 @@ class RegressionPriorLoss(base_legacy.LossFn):
 
 
 @dataclasses.dataclass
-class RegressionPriorLossWithState(base_legacy.LossFnWithState):
+class RegressionPriorLossWithState(losses_base.LossFnWithState):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: base_legacy.EpistemicNetworkWithState,
-               params: hk.Params, state: hk.State, batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def __call__(self, enn: networks.EpistemicNetworkWithState,
+               params: hk.Params, state: hk.State, batch: base.Batch,
+               key: chex.PRNGKey) -> chex.Array:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
@@ -208,16 +212,16 @@ class RegressionPriorLossWithState(base_legacy.LossFnWithState):
 
 # TODO(author3): Remove this module. Use ClassificationPriorLossWithState.
 @dataclasses.dataclass
-class ClassificationPriorLoss(base_legacy.LossFn):
+class ClassificationPriorLoss(losses_base.LossFn):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: base_legacy.EpistemicNetwork, params: hk.Params,
-               batch: base_legacy.Batch,
-               key: base_legacy.RngKey) -> base_legacy.Array:
+  def __call__(self, enn: networks.EpistemicNetwork, params: hk.Params,
+               batch: base.Batch,
+               key: chex.PRNGKey) -> losses_base.LossOutput:
 
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
@@ -237,7 +241,7 @@ class ClassificationPriorLoss(base_legacy.LossFn):
 
 
 @dataclasses.dataclass
-class ClassificationPriorLossWithState(base_legacy.LossFnWithState):
+class ClassificationPriorLossWithState(losses_base.LossFnWithState):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
@@ -246,12 +250,12 @@ class ClassificationPriorLossWithState(base_legacy.LossFnWithState):
 
   def __call__(
       self,
-      enn: base_legacy.EpistemicNetworkWithState,
+      enn: networks.EpistemicNetworkWithState,
       params: hk.Params,
       state: hk.State,
-      batch: base_legacy.Batch,
-      key: base_legacy.RngKey,
-  ) -> base_legacy.LossOutputWithState:
+      batch: base.Batch,
+      key: chex.PRNGKey,
+  ) -> base.LossOutput:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment

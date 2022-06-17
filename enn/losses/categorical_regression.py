@@ -17,19 +17,19 @@
 """Implementing categorical regression (MuZero-style) in JAX."""
 
 import dataclasses
+
 import chex
-from enn import base_legacy
+from enn import base
 from enn import networks
-from enn.losses import single_index
-from enn.losses import single_index_with_state
+from enn.losses import base as losses_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import rlax
 
 
-def transform_to_2hot(target: base_legacy.Array,
-                      support: base_legacy.Array) -> base_legacy.Array:
+def transform_to_2hot(target: chex.Array,
+                      support: chex.Array) -> chex.Array:
   """Converts a scalar target to a 2-hot encoding of the nearest support."""
   target = jnp.clip(target, support.min(), support.max())
   high_idx = jnp.sum(support < target)
@@ -47,12 +47,12 @@ def transform_to_2hot(target: base_legacy.Array,
 
 # TODO(author3): Remove this module. We should use Cat2HotRegressionWithState.
 @dataclasses.dataclass
-class Cat2HotRegression(single_index.SingleIndexLossFn):
+class Cat2HotRegression(losses_base.SingleIndexLossFn):
   """Apply categorical loss to 2-hot regression target."""
 
-  def __call__(self, apply: base_legacy.ApplyFn, params: hk.Params,
-               batch: base_legacy.Batch,
-               index: base_legacy.Index) -> base_legacy.Array:
+  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+               batch: base.Batch,
+               index: base.Index) -> losses_base.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
 
@@ -77,14 +77,13 @@ class Cat2HotRegression(single_index.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class Cat2HotRegressionWithState(
-    single_index_with_state.SingleIndexLossFnWithState):
+class Cat2HotRegressionWithState(losses_base.SingleIndexLossFnWithState):
   """Apply categorical loss to 2-hot regression target."""
 
-  def __call__(self, apply: base_legacy.ApplyFnWithState, params: hk.Params,
+  def __call__(self, apply: networks.ApplyFnWithState, params: hk.Params,
                state: hk.State,
-               batch: base_legacy.Batch,
-               index: base_legacy.Index) -> base_legacy.LossOutputWithState:
+               batch: base.Batch,
+               index: base.Index) -> base.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
 

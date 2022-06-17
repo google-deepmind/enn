@@ -19,10 +19,10 @@
 from typing import Sequence
 
 import chex
-from enn import base_legacy
-from enn import utils
+from enn.networks import base as network_base
 from enn.networks import hypermodels
 from enn.networks import indexers
+from enn.networks import utils as network_utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -37,7 +37,7 @@ import jax.numpy as jnp
 def make_bbb_enn(
     base_output_sizes: Sequence[int],
     dummy_input: chex.Array,
-    temperature: float = 1.) -> base_legacy.EpistemicNetworkWithState:
+    temperature: float = 1.) -> network_base.EpistemicNetworkWithState:
   """Makes a Bayes-by-backprop (BBB) aganet."""
 
   def make_transformed_base(output_sizes: Sequence[int]) -> hk.Transformed:
@@ -58,7 +58,7 @@ def make_bbb_enn(
   # index to be Gaussian with the same variance as the latent prior variance.
   indexer = indexers.GaussianIndexer(index_dim=num_base_params)
 
-  enn = utils.epistemic_network_from_module(
+  enn = network_utils.epistemic_network_from_module(
       enn_ctor=hypermodels.hypermodel_module(
           transformed_base,
           dummy_input,

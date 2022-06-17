@@ -15,6 +15,14 @@
 # ============================================================================
 
 """Exposing the public methods of the networks."""
+# Base
+from enn.networks.base import ApplyFn
+from enn.networks.base import ApplyFnWithState
+from enn.networks.base import EpistemicModule
+from enn.networks.base import EpistemicNetwork
+from enn.networks.base import EpistemicNetworkWithState
+from enn.networks.base import InitFn
+from enn.networks.base import InitFnWithState
 # BBB
 from enn.networks.bbb import make_bbb_enn
 # Categorical regression ensemble
@@ -83,6 +91,19 @@ from enn.networks.resnet.lib import ResNetConfig
 # ResNet (Imagenet)
 from enn.networks.resnet.priors import ResnetCnnPrior
 from enn.networks.resnet.priors import ResnetMlpPrior
+# Utils
+from enn.networks.utils import epistemic_network_from_module
+from enn.networks.utils import make_centered_enn
+from enn.networks.utils import make_centered_enn_with_state
+from enn.networks.utils import parse_net_output
+from enn.networks.utils import parse_to_output_with_prior
+from enn.networks.utils import scale_enn_output
+from enn.networks.utils import wrap_apply_as_apply_with_state
+from enn.networks.utils import wrap_enn_as_enn_with_state
+from enn.networks.utils import wrap_enn_with_state_as_enn
+from enn.networks.utils import wrap_init_as_init_with_state
+from enn.networks.utils import wrap_transformed_as_enn
+from enn.networks.utils import wrap_transformed_as_enn_with_state
 # VGG (Cifar10)
 from enn.networks.vgg import EnsembleVGGENN
 from enn.networks.vgg import VGG

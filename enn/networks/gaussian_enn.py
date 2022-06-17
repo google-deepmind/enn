@@ -26,9 +26,10 @@ This is an implementation framing that network as an ENN.
 
 from typing import Callable, Sequence
 
-from enn import base_legacy
-from enn import utils
+import chex
+from enn.networks import base as network_base
 from enn.networks import indexers
+from enn.networks import utils as network_utils
 import haiku as hk
 import haiku.experimental as hke
 import jax
@@ -67,7 +68,7 @@ def enn_getter(next_getter, value, context):
     return next_getter(value)
 
 
-class GaussianNoiseEnn(base_legacy.EpistemicNetworkWithState):
+class GaussianNoiseEnn(network_base.EpistemicNetworkWithState):
   """GaussianNoiseEnn from callable module."""
 
   def __init__(self,
@@ -76,7 +77,7 @@ class GaussianNoiseEnn(base_legacy.EpistemicNetworkWithState):
     """GaussianNoiseEnn from callable module."""
     enn_creator = make_enn_creator(init_scale=init_scale)
 
-    def net_fn(inputs: base_legacy.Array) -> base_legacy.Array:
+    def net_fn(inputs: chex.Array) -> chex.Array:
       with hke.custom_getter(enn_getter), hke.custom_creator(enn_creator):
         output = module_ctor()(inputs)  # pytype: disable=not-callable
         return output
@@ -88,13 +89,13 @@ class GaussianNoiseEnn(base_legacy.EpistemicNetworkWithState):
     init = lambda rng, x, z: transformed.init(rng, x)
 
     # TODO(author3): Change apply and init fns above to work with state.
-    apply = utils.wrap_apply_as_apply_with_state(apply)
-    init = utils.wrap_init_as_init_with_state(init)
+    apply = network_utils.wrap_apply_as_apply_with_state(apply)
+    init = network_utils.wrap_init_as_init_with_state(init)
 
     super().__init__(apply, init, indexer=indexers.PrngIndexer(),)
 
 
-class GaussianNoiseMLP(base_legacy.EpistemicNetworkWithState):
+class GaussianNoiseMLP(network_base.EpistemicNetworkWithState):
   """Gaussian Enn on a standard MLP."""
 
   def __init__(self, output_sizes: Sequence[int], init_scale: float = 1.):

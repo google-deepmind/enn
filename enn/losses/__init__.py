@@ -15,6 +15,14 @@
 # ============================================================================
 
 """Exposing the public methods of the losses."""
+# Base
+from enn.losses.base import LossFn
+from enn.losses.base import LossFnWithState
+from enn.losses.base import LossOutput
+from enn.losses.base import SingleIndexLossFn
+from enn.losses.base import SingleIndexLossFnWithState
+from enn.losses.base import SingleIndexLossFnWithStateBase
+
 # Categorical regression
 from enn.losses.categorical_regression import Cat2HotRegression
 from enn.losses.categorical_regression import Cat2HotRegressionWithState
@@ -36,7 +44,6 @@ from enn.losses.single_index import add_data_noise
 from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
 from enn.losses.single_index import L2Loss
-from enn.losses.single_index import SingleIndexLossFn
 from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import XentLoss
 
@@ -46,8 +53,6 @@ from enn.losses.single_index_with_state import add_data_noise_to_loss_with_state
 from enn.losses.single_index_with_state import average_single_index_loss_with_state
 from enn.losses.single_index_with_state import ElboLossWithState
 from enn.losses.single_index_with_state import L2LossWithState
-from enn.losses.single_index_with_state import SingleIndexLossFnWithState
-from enn.losses.single_index_with_state import SingleIndexLossFnWithStateBase
 from enn.losses.single_index_with_state import VaeLossWithState
 from enn.losses.single_index_with_state import xent_loss_with_state_custom_labels
 from enn.losses.single_index_with_state import XentLossWithState
@@ -66,6 +71,7 @@ from enn.losses.utils import CombineLossWithStateConfig
 from enn.losses.utils import CombineLossWithStateConfigBase
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
+from enn.losses.utils import wrap_loss_as_loss_with_state
 
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood

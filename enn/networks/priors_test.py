@@ -16,11 +16,12 @@
 
 """Tests for enn.priors."""
 from typing import List
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
-from enn import utils
 from enn.networks import priors
+from enn.networks import utils as network_utils
 import haiku as hk
 import jax
 
@@ -40,7 +41,7 @@ class PriorsTest(parameterized.TestCase):
       return net(x)
 
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = utils.wrap_transformed_as_enn_with_state(transformed)
+    enn = network_utils.wrap_transformed_as_enn_with_state(transformed)
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
 
@@ -52,7 +53,7 @@ class PriorsTest(parameterized.TestCase):
       net = hk.nets.MLP(hiddens + [test_experiment.num_outputs])
       return net(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    train_enn = utils.wrap_transformed_as_enn_with_state(transformed)
+    train_enn = network_utils.wrap_transformed_as_enn_with_state(transformed)
 
     prior_params = transformed.init(
         jax.random.PRNGKey(0), test_experiment.dummy_input)
@@ -90,7 +91,7 @@ class PriorsTest(parameterized.TestCase):
       net = hk.nets.MLP(output_sizes)
       return net(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    train_enn = utils.wrap_transformed_as_enn_with_state(transformed)
+    train_enn = network_utils.wrap_transformed_as_enn_with_state(transformed)
 
     dummy_x = test_experiment.dummy_input
     dummy_z = train_enn.indexer(jax.random.PRNGKey(0))

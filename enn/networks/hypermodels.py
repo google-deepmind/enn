@@ -19,9 +19,10 @@
 from typing import Callable, Optional, Sequence, Type
 
 import chex
-from enn import base_legacy
-from enn import utils
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import priors
+from enn.networks import utils as network_utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -33,14 +34,14 @@ import numpy as np
 # this can easily be converted into a form that works with batched index.
 
 
-class MLPHypermodel(base_legacy.EpistemicNetworkWithState):
+class MLPHypermodel(network_base.EpistemicNetworkWithState):
   """MLP hypermodel for transformed_base as EpistemicNetwork."""
 
   def __init__(
       self,
       transformed_base: hk.Transformed,
-      dummy_input: base_legacy.Array,
-      indexer: base_legacy.EpistemicIndexer,
+      dummy_input: chex.Array,
+      indexer: base.EpistemicIndexer,
       hidden_sizes: Optional[Sequence[int]] = None,
       return_generated_params: bool = False,
       scale: bool = True,
@@ -55,7 +56,7 @@ class MLPHypermodel(base_legacy.EpistemicNetworkWithState):
       def hyper_torso(index):
         return hk.nets.MLP(hidden_sizes, w_init=w_init, b_init=b_init)(index)
 
-    enn = utils.epistemic_network_from_module(
+    enn = network_utils.epistemic_network_from_module(
         enn_ctor=hypermodel_module(
             transformed_base,
             dummy_input,
@@ -70,12 +71,12 @@ class MLPHypermodel(base_legacy.EpistemicNetworkWithState):
 # pytype: disable=bad-return-type
 def hypermodel_module(
     transformed_base: hk.Transformed,
-    dummy_input: base_legacy.Array,
-    hyper_torso: Callable[[base_legacy.Index], base_legacy.Array] = lambda x: x,
+    dummy_input: chex.Array,
+    hyper_torso: Callable[[base.Index], chex.Array] = lambda x: x,
     diagonal_linear_hyper: bool = False,
     return_generated_params: bool = False,
     scale: bool = True,
-) -> Type[base_legacy.EpistemicModule]:
+) -> Type[network_base.EpistemicModule]:
   """Generates an haiku module for a hypermodel of a transformed base network.
 
   A hypermodel uses the index z to predict parameters for the base model defined
@@ -129,8 +130,8 @@ def hypermodel_module(
     # or 'b' (if the parameter is a bias)
     return value / jnp.sqrt(value.shape[0]) if name == 'w' else value
 
-  def hyper_fn(inputs: base_legacy.Array,
-               index: base_legacy.Index) -> base_legacy.Array:
+  def hyper_fn(inputs: chex.Array,
+               index: base.Index) -> chex.Array:
 
     if diagonal_linear_hyper:
       # index must be the same size as the total number of base params.
@@ -168,7 +169,7 @@ def hypermodel_module(
     # Output the original base function(inputs) with these generated params
     out = transformed_base.apply(generated_params_scaled, inputs)
     if return_generated_params:
-      out = base_legacy.OutputWithPrior(
+      out = base.OutputWithPrior(
           train=transformed_base.apply(generated_params_scaled, inputs),
           extra={
               'hyper_net_out': generated_params,
@@ -182,15 +183,15 @@ def hypermodel_module(
 # pytype: enable=bad-return-type
 
 
-class MLPHypermodelWithHypermodelPrior(base_legacy.EpistemicNetworkWithState):
+class MLPHypermodelWithHypermodelPrior(network_base.EpistemicNetworkWithState):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(
       self,
       base_output_sizes: Sequence[int],
       prior_scale: float,
-      dummy_input: base_legacy.Array,
-      indexer: base_legacy.EpistemicIndexer,
+      dummy_input: chex.Array,
+      indexer: base.EpistemicIndexer,
       prior_base_output_sizes: Sequence[int],
       hyper_hidden_sizes: Optional[Sequence[int]] = None,
       prior_hyper_hidden_sizes: Optional[Sequence[int]] = None,
@@ -269,8 +270,8 @@ class HyperLinear(hk.Module):
     self._fixed_bias_val = fixed_bias_val
     self._first_layer = first_layer
 
-  def __call__(self, x: base_legacy.Array,
-               z: base_legacy.Index) -> base_legacy.Array:
+  def __call__(self, x: chex.Array,
+               z: base.Index) -> chex.Array:
     unused_x_batch_size, hidden_size = x.shape
     init = hk.initializers.RandomNormal()
     w = hk.get_parameter(
@@ -334,8 +335,8 @@ class PriorMLPIndependentLayers(hk.Module):
       first_layer = False
       self._layers.append(layer)
 
-  def __call__(self, x: base_legacy.Array,
-               z: base_legacy.Index) -> base_legacy.Array:
+  def __call__(self, x: chex.Array,
+               z: base.Index) -> chex.Array:
     if self._index_dim < self._num_layers:
       # Assigning all index dimensions to all layers
       index_layers = [z] * self._num_layers
@@ -352,15 +353,15 @@ class PriorMLPIndependentLayers(hk.Module):
     return out
 
 
-class MLPHypermodelPriorIndependentLayers(base_legacy.EpistemicNetworkWithState
+class MLPHypermodelPriorIndependentLayers(network_base.EpistemicNetworkWithState
                                          ):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(self,
                base_output_sizes: Sequence[int],
                prior_scale: float,
-               dummy_input: base_legacy.Array,
-               indexer: base_legacy.EpistemicIndexer,
+               dummy_input: chex.Array,
+               indexer: base.EpistemicIndexer,
                prior_base_output_sizes: Sequence[int],
                hyper_hidden_sizes: Optional[Sequence[int]] = None,
                w_init: Optional[hk.initializers.Initializer] = None,

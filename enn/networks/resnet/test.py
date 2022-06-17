@@ -17,7 +17,7 @@
 """Tests for ENN Networks."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import utils
+from enn.networks import utils as networks_utils
 from enn.networks.resnet import base
 from enn.networks.resnet import lib
 import haiku as hk
@@ -56,7 +56,7 @@ class NetworkTest(parameterized.TestCase):
     index = enn.indexer(next(rng))
     params, state = enn.init(next(rng), x, index)
     out, unused_new_state = enn.apply(params, state, x, index)
-    logits = utils.parse_net_output(out)
+    logits = networks_utils.parse_net_output(out)
     self.assertEqual(logits.shape, (batch_size, num_classes))
 
 

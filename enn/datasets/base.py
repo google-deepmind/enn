@@ -20,7 +20,7 @@ import abc
 import dataclasses
 import enum
 from typing import Callable, Dict, Generator, List, Sequence, Union
-from enn import base_legacy as enn_base
+from enn import base
 import numpy as np
 import tensorflow.compat.v2 as tf
 
@@ -29,7 +29,7 @@ Array = Union[np.ndarray, tf.Tensor]
 DatasetDict = Dict[str, Array]
 
 # TODO(author3): Describe DatasetGenerator
-DatasetGenerator = Generator[enn_base.Batch, None, None]
+DatasetGenerator = Generator[base.Batch, None, None]
 DatasetTransformer = Callable[[tf.data.Dataset], tf.data.Dataset]
 
 

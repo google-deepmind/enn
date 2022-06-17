@@ -17,7 +17,7 @@
 """Tests for enn.networks.indexers."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base_legacy
+from enn import base
 from enn.networks import indexers
 import jax
 import numpy as np
@@ -32,7 +32,7 @@ class IndexersTest(parameterized.TestCase):
       [indexers.ScaledGaussianIndexer(7)],
       [indexers.DirichletIndexer(np.ones(3))],
   ])
-  def test_index_forward(self, indexer: base_legacy.EpistemicIndexer):
+  def test_index_forward(self, indexer: base.EpistemicIndexer):
     key = jax.random.PRNGKey(777)
     jit_indexer = jax.jit(lambda x: indexer(x))  # pylint: disable=unnecessary-lambda
     assert np.allclose(indexer(key), jit_indexer(key))

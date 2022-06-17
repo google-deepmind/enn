@@ -17,8 +17,9 @@
 """Setting up simple experiments for tests."""
 from typing import Callable, NamedTuple
 
-from enn import base_legacy
+import chex
 from enn import losses
+from enn import networks
 from enn import utils
 from enn.supervised import sgd_experiment
 import optax
@@ -26,9 +27,9 @@ import optax
 
 class TestExperiment(NamedTuple):
   num_outputs: int
-  experiment_ctor: Callable[[base_legacy.EpistemicNetwork],
+  experiment_ctor: Callable[[networks.EpistemicNetwork],
                             sgd_experiment.Experiment]
-  dummy_input: base_legacy.Array
+  dummy_input: chex.Array
 
 
 def make_test_experiment(regression: bool) -> TestExperiment:

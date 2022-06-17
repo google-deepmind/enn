@@ -16,9 +16,11 @@
 """Implementing Dropout as an ENN in JAX."""
 from typing import List, Optional, Sequence
 
-from enn import base_legacy
-from enn import utils
+import chex
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import indexers
+from enn.networks import utils as network_utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -33,7 +35,7 @@ def cummulative_sum(x):
   return output
 
 
-def generate_masks(key: base_legacy.RngKey, input_size: int,
+def generate_masks(key: chex.PRNGKey, input_size: int,
                    output_sizes: Sequence[int],
                    dropout_rate: float) -> List[jnp.ndarray]:
   """Generates masks for nodes of the network excluding nodes of the last layer."""
@@ -52,7 +54,7 @@ def generate_masks(key: base_legacy.RngKey, input_size: int,
   return masks
 
 
-class MLPDropoutENN(base_legacy.EpistemicNetworkWithStateBase):
+class MLPDropoutENN(network_base.EpistemicNetworkWithState):
   """MLP with dropout as an ENN."""
 
   def __init__(
@@ -67,8 +69,8 @@ class MLPDropoutENN(base_legacy.EpistemicNetworkWithStateBase):
   ):
     """MLP with dropout as an ENN."""
 
-    def enn_fn(inputs: base_legacy.Array,
-               z: base_legacy.Index) -> base_legacy.Output:
+    def enn_fn(inputs: chex.Array,
+               z: base.Index) -> base.Output:
 
       assert inputs.ndim == 2
       unused_batch, input_size = inputs.shape
@@ -108,7 +110,7 @@ class MLPDropoutENN(base_legacy.EpistemicNetworkWithStateBase):
       return x
 
     # Note that our enn_fn is stochastic because we generate masks in it. But,
-    # since we pass a base.RngKey directly to it, we can still wrap transformed
+    # since we pass a chex.PRNGKey directly to it, we can still wrap transformed
     # function with hk.without_apply_rng.
     transformed = hk.without_apply_rng(hk.transform(enn_fn))
 
@@ -117,12 +119,12 @@ class MLPDropoutENN(base_legacy.EpistemicNetworkWithStateBase):
 
     # Apply function for enn_fn requires a rng key to generate masks. We use
     # the index z in f(x,z) as the rng key.
-    def apply(params: hk.Params, x: base_legacy.Array,
-              z: base_legacy.Index) -> base_legacy.Output:
+    def apply(params: hk.Params, x: chex.Array,
+              z: base.Index) -> base.Output:
       net_out = transformed.apply(params, x, z)
       return net_out
 
-    apply = utils.wrap_apply_as_apply_with_state(apply)
-    init = utils.wrap_init_as_init_with_state(transformed.init)
+    apply = network_utils.wrap_apply_as_apply_with_state(apply)
+    init = network_utils.wrap_init_as_init_with_state(transformed.init)
 
     super().__init__(apply, init, indexer)

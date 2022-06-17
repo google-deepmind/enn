@@ -20,9 +20,9 @@ from typing import Sequence
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import supervised
-from enn import utils
 from enn.networks import indexers
 from enn.networks import mlp
+from enn.networks import utils as network_utils
 import haiku as hk
 
 
@@ -40,7 +40,7 @@ class EpinetTest(parameterized.TestCase):
     def net_fn(x):
       return mlp.ExposedMLP(output_sizes)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = utils.wrap_transformed_as_enn_with_state(transformed)
+    enn = network_utils.wrap_transformed_as_enn_with_state(transformed)
 
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)
@@ -63,7 +63,7 @@ class EpinetTest(parameterized.TestCase):
           final_out=test_experiment.num_outputs,
           index_dim=index_dim,
       )
-    enn = utils.epistemic_network_from_module(
+    enn = network_utils.epistemic_network_from_module(
         enn_ctor, indexers.GaussianIndexer(index_dim))
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)

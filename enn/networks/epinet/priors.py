@@ -21,7 +21,7 @@ WARNING: NOT GOLD QUALITY YET - WORK IN PROGRESS.
 from typing import Optional, Sequence, Tuple
 
 import chex
-from enn import base_legacy as enn_base
+from enn import base
 from enn import networks
 from enn.networks.epinet import base as epinet_base
 import haiku as hk
@@ -38,13 +38,13 @@ def combine_epinet_and_prior(
   def apply(
       params: hk.Params,  # Epinet parameters
       state: hk.State,  # Epinet state
-      inputs: enn_base.Array,  # ENN inputs = x
-      index: enn_base.Index,  # ENN index = z
-      hidden: enn_base.Array,  # Base net hiddens = phi(x)
-  ) -> Tuple[enn_base.OutputWithPrior, hk.State]:
+      inputs: chex.Array,  # ENN inputs = x
+      index: base.Index,  # ENN index = z
+      hidden: chex.Array,  # Base net hiddens = phi(x)
+  ) -> Tuple[base.OutputWithPrior, hk.State]:
     epi_out, epi_state = epinet.apply(params, state, inputs, index, hidden)
     prior_out = prior_fn(inputs, index)
-    combined_out = enn_base.OutputWithPrior(
+    combined_out = base.OutputWithPrior(
         train=epi_out.train,
         prior=epi_out.prior + prior_out * prior_scale,
         extra=epi_out.extra

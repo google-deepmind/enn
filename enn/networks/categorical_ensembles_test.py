@@ -19,7 +19,7 @@ from typing import List
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base_legacy
+import chex
 from enn import losses
 from enn import supervised
 from enn import utils
@@ -35,7 +35,7 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
       [[], np.linspace(-1, 1, 10), 1],
   ])
   def test_categorical_ensemble(self, hiddens: List[int],
-                                atoms: base_legacy.Array, num_ensemble: int):
+                                atoms: chex.Array, num_ensemble: int):
     """Running with the naive L2 loss."""
     test_experiment = supervised.make_test_experiment(regression=True)
     enn = categorical_ensembles.CatMLPEnsembleGpPrior(

@@ -18,16 +18,18 @@
 
 from typing import Sequence
 
-from enn import base_legacy
-from enn import utils
+import chex
+from enn import base
+from enn.networks import base as network_base
 from enn.networks import indexers
 from enn.networks import priors
+from enn.networks import utils as network_utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
 
 
-class ConcatIndexMLP(base_legacy.EpistemicModule):
+class ConcatIndexMLP(network_base.EpistemicModule):
   """An MLP that has an d-dimensional index concatenated to every layer."""
   # TODO(author2): Rationalize the type behaviour of network outputs.
 
@@ -42,8 +44,8 @@ class ConcatIndexMLP(base_legacy.EpistemicModule):
     self.output_dim = output_sizes[-1]
     self.variance_dim = variance_dim
 
-  def __call__(self, inputs: base_legacy.Array,
-               index: base_legacy.Index) -> base_legacy.OutputWithPrior:
+  def __call__(self, inputs: chex.Array,
+               index: base.Index) -> base.OutputWithPrior:
     """Index must be of shape (index_dim,) intended to be Gaussian."""
     batch_size = inputs.shape[0]
     batched_index = jnp.repeat(jnp.expand_dims(index, 0), batch_size, axis=0)
@@ -60,13 +62,13 @@ class ConcatIndexMLP(base_legacy.EpistemicModule):
         [self.variance_dim], activate_final=True)(flat_inputs)
     var_embedding = jnp.concatenate([out_no_index, input_projection], axis=1)
     var_pred = hk.nets.MLP([self.variance_dim, self.output_dim])(var_embedding)
-    return base_legacy.OutputWithPrior(
+    return base.OutputWithPrior(
         train=hk.Linear(self.output_dim)(out),
         extra={'log_var': var_pred},
     )
 
 
-class IndexMLPWithGpPrior(base_legacy.EpistemicNetworkWithState):
+class IndexMLPWithGpPrior(network_base.EpistemicNetworkWithState):
   """An Index MLP with GP prior as an ENN."""
 
   def __init__(self,
@@ -95,8 +97,8 @@ class IndexMLPWithGpPrior(base_legacy.EpistemicNetworkWithState):
       prior_fns.append(priors.make_random_feat_gp(
           input_dim, output_dim, num_feat, next(rng), gamma))
 
-    def apply(params: hk.Params, inputs: base_legacy.Array,
-              index: base_legacy.Index) -> base_legacy.OutputWithPrior:
+    def apply(params: hk.Params, inputs: chex.Array,
+              index: base.Index) -> base.OutputWithPrior:
       """Forward the SpecialMLP and also the prior network with index."""
       net_out = transformed.apply(params, inputs, index)
       all_priors = [prior(inputs) for prior in prior_fns]
@@ -104,8 +106,8 @@ class IndexMLPWithGpPrior(base_legacy.EpistemicNetworkWithState):
       return net_out._replace(prior=prior_scale * prior_fn)
 
     # TODO(author3): Change transformed above to work with state.
-    apply = utils.wrap_apply_as_apply_with_state(apply)
-    init = utils.wrap_init_as_init_with_state(transformed.init)
+    apply = network_utils.wrap_apply_as_apply_with_state(apply)
+    init = network_utils.wrap_init_as_init_with_state(transformed.init)
 
     super().__init__(
         apply=apply,
@@ -114,7 +116,7 @@ class IndexMLPWithGpPrior(base_legacy.EpistemicNetworkWithState):
     )
 
 
-class IndexMLPEnn(base_legacy.EpistemicNetworkWithState):
+class IndexMLPEnn(network_base.EpistemicNetworkWithState):
   """An MLP with index appended to each layer as ENN."""
 
   def __init__(self,
@@ -122,7 +124,7 @@ class IndexMLPEnn(base_legacy.EpistemicNetworkWithState):
                index_dim: int,
                variance_dim: int = 20):
     """An MLP with index appended to each layer as ENN."""
-    enn = utils.epistemic_network_from_module(
+    enn = network_utils.epistemic_network_from_module(
         enn_ctor=lambda: ConcatIndexMLP(output_sizes, index_dim, variance_dim),
         indexer=indexers.GaussianWithUnitIndexer(index_dim),
     )
