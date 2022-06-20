@@ -66,7 +66,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     single_loss_fn = DummySingleLossFn(num_ensemble, dummy_metrics)
 
     num_index_samples = 100
-    loss_fn = single_index_with_state.average_single_index_loss_with_state(
+    loss_fn = losses_base.average_single_index_loss(
         single_loss_fn, num_index_samples)
     dummy_batch = base.Batch(np.ones([1, 1]), np.ones([1, 1]))
     enn = networks.MLPEnsembleMatchedPrior(

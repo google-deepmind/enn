@@ -43,7 +43,7 @@ def make_test_experiment(regression: bool) -> TestExperiment:
     num_outputs = 2
     single_loss = losses.XentLossWithState(num_outputs)
 
-  loss_fn = losses.average_single_index_loss_with_state(
+  loss_fn = losses.average_single_index_loss(
       single_loss, num_index_samples=1)
   return TestExperiment(
       num_outputs=num_outputs,

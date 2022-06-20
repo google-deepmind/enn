@@ -138,7 +138,8 @@ def train_vae(encoder: PreTransformFn,
 
   # Create loss function
   single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)
-  loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
+  loss_fn = losses.average_single_index_loss_no_state(
+      single_loss, num_index_samples=1)
 
   # Train VAE by gradient descent for num_batches and extract parameters.
   experiment = supervised.ExperimentLegacy(

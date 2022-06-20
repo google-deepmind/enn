@@ -58,7 +58,7 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
         num_ensemble=3,
     )
     single_loss = losses.Cat2HotRegressionWithState()
-    loss_fn = losses.average_single_index_loss_with_state(single_loss, 1)
+    loss_fn = losses.average_single_index_loss(single_loss, 1)
     experiment = supervised.Experiment(enn, loss_fn, optax.adam(1e-3), dataset)
     experiment.train(10)
 

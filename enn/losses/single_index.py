@@ -20,51 +20,11 @@ from typing import Callable, Optional
 
 import chex
 from enn import base
-from enn import data_noise
 from enn import networks
-from enn import utils
 from enn.losses import base as losses_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
-
-
-def average_single_index_loss(
-    single_loss: losses_base.SingleLossFnNoState,
-    num_index_samples: int = 1) -> losses_base.LossFnNoState:
-  """Average a single index loss over multiple index samples.
-
-  Args:
-    single_loss: loss function applied per epistemic index.
-    num_index_samples: number of index samples to average.
-
-  Returns:
-    LossFnNoState that comprises the mean of both the loss and the metrics.
-  """
-
-  def loss_fn(enn: networks.EnnNoState,
-              params: hk.Params, batch: base.Batch,
-              key: chex.PRNGKey) -> losses_base.LossOutputNoState:
-    batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
-    batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
-    loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
-    batch_mean = lambda x: jnp.mean(x, axis=0)
-    return batch_mean(loss), jax.tree_map(batch_mean, metrics)
-  return loss_fn
-
-
-def add_data_noise(
-    single_loss: losses_base.SingleLossFnNoState,
-    noise_fn: data_noise.DataNoise,
-) -> losses_base.SingleLossFnNoState:
-  """Applies a DataNoise function to each batch of data."""
-
-  def noisy_loss(apply: networks.ApplyNoState,
-                 params: hk.Params, batch: base.Batch,
-                 index: base.Index) -> losses_base.LossOutputNoState:
-    noisy_batch = noise_fn(batch, index)
-    return single_loss(apply, params, noisy_batch, index)
-  return noisy_loss
 
 
 @dataclasses.dataclass

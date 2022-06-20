@@ -39,8 +39,8 @@ class ExperimentTest(parameterized.TestCase):
       single_loss = losses.L2Loss()
     else:
       single_loss = losses.XentLoss(num_classes)
-    loss_fn = losses.average_single_index_loss(single_loss, 2)
-    loss_fn = losses.wrap_loss_as_loss_with_state(loss_fn)
+    loss_fn = losses.average_single_index_loss_no_state(single_loss, 2)
+    loss_fn = losses.wrap_loss_no_state_as_loss(loss_fn)
     # Create two different training losses
     train_dataset = utils.make_test_data(30)
     base_trainer = multiloss_experiment.MultilossTrainer(

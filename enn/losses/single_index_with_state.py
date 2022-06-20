@@ -23,9 +23,7 @@ from typing import Callable, Optional
 
 import chex
 from enn import base
-from enn import data_noise
 from enn import networks
-from enn import utils
 from enn.losses import base as losses_base
 import haiku as hk
 import jax
@@ -188,71 +186,3 @@ class VaeLossWithState(losses_base.SingleLossFnArray):
     log_likelihood = self.log_likelihood_fn(net_out, batch)
     return kl_term - log_likelihood, (state, {})
 
-
-def average_single_index_loss_with_state(
-    single_loss: losses_base.SingleLossFn[base.Input, base.Data],
-    num_index_samples: int = 1,
-) -> base.LossFn[base.Input, base.Data]:
-  """Average a single index loss over multiple index samples.
-
-  Note that the *network state* is also averaged over indices. This is not going
-  to be equivalent to num_index_samples updates sequentially. We may want to
-  think about alternative ways to do this, or set num_index_samples=1.
-
-  Args:
-    single_loss: loss function applied per epistemic index.
-    num_index_samples: number of index samples to average.
-
-  Returns:
-    LossFnArray that comprises the mean of both the loss and the metrics.
-  """
-
-  def loss_fn(enn: base.EpistemicNetwork[base.Input],
-              params: hk.Params, state: hk.State, batch: base.Data,
-              key: chex.PRNGKey) -> base.LossOutput:
-    # Apply the loss in parallel over num_index_samples different indices.
-    # This is the key logic to this loss function.
-    batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
-    batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
-    loss, (new_state, metrics) = batched_loss(
-        enn.apply, params, state, batch, batched_indexer(key))
-
-    # Take the mean over the synthetic index batch dimension
-    batch_mean = lambda x: jnp.mean(x, axis=0)
-    mean_loss = batch_mean(loss)
-
-    if new_state:
-      # TODO(author2): This section is a bit of a hack, since we do not have
-      # a clear way to deal with network "state" in the presence of epistemic
-      # index. We choose to average the state across epistemic indices and
-      # then perform basic error checking to make sure the shape is unchanged.
-      new_state = jax.tree_map(batch_mean, new_state)
-      jax.tree_multimap(
-          lambda x, y: chex.assert_equal_shape([x, y]), new_state, state)
-    mean_metrics = jax.tree_map(batch_mean, metrics)
-
-    # TODO(author2): Adding a logging method for keeping track of state counter.
-    # This piece of code is only used for debugging/metrics.
-    if len(new_state) > 0:  # pylint:disable=g-explicit-length-test
-      first_state_layer = new_state[list(new_state.keys())[0]]
-      mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
-    return mean_loss, (new_state, mean_metrics)
-  return loss_fn
-
-
-def add_data_noise_to_loss_with_state(
-    single_loss: losses_base.SingleLossFn[base.Input, base.Data],
-    noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> losses_base.SingleLossFn[base.Input, base.Data]:
-  """Applies a DataNoise function to each batch of data."""
-
-  def noisy_loss(
-      apply: base.ApplyFn[base.Input],
-      params: hk.Params,
-      state: hk.State,
-      batch: base.Data,
-      index: base.Index,
-  ) -> base.LossOutput:
-    noisy_batch = noise_fn(batch, index)
-    return single_loss(apply, params, state, noisy_batch, index)
-  return noisy_loss

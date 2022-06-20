@@ -23,7 +23,6 @@ from enn import base
 from enn import networks
 from enn.losses import base as losses_base
 from enn.losses import single_index
-from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
 import haiku as hk
 import jax
@@ -63,7 +62,8 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     single_loss_fn = DummySingleLossFnNoState(num_ensemble, dummy_metrics)
 
     num_index_samples = 100
-    loss_fn = average_single_index_loss(single_loss_fn, num_index_samples)
+    loss_fn = losses_base.average_single_index_loss_no_state(single_loss_fn,
+                                                             num_index_samples)
     dummy_batch = base.Batch(np.ones([1, 1]), np.ones([1, 1]))
     enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=[1],

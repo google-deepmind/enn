@@ -16,6 +16,8 @@
 
 """Exposing the public methods of the losses."""
 # Base
+from enn.losses.base import average_single_index_loss
+from enn.losses.base import average_single_index_loss_no_state
 from enn.losses.base import LossFnArray
 from enn.losses.base import LossFnNoState
 from enn.losses.base import LossOutputNoState
@@ -40,8 +42,6 @@ from enn.losses.prior_losses import RegressionPriorLossWithState
 
 # Single Index
 from enn.losses.single_index import AccuracyErrorLoss
-from enn.losses.single_index import add_data_noise
-from enn.losses.single_index import average_single_index_loss
 from enn.losses.single_index import ElboLoss
 from enn.losses.single_index import L2Loss
 from enn.losses.single_index import VaeLoss
@@ -49,8 +49,6 @@ from enn.losses.single_index import XentLoss
 
 # Single Index With State
 from enn.losses.single_index_with_state import AccuracyErrorLossWithState
-from enn.losses.single_index_with_state import add_data_noise_to_loss_with_state
-from enn.losses.single_index_with_state import average_single_index_loss_with_state
 from enn.losses.single_index_with_state import ElboLossWithState
 from enn.losses.single_index_with_state import L2LossWithState
 from enn.losses.single_index_with_state import VaeLossWithState
@@ -58,20 +56,22 @@ from enn.losses.single_index_with_state import xent_loss_with_state_custom_label
 from enn.losses.single_index_with_state import XentLossWithState
 
 # Utils
+from enn.losses.utils import add_data_noise
+from enn.losses.utils import add_data_noise_no_state
 from enn.losses.utils import add_l2_weight_decay
-from enn.losses.utils import add_l2_weight_decay_with_state
+from enn.losses.utils import add_l2_weight_decay_no_state
 from enn.losses.utils import combine_losses
 from enn.losses.utils import combine_losses_as_metric
-from enn.losses.utils import combine_losses_with_state
-from enn.losses.utils import combine_losses_with_state_as_metric
+from enn.losses.utils import combine_losses_no_state
+from enn.losses.utils import combine_losses_no_state_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
-from enn.losses.utils import combine_single_index_losses_with_state_as_metric
+from enn.losses.utils import combine_single_index_losses_no_state_as_metric
 from enn.losses.utils import CombineLossConfig
 from enn.losses.utils import CombineLossConfigArray
 from enn.losses.utils import CombineLossConfigNoState
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
-from enn.losses.utils import wrap_loss_as_loss_with_state
+from enn.losses.utils import wrap_loss_no_state_as_loss
 
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood
