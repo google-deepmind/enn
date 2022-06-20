@@ -44,7 +44,7 @@ class MultilossTrainer:
     If should_train(step):
       Apply one step of loss_fn on a batch = next(dataset).
   """
-  loss_fn: losses.LossFn  # Loss function
+  loss_fn: losses.LossFnNoState  # Loss function
   dataset: base.BatchIterator  # Dataset to pull batch from
   should_train: Callable[[int], bool] = lambda _: True  # Which steps to train
   name: str = 'loss'  # Name used for logging
@@ -69,7 +69,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
   """
 
   def __init__(self,
-               enn: networks.EpistemicNetwork,
+               enn: networks.EnnNoState,
                trainers: Sequence[MultilossTrainer],
                optimizer: optax.GradientTransformation,
                seed: int = 0,
@@ -181,7 +181,7 @@ class _PureTrainer:
 
 def _purify_trainers(
     trainers: Sequence[MultilossTrainer],
-    enn: networks.EpistemicNetwork) -> Sequence[_PureTrainer]:
+    enn: networks.EnnNoState) -> Sequence[_PureTrainer]:
   """Converts MultilossTrainer to have *pure* loss function including enn."""
   pure_trainers = []
   for t in trainers:

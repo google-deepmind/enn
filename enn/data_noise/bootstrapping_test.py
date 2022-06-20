@@ -50,7 +50,7 @@ class BootstrappingTest(parameterized.TestCase):
     def init_fn(k, x, z):
       del k, x, z
       return {'lin': {'w': np.ones(1), 'b': np.ones(1)}}
-    fake_enn = networks.EpistemicNetwork(
+    fake_enn = networks.EnnNoState(
         apply=lambda p, x, z: np.ones(1)[:, None],
         init=init_fn,
         indexer=indexer,

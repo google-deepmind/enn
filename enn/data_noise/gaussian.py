@@ -26,8 +26,8 @@ from enn.data_noise import base as data_noise_base
 import jax
 import jax.numpy as jnp
 
-_ENN = Union[networks.EpistemicNetwork,
-             networks.EpistemicNetworkWithState]
+_ENN = Union[networks.EnnNoState,
+             networks.EnnArray]
 
 
 @dataclasses.dataclass

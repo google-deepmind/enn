@@ -33,11 +33,11 @@ import jax.numpy as jnp
 
 
 @dataclasses.dataclass
-class L2LossWithState(losses_base.SingleIndexLossFnWithState):
+class L2LossWithState(losses_base.SingleLossFnArray):
   """L2 regression applied to a single epistemic index."""
 
   def __call__(self,
-               apply: networks.ApplyFnWithState,
+               apply: networks.ApplyArray,
                params: hk.Params,
                state: hk.State,
                batch: base.Batch,
@@ -57,7 +57,7 @@ class L2LossWithState(losses_base.SingleIndexLossFnWithState):
     return jnp.mean(batch_weights * sq_loss), (state, {})
 
 
-class XentLossWithState(losses_base.SingleIndexLossFnWithState):
+class XentLossWithState(losses_base.SingleLossFnArray):
   """Cross-entropy single index loss with network state as auxiliary."""
 
   def __init__(self, num_classes: int):
@@ -69,7 +69,7 @@ class XentLossWithState(losses_base.SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: networks.ApplyFnWithState,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -80,11 +80,11 @@ class XentLossWithState(losses_base.SingleIndexLossFnWithState):
 
 def xent_loss_with_state_custom_labels(
     labeller: Callable[[chex.Array], chex.Array]
-) -> losses_base.SingleIndexLossFnWithState:
+) -> losses_base.SingleLossFnArray:
   """Factory method to create a loss function with custom labelling."""
 
   def single_loss(
-      apply: networks.ApplyFnWithState,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -111,13 +111,13 @@ def xent_loss_with_state_custom_labels(
 
 
 @dataclasses.dataclass
-class AccuracyErrorLossWithState(losses_base.SingleIndexLossFnWithState):
+class AccuracyErrorLossWithState(losses_base.SingleLossFnArray):
   """Evaluates the accuracy error of a greedy logit predictor."""
   num_classes: int
 
   def single_loss(
       self,
-      apply: networks.ApplyFnWithState,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -133,7 +133,7 @@ class AccuracyErrorLossWithState(losses_base.SingleIndexLossFnWithState):
 
 
 @dataclasses.dataclass
-class ElboLossWithState(losses_base.SingleIndexLossFnWithState):
+class ElboLossWithState(losses_base.SingleLossFnArray):
   """Standard VI loss (negative of evidence lower bound).
 
   Given latent variable u with model density q(u), prior density p_0(u)
@@ -152,7 +152,7 @@ class ElboLossWithState(losses_base.SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: networks.ApplyFnWithState,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -169,7 +169,7 @@ class ElboLossWithState(losses_base.SingleIndexLossFnWithState):
 
 
 @dataclasses.dataclass
-class VaeLossWithState(losses_base.SingleIndexLossFnWithState):
+class VaeLossWithState(losses_base.SingleLossFnArray):
   """VAE loss."""
   log_likelihood_fn: Callable[[base.OutputWithPrior, base.Batch],
                               float]
@@ -177,7 +177,7 @@ class VaeLossWithState(losses_base.SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: networks.ApplyFnWithState,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -190,8 +190,7 @@ class VaeLossWithState(losses_base.SingleIndexLossFnWithState):
 
 
 def average_single_index_loss_with_state(
-    single_loss: losses_base.SingleIndexLossFnWithStateBase[base.Input,
-                                                            base.Data],
+    single_loss: losses_base.SingleLossFn[base.Input, base.Data],
     num_index_samples: int = 1,
 ) -> base.LossFn[base.Input, base.Data]:
   """Average a single index loss over multiple index samples.
@@ -205,7 +204,7 @@ def average_single_index_loss_with_state(
     num_index_samples: number of index samples to average.
 
   Returns:
-    LossFnWithState that comprises the mean of both the loss and the metrics.
+    LossFnArray that comprises the mean of both the loss and the metrics.
   """
 
   def loss_fn(enn: base.EpistemicNetwork[base.Input],
@@ -242,10 +241,9 @@ def average_single_index_loss_with_state(
 
 
 def add_data_noise_to_loss_with_state(
-    single_loss: losses_base.SingleIndexLossFnWithStateBase[base.Input,
-                                                            base.Data],
+    single_loss: losses_base.SingleLossFn[base.Input, base.Data],
     noise_fn: data_noise.DataNoiseBase[base.Data],
-) -> losses_base.SingleIndexLossFnWithStateBase[base.Input, base.Data]:
+) -> losses_base.SingleLossFn[base.Input, base.Data]:
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(

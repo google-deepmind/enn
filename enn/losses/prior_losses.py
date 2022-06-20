@@ -77,7 +77,7 @@ def variance_kl(var: chex.Array,
 # TODO(author3): Remove and use generate_batched_forward_at_data_with_state.
 def generate_batched_forward_at_data(
     num_index_sample: int, x: chex.Array,
-    enn: networks.EpistemicNetwork, params: hk.Params,
+    enn: networks.EnnNoState, params: hk.Params,
     key: chex.PRNGKey) -> base.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
@@ -88,7 +88,7 @@ def generate_batched_forward_at_data(
 
 def generate_batched_forward_at_data_with_state(
     num_index_sample: int, x: chex.Array,
-    enn: networks.EpistemicNetworkWithState, params: hk.Params,
+    enn: networks.EnnArray, params: hk.Params,
     key: chex.PRNGKey) -> base.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
@@ -150,16 +150,16 @@ def distill_var_classification(
 
 # TODO(author3): Remove this module. Use RegressionPriorLossWithState.
 @dataclasses.dataclass
-class RegressionPriorLoss(losses_base.LossFn):
+class RegressionPriorLoss(losses_base.LossFnNoState):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: networks.EpistemicNetwork, params: hk.Params,
+  def __call__(self, enn: networks.EnnNoState, params: hk.Params,
                batch: base.Batch,
-               key: chex.PRNGKey) -> chex.Array:
+               key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
@@ -178,16 +178,16 @@ class RegressionPriorLoss(losses_base.LossFn):
 
 
 @dataclasses.dataclass
-class RegressionPriorLossWithState(losses_base.LossFnWithState):
+class RegressionPriorLossWithState(losses_base.LossFnArray):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: networks.EpistemicNetworkWithState,
+  def __call__(self, enn: networks.EnnArray,
                params: hk.Params, state: hk.State, batch: base.Batch,
-               key: chex.PRNGKey) -> chex.Array:
+               key: chex.PRNGKey) -> base.LossOutput:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
@@ -212,16 +212,16 @@ class RegressionPriorLossWithState(losses_base.LossFnWithState):
 
 # TODO(author3): Remove this module. Use ClassificationPriorLossWithState.
 @dataclasses.dataclass
-class ClassificationPriorLoss(losses_base.LossFn):
+class ClassificationPriorLoss(losses_base.LossFnNoState):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
   scale: float = 1.
   distill_index: bool = False
 
-  def __call__(self, enn: networks.EpistemicNetwork, params: hk.Params,
+  def __call__(self, enn: networks.EnnNoState, params: hk.Params,
                batch: base.Batch,
-               key: chex.PRNGKey) -> losses_base.LossOutput:
+               key: chex.PRNGKey) -> losses_base.LossOutputNoState:
 
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
@@ -241,7 +241,7 @@ class ClassificationPriorLoss(losses_base.LossFn):
 
 
 @dataclasses.dataclass
-class ClassificationPriorLossWithState(losses_base.LossFnWithState):
+class ClassificationPriorLossWithState(losses_base.LossFnArray):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
@@ -250,7 +250,7 @@ class ClassificationPriorLossWithState(losses_base.LossFnWithState):
 
   def __call__(
       self,
-      enn: networks.EpistemicNetworkWithState,
+      enn: networks.EnnArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,

@@ -72,7 +72,7 @@ def combine_base_epinet_as_enn(
     base_index: Optional[base.Index] = None,
     base_scale: float = 1,
     freeze_base: bool = True,
-) -> networks_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Returns a combined ENN from a base network and an epinet.
 
   Args:
@@ -133,4 +133,4 @@ def combine_base_epinet_as_enn(
     else:
       return {**params, **base_params_init}, {**state, **base_state_init}
 
-  return networks_base.EpistemicNetworkWithState(apply, init, epinet.indexer)
+  return networks_base.EnnArray(apply, init, epinet.indexer)

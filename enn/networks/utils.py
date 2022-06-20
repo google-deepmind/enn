@@ -18,7 +18,7 @@ from typing import Callable, Optional, Tuple
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 import haiku as hk
 import jax.numpy as jnp
 
@@ -42,9 +42,9 @@ def parse_to_output_with_prior(
 
 
 def epistemic_network_from_module(
-    enn_ctor: Callable[[], network_base.EpistemicModule],
+    enn_ctor: Callable[[], networks_base.EpistemicModule],
     indexer: base.EpistemicIndexer,
-) -> network_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Convert an Enn module to epistemic network with paired index."""
 
   def enn_fn(inputs: chex.Array,
@@ -52,14 +52,13 @@ def epistemic_network_from_module(
     return enn_ctor()(inputs, index)
 
   transformed = hk.without_apply_rng(hk.transform_with_state(enn_fn))
-  return network_base.EpistemicNetworkWithState(transformed.apply,
-                                                transformed.init, indexer)
+  return networks_base.EnnArray(transformed.apply, transformed.init, indexer)
 
 
 def wrap_transformed_as_enn(
-    transformed: hk.Transformed) -> network_base.EpistemicNetwork:
+    transformed: hk.Transformed) -> networks_base.EnnNoState:
   """Wraps a simple transformed function y = f(x) as an ENN."""
-  return network_base.EpistemicNetwork(
+  return networks_base.EnnNoState(
       apply=lambda params, x, z: transformed.apply(params, x),
       init=lambda key, x, z: transformed.init(key, x),
       indexer=lambda key: key,
@@ -68,13 +67,13 @@ def wrap_transformed_as_enn(
 
 def wrap_transformed_as_enn_with_state(
     transformed: hk.Transformed
-) -> network_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Wraps a simple transformed function y = f(x) as an ENN."""
   apply = lambda params, x, z: transformed.apply(params, x)
   apply = wrap_apply_as_apply_with_state(apply)
   init = lambda key, x, z: transformed.init(key, x)
   init = wrap_init_as_init_with_state(init)
-  return network_base.EpistemicNetworkWithState(
+  return networks_base.EnnArray(
       apply=apply,
       init=init,
       indexer=lambda key: key,
@@ -82,11 +81,11 @@ def wrap_transformed_as_enn_with_state(
 
 
 def wrap_enn_as_enn_with_state(
-    enn: network_base.EpistemicNetwork
-) -> network_base.EpistemicNetworkWithState:
+    enn: networks_base.EnnNoState
+) -> networks_base.EnnArray:
   """Wraps a standard ENN as an ENN with a dummy network state."""
 
-  return network_base.EpistemicNetworkWithState(
+  return networks_base.EnnArray(
       apply=wrap_apply_as_apply_with_state(enn.apply),
       init=wrap_init_as_init_with_state(enn.init),
       indexer=enn.indexer,
@@ -94,9 +93,9 @@ def wrap_enn_as_enn_with_state(
 
 
 def wrap_enn_with_state_as_enn(
-    enn: network_base.EpistemicNetworkWithState,
+    enn: networks_base.EnnArray,
     constant_state: Optional[hk.State] = None,
-) -> network_base.EpistemicNetwork:
+) -> networks_base.EnnNoState:
   """Passes a dummy state to ENN with state as an ENN."""
   if constant_state is None:
     constant_state = {}
@@ -111,7 +110,7 @@ def wrap_enn_with_state_as_enn(
     output, unused_state = enn.apply(params, constant_state, x, z)
     return output
 
-  return network_base.EpistemicNetwork(
+  return networks_base.EnnNoState(
       apply=apply,
       init=init,
       indexer=enn.indexer,
@@ -119,7 +118,7 @@ def wrap_enn_with_state_as_enn(
 
 
 def wrap_apply_as_apply_with_state(
-    apply: network_base.ApplyFn,) -> network_base.ApplyFnWithState:
+    apply: networks_base.ApplyNoState,) -> networks_base.ApplyArray:
   """Wraps a legacy enn apply as an apply for enn with state."""
   def new_apply(
       params: hk.Params,
@@ -132,7 +131,7 @@ def wrap_apply_as_apply_with_state(
 
 
 def wrap_init_as_init_with_state(
-    init: network_base.InitFn) -> network_base.InitFnWithState:
+    init: networks_base.InitNoState) -> networks_base.InitArray:
   """Wraps a legacy enn init as an init for enn with state."""
 
   def new_init(
@@ -145,9 +144,9 @@ def wrap_init_as_init_with_state(
 
 
 def scale_enn_output(
-    enn: network_base.EpistemicNetworkWithState,
+    enn: networks_base.EnnArray,
     scale: float,
-) -> network_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Returns an ENN with output scaled by a scaling factor."""
   def scaled_apply(
       params: hk.Params, state: hk.State, inputs: chex.Array,
@@ -163,7 +162,7 @@ def scale_enn_output(
       scaled_out = out * scale
     return scaled_out, state
 
-  return network_base.EpistemicNetworkWithState(
+  return networks_base.EnnArray(
       apply=scaled_apply,
       init=enn.init,
       indexer=enn.indexer,
@@ -171,8 +170,8 @@ def scale_enn_output(
 
 
 def make_centered_enn(
-    enn: network_base.EpistemicNetwork,
-    x_train: chex.Array) -> network_base.EpistemicNetwork:
+    enn: networks_base.EnnNoState,
+    x_train: chex.Array) -> networks_base.EnnNoState:
   """Returns an ENN that centers input according to x_train."""
   assert x_train.ndim > 1  # need to include a batch dimension
   x_mean = jnp.mean(x_train, axis=0)
@@ -182,12 +181,12 @@ def make_centered_enn(
     normalized_x = (x - x_mean) / (x_std + 1e-9)
     return enn.apply(params, normalized_x, z)
 
-  return network_base.EpistemicNetwork(centered_apply, enn.init, enn.indexer)
+  return networks_base.EnnNoState(centered_apply, enn.init, enn.indexer)
 
 
 def make_centered_enn_with_state(
-    enn: network_base.EpistemicNetworkWithState,
-    x_train: chex.Array) -> network_base.EpistemicNetworkWithState:
+    enn: networks_base.EnnArray,
+    x_train: chex.Array) -> networks_base.EnnArray:
   """Returns an ENN that centers input according to x_train."""
   assert x_train.ndim > 1  # need to include a batch dimension
   x_mean = jnp.mean(x_train, axis=0)
@@ -197,5 +196,4 @@ def make_centered_enn_with_state(
     normalized_x = (x - x_mean) / (x_std + 1e-9)
     return enn.apply(params, state, normalized_x, z)
 
-  return network_base.EpistemicNetworkWithState(centered_apply, enn.init,
-                                                enn.indexer)
+  return networks_base.EnnArray(centered_apply, enn.init, enn.indexer)

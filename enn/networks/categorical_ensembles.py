@@ -22,7 +22,7 @@ from typing import Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import ensembles
 from enn.networks import priors
 import haiku as hk
@@ -59,7 +59,7 @@ class CategoricalRegressionMLP(hk.Module):
     )
 
 
-class CatMLPEnsemble(network_base.EpistemicNetworkWithState):
+class CatMLPEnsemble(networks_base.EnnArray):
   """An ensemble of categorical MLP for regression."""
 
   def __init__(self, output_sizes: Sequence[int], atoms: chex.Array,
@@ -73,7 +73,7 @@ class CatMLPEnsemble(network_base.EpistemicNetworkWithState):
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleGpPrior(network_base.EpistemicNetworkWithState):
+class CatMLPEnsembleGpPrior(networks_base.EnnArray):
   """An ensemble of categorical MLP with a real-valued GP prior."""
 
   def __init__(self,
@@ -96,7 +96,7 @@ class CatMLPEnsembleGpPrior(network_base.EpistemicNetworkWithState):
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class CatMLPEnsembleMlpPrior(network_base.EpistemicNetworkWithState):
+class CatMLPEnsembleMlpPrior(networks_base.EnnArray):
   """An ensemble of categorical MLP with real-valued MLP prior."""
 
   def __init__(self,

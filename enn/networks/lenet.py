@@ -18,7 +18,7 @@ from typing import Sequence
 
 from absl import logging
 import chex
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import ensembles
 import haiku as hk
 import jax
@@ -65,7 +65,7 @@ class LeNet5(hk.Module):
     return self._logits_module(net)
 
 
-class EnsembleLeNet5ENN(network_base.EpistemicNetworkWithState):
+class EnsembleLeNet5ENN(networks_base.EnnArray):
   """Ensemble of LeNet5 Networks created using einsum ensemble."""
 
   def __init__(self,

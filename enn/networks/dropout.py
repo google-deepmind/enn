@@ -18,7 +18,7 @@ from typing import List, Optional, Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import utils as network_utils
 import haiku as hk
@@ -54,7 +54,7 @@ def generate_masks(key: chex.PRNGKey, input_size: int,
   return masks
 
 
-class MLPDropoutENN(network_base.EpistemicNetworkWithState):
+class MLPDropoutENN(networks_base.EnnArray):
   """MLP with dropout as an ENN."""
 
   def __init__(

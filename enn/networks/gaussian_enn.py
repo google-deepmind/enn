@@ -27,7 +27,7 @@ This is an implementation framing that network as an ENN.
 from typing import Callable, Sequence
 
 import chex
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import utils as network_utils
 import haiku as hk
@@ -68,7 +68,7 @@ def enn_getter(next_getter, value, context):
     return next_getter(value)
 
 
-class GaussianNoiseEnn(network_base.EpistemicNetworkWithState):
+class GaussianNoiseEnn(networks_base.EnnArray):
   """GaussianNoiseEnn from callable module."""
 
   def __init__(self,
@@ -95,7 +95,7 @@ class GaussianNoiseEnn(network_base.EpistemicNetworkWithState):
     super().__init__(apply, init, indexer=indexers.PrngIndexer(),)
 
 
-class GaussianNoiseMLP(network_base.EpistemicNetworkWithState):
+class GaussianNoiseMLP(networks_base.EnnArray):
   """Gaussian Enn on a standard MLP."""
 
   def __init__(self, output_sizes: Sequence[int], init_scale: float = 1.):

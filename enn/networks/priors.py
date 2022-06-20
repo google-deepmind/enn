@@ -21,7 +21,7 @@ from typing import Callable, Iterable, Optional, Tuple, Union
 from absl import logging
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import utils as network_utils
 import haiku as hk
 import jax
@@ -30,11 +30,11 @@ import jax.numpy as jnp
 PriorFn = Callable[[chex.Array, base.Index], chex.Array]
 
 
-class EnnWithAdditivePrior(network_base.EpistemicNetwork):
+class EnnWithAdditivePrior(networks_base.EnnNoState):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
-               enn: network_base.EpistemicNetwork,
+               enn: networks_base.EnnNoState,
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
@@ -44,11 +44,11 @@ class EnnWithAdditivePrior(network_base.EpistemicNetwork):
     super().__init__(enn_prior.apply, enn_prior.init, enn_prior.indexer)
 
 
-class EnnStateWithAdditivePrior(network_base.EpistemicNetworkWithState):
+class EnnStateWithAdditivePrior(networks_base.EnnArray):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
-               enn: network_base.EpistemicNetworkWithState,
+               enn: networks_base.EnnArray,
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
@@ -70,7 +70,7 @@ class EnnStateWithAdditivePrior(network_base.EpistemicNetworkWithState):
     )
 
 
-def convert_enn_to_prior_fn(enn: network_base.EpistemicNetworkWithState,
+def convert_enn_to_prior_fn(enn: networks_base.EnnArray,
                             dummy_input: chex.Array,
                             key: chex.PRNGKey) -> PriorFn:
   """Converts an ENN to prior function for fixed prior params."""

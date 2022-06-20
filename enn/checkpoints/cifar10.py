@@ -28,7 +28,7 @@ def _make_resnet_ctor(
     config: networks.ResNetConfig,
 ) -> checkpoint_base.EnnCtor:
   """Creates a resnet constructor for appropriate config."""
-  def enn_ctor() -> networks.EpistemicNetworkWithState:
+  def enn_ctor() -> networks.EnnArray:
     return networks.EnsembleResNetENN(
         num_output_classes=datasets.Cifar10().num_classes,
         num_ensemble=1,

@@ -19,7 +19,7 @@ from typing import Optional, Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -71,7 +71,7 @@ class ExposedMLP(hk.Module):
     return base.OutputWithPrior(train=out, extra=extra)
 
 
-class ProjectedMLP(network_base.EpistemicModule):
+class ProjectedMLP(networks_base.EpistemicModule):
   """MLP whose output in the final layer is then dot-product with Z-index."""
 
   def __init__(self,

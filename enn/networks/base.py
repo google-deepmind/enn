@@ -24,28 +24,42 @@ import haiku as hk
 import typing_extensions
 
 
-# TODO(author3): Clean-up the names.
-class ApplyFn(typing_extensions.Protocol):
+################################################################################
+# Sepcializing the network definitions from base.py to work with Array inputs
+################################################################################
+ApplyArray = base.ApplyFn[chex.Array]
+InitArray = base.InitFn[chex.Array]
+EnnArray = base.EpistemicNetwork[chex.Array]
+
+
+# The default network definitions above assume that the network has a state.
+# Since a network might not have a state, below we provide definitions for
+# Epistemic Networks without state, specialized to work with Array inputs.
+
+
+class ApplyNoState(typing_extensions.Protocol):
   """Applies the ENN at given parameters, inputs, index."""
 
-  def __call__(self, params: hk.Params, inputs: chex.Array,
+  def __call__(self, params: hk.Params,
+               inputs: chex.Array,
                index: base.Index) -> base.Output:
     """Applies the ENN at given parameters, inputs, index."""
 
 
-class InitFn(typing_extensions.Protocol):
+class InitNoState(typing_extensions.Protocol):
   """Initializes the ENN at given rng_key, inputs, index."""
 
-  def __call__(self, rng_key: chex.PRNGKey, inputs: chex.Array,
+  def __call__(self, rng_key: chex.PRNGKey,
+               inputs: chex.Array,
                index: base.Index) -> hk.Params:
     """Initializes the ENN at given rng_key, inputs, index."""
 
 
 @dataclasses.dataclass
-class EpistemicNetwork:
+class EnnNoState:
   """Convenient pairing of Haiku transformed function and index sampler."""
-  apply: ApplyFn
-  init: InitFn
+  apply: ApplyNoState
+  init: InitNoState
   indexer: base.EpistemicIndexer
 
 
@@ -55,11 +69,3 @@ class EpistemicModule(abc.ABC, hk.Module):
   @abc.abstractmethod
   def __call__(self, inputs: chex.Array, index: base.Index) -> base.Output:
     """Forwards the epsitemic network y = f(x,z)."""
-
-
-################################################################################
-# Definitions for networks with "state" e.g. BatchNorm.
-################################################################################
-ApplyFnWithState = base.ApplyFn[chex.Array]
-InitFnWithState = base.InitFn[chex.Array]
-EpistemicNetworkWithState = base.EpistemicNetwork[chex.Array]

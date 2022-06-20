@@ -16,12 +16,12 @@
 
 """Exposing the public methods of the losses."""
 # Base
-from enn.losses.base import LossFn
-from enn.losses.base import LossFnWithState
-from enn.losses.base import LossOutput
-from enn.losses.base import SingleIndexLossFn
-from enn.losses.base import SingleIndexLossFnWithState
-from enn.losses.base import SingleIndexLossFnWithStateBase
+from enn.losses.base import LossFnArray
+from enn.losses.base import LossFnNoState
+from enn.losses.base import LossOutputNoState
+from enn.losses.base import SingleLossFn
+from enn.losses.base import SingleLossFnArray
+from enn.losses.base import SingleLossFnNoState
 
 # Categorical regression
 from enn.losses.categorical_regression import Cat2HotRegression
@@ -67,8 +67,8 @@ from enn.losses.utils import combine_losses_with_state_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_with_state_as_metric
 from enn.losses.utils import CombineLossConfig
-from enn.losses.utils import CombineLossWithStateConfig
-from enn.losses.utils import CombineLossWithStateConfigBase
+from enn.losses.utils import CombineLossConfigArray
+from enn.losses.utils import CombineLossConfigNoState
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
 from enn.losses.utils import wrap_loss_as_loss_with_state

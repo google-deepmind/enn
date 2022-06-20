@@ -19,7 +19,7 @@
 from typing import Sequence
 
 import chex
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import hypermodels
 from enn.networks import indexers
 from enn.networks import utils as network_utils
@@ -37,7 +37,7 @@ import jax.numpy as jnp
 def make_bbb_enn(
     base_output_sizes: Sequence[int],
     dummy_input: chex.Array,
-    temperature: float = 1.) -> network_base.EpistemicNetworkWithState:
+    temperature: float = 1.) -> networks_base.EnnArray:
   """Makes a Bayes-by-backprop (BBB) aganet."""
 
   def make_transformed_base(output_sizes: Sequence[int]) -> hk.Transformed:

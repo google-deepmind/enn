@@ -29,7 +29,7 @@ import jax
 import numpy as np
 
 
-class DummySingleIndexLossFn(losses_base.SingleIndexLossFnWithState):
+class DummySingleLossFn(losses_base.SingleLossFnArray):
   """A dummy loss fn that returns the normalized index as loss.
 
   It also returns a constant dummy metrics. It is meant to be used with an
@@ -43,7 +43,7 @@ class DummySingleIndexLossFn(losses_base.SingleIndexLossFnWithState):
 
   def __call__(
       self,
-      apply: networks.ApplyFn,
+      apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
       batch: base.Batch,
@@ -63,7 +63,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     dummy_metrics = {'a': 0, 'b': 1}
     # A dummy loss fn that returns the normalized index as loss and two constant
     # metrics. Index is random but normalized such that its mean is 1.
-    single_loss_fn = DummySingleIndexLossFn(num_ensemble, dummy_metrics)
+    single_loss_fn = DummySingleLossFn(num_ensemble, dummy_metrics)
 
     num_index_samples = 100
     loss_fn = single_index_with_state.average_single_index_loss_with_state(

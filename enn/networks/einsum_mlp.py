@@ -18,7 +18,7 @@ from typing import Callable, Sequence, Tuple
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import priors
 from enn.networks import utils as network_utils
@@ -34,7 +34,7 @@ def make_einsum_ensemble_mlp_enn(
     num_ensemble: int,
     nonzero_bias: bool = True,
     activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
-) -> network_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Factory method to create fast einsum MLP ensemble ENN.
 
   This is a specialized implementation for ReLU MLP without a prior network.
@@ -72,7 +72,7 @@ def make_einsum_ensemble_mlp_enn(
   # TODO(author3): Change apply and init fns above to work with state.
   apply = network_utils.wrap_apply_as_apply_with_state(apply)
   init = network_utils.wrap_init_as_init_with_state(init)
-  return network_base.EpistemicNetworkWithState(apply, init, indexer)
+  return networks_base.EnnArray(apply, init, indexer)
 
 
 def make_ensemble_mlp_with_prior_enn(
@@ -82,7 +82,7 @@ def make_ensemble_mlp_with_prior_enn(
     prior_scale: float = 1.,
     nonzero_bias: bool = True,
     seed: int = 999,
-) -> network_base.EpistemicNetworkWithState:
+) -> networks_base.EnnArray:
   """Factory method to create fast einsum MLP ensemble with matched prior.
 
   Args:
@@ -114,8 +114,7 @@ def make_ensemble_mlp_with_prior_enn(
         train=ensemble_train, prior=ensemble_prior * prior_scale)
     return output, state
 
-  return network_base.EpistemicNetworkWithState(apply_with_prior, enn.init,
-                                                enn.indexer)
+  return networks_base.EnnArray(apply_with_prior, enn.init, enn.indexer)
 
 
 # TODO(author3): Come up with a better name and use ensembles.py instead.

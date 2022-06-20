@@ -22,7 +22,7 @@ from enn import datasets
 from enn import networks
 import haiku as hk
 
-EnnCtor = Callable[[], networks.EpistemicNetworkWithState]
+EnnCtor = Callable[[], networks.EnnArray]
 ParamsStateLoadFn = Callable[[], Tuple[hk.Params, hk.State]]
 
 

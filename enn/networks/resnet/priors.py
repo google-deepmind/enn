@@ -19,7 +19,7 @@ from typing import Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks.resnet import base as resnet_base
 import haiku as hk
@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class ResnetMlpPrior(network_base.EpistemicNetworkWithState):
+class ResnetMlpPrior(networks_base.EnnArray):
   """Resnet Network with MLP Prior."""
 
   def __init__(self,
@@ -50,14 +50,14 @@ class ResnetMlpPrior(network_base.EpistemicNetworkWithState):
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-    enn = network_base.EpistemicNetworkWithState(
+    enn = networks_base.EnnArray(
         apply=transformed.apply,
         init=transformed.init,
         indexer=indexers.EnsembleIndexer(1))
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-class ResnetCnnPrior(network_base.EpistemicNetworkWithState):
+class ResnetCnnPrior(networks_base.EnnArray):
   """VGG Network with ConvNet Prior."""
 
   def __init__(self,
@@ -93,7 +93,7 @@ class ResnetCnnPrior(network_base.EpistemicNetworkWithState):
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-    enn = network_base.EpistemicNetworkWithState(
+    enn = networks_base.EnnArray(
         apply=transformed.apply,
         init=transformed.init,
         indexer=indexers.EnsembleIndexer(1))

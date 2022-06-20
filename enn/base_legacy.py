@@ -25,7 +25,7 @@ import warnings
 import chex
 from enn import base
 from enn.losses import base as losses_base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 
 # WARNING: THIS FILE IS DEPRECATED, PLEASE MIGRATE TO base.py
 warnings.warn('Legacy interface is deprecated, please move to base.py',
@@ -45,15 +45,15 @@ Data = base.Data
 OutputWithPrior = base.OutputWithPrior
 Output = base.Output
 
-EpistemicModule = network_base.EpistemicModule
+EpistemicModule = networks_base.EpistemicModule
 EpistemicIndexer = base.EpistemicIndexer
 
-ApplyFn = network_base.ApplyFn
-InitFn = network_base.InitFn
-EpistemicNetwork = network_base.EpistemicNetwork
+ApplyFn = networks_base.ApplyNoState
+InitFn = networks_base.InitNoState
+EpistemicNetwork = networks_base.EnnNoState
 
 LossOutput = Tuple[Array, LossMetrics]
-LossFn = losses_base.LossFn
+LossFn = losses_base.LossFnNoState
 
 
 ApplyFnWithStateBase = base.ApplyFn
@@ -63,9 +63,9 @@ LossFnWithStateBase = base.LossFn
 LossOutputWithState = base.LossOutput
 
 # Modules specialized to work only with Array inputs.
-ApplyFnWithState = network_base.ApplyFnWithState
-InitFnWithState = network_base.InitFnWithState
-EpistemicNetworkWithState = network_base.EpistemicNetworkWithState
+ApplyFnWithState = networks_base.ApplyArray
+InitFnWithState = networks_base.InitArray
+EpistemicNetworkWithState = networks_base.EnnArray
 
-# LossFnWithStateBase specialized to work only with Array inputs and Batch data.
-LossFnWithState = LossFnWithStateBase[Array, Batch]
+# LossFnArrayBase specialized to work only with Array inputs and Batch data.
+LossFnWithState = base.LossFn[Array, Batch]

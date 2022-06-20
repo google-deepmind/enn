@@ -27,7 +27,7 @@ import optax
 
 class TestExperiment(NamedTuple):
   num_outputs: int
-  experiment_ctor: Callable[[networks.EpistemicNetwork],
+  experiment_ctor: Callable[[networks.EnnNoState],
                             sgd_experiment.Experiment]
   dummy_input: chex.Array
 

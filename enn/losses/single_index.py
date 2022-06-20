@@ -30,8 +30,8 @@ import jax.numpy as jnp
 
 
 def average_single_index_loss(
-    single_loss: losses_base.SingleIndexLossFn, num_index_samples: int = 1
-) -> losses_base.LossFn:
+    single_loss: losses_base.SingleLossFnNoState,
+    num_index_samples: int = 1) -> losses_base.LossFnNoState:
   """Average a single index loss over multiple index samples.
 
   Args:
@@ -39,12 +39,12 @@ def average_single_index_loss(
     num_index_samples: number of index samples to average.
 
   Returns:
-    LossFn that comprises the mean of both the loss and the metrics.
+    LossFnNoState that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: networks.EpistemicNetwork,
+  def loss_fn(enn: networks.EnnNoState,
               params: hk.Params, batch: base.Batch,
-              key: chex.PRNGKey) -> losses_base.LossOutput:
+              key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
@@ -54,26 +54,26 @@ def average_single_index_loss(
 
 
 def add_data_noise(
-    single_loss: losses_base.SingleIndexLossFn,
+    single_loss: losses_base.SingleLossFnNoState,
     noise_fn: data_noise.DataNoise,
-) -> losses_base.SingleIndexLossFn:
+) -> losses_base.SingleLossFnNoState:
   """Applies a DataNoise function to each batch of data."""
 
-  def noisy_loss(apply: networks.ApplyFn,
+  def noisy_loss(apply: networks.ApplyNoState,
                  params: hk.Params, batch: base.Batch,
-                 index: base.Index) -> losses_base.LossOutput:
+                 index: base.Index) -> losses_base.LossOutputNoState:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, noisy_batch, index)
   return noisy_loss
 
 
 @dataclasses.dataclass
-class L2Loss(losses_base.SingleIndexLossFn):
+class L2Loss(losses_base.SingleLossFnNoState):
   """L2 regression applied to a single epistemic index."""
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     """L2 regression applied to a single epistemic index."""
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
@@ -89,16 +89,16 @@ class L2Loss(losses_base.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class XentLoss(losses_base.SingleIndexLossFn):
+class XentLoss(losses_base.SingleLossFnNoState):
   """Cross-entropy classification single index loss."""
   num_classes: int
 
   def __post_init__(self):
     chex.assert_scalar_non_negative(self.num_classes - 2.0)
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
     net_out = apply(params, batch.x, index)
@@ -116,13 +116,13 @@ class XentLoss(losses_base.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class AccuracyErrorLoss(losses_base.SingleIndexLossFn):
+class AccuracyErrorLoss(losses_base.SingleLossFnNoState):
   """Evaluates the accuracy error of a greedy logit predictor."""
   num_classes: int
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     chex.assert_shape(batch.y, (None, 1))
     net_out = apply(params, batch.x, index)
     logits = networks.parse_net_output(net_out)
@@ -133,7 +133,7 @@ class AccuracyErrorLoss(losses_base.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class ElboLoss(losses_base.SingleIndexLossFn):
+class ElboLoss(losses_base.SingleLossFnNoState):
   """Standard VI loss (negative of evidence lower bound).
 
   Given latent variable u with model density q(u), prior density p_0(u)
@@ -150,9 +150,9 @@ class ElboLoss(losses_base.SingleIndexLossFn):
   temperature: Optional[float] = None
   input_dim: Optional[int] = None
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     """This function returns a one-sample MC estimate of the ELBO."""
     out = apply(params, batch.x, index)
     log_likelihood = self.log_likelihood_fn(out, batch)
@@ -164,15 +164,15 @@ class ElboLoss(losses_base.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class VaeLoss(losses_base.SingleIndexLossFn):
+class VaeLoss(losses_base.SingleLossFnNoState):
   """VAE loss."""
   log_likelihood_fn: Callable[[base.OutputWithPrior, base.Batch],
                               float]
   latent_kl_fn: Callable[[base.OutputWithPrior], float]
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     net_out = apply(params, batch.x, index)
     kl_term = self.latent_kl_fn(net_out)
     log_likelihood = self.log_likelihood_fn(net_out, batch)

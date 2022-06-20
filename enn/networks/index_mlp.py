@@ -20,7 +20,7 @@ from typing import Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import priors
 from enn.networks import utils as network_utils
@@ -29,7 +29,7 @@ import jax
 import jax.numpy as jnp
 
 
-class ConcatIndexMLP(network_base.EpistemicModule):
+class ConcatIndexMLP(networks_base.EpistemicModule):
   """An MLP that has an d-dimensional index concatenated to every layer."""
   # TODO(author2): Rationalize the type behaviour of network outputs.
 
@@ -68,7 +68,7 @@ class ConcatIndexMLP(network_base.EpistemicModule):
     )
 
 
-class IndexMLPWithGpPrior(network_base.EpistemicNetworkWithState):
+class IndexMLPWithGpPrior(networks_base.EnnArray):
   """An Index MLP with GP prior as an ENN."""
 
   def __init__(self,
@@ -116,7 +116,7 @@ class IndexMLPWithGpPrior(network_base.EpistemicNetworkWithState):
     )
 
 
-class IndexMLPEnn(network_base.EpistemicNetworkWithState):
+class IndexMLPEnn(networks_base.EnnArray):
   """An MLP with index appended to each layer as ENN."""
 
   def __init__(self,

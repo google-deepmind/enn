@@ -20,7 +20,7 @@ from typing import Callable, Optional, Sequence
 
 from enn.checkpoints import base as checkpoints_base
 from enn.checkpoints import epinet as checkpoints_epinet
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import priors as enn_priors
 from enn.networks.epinet import base as epinet_base
 from enn.networks.epinet import last_layer
@@ -47,7 +47,7 @@ class ResnetFinalEpinetConfig:
   seed: int = 23
 
 
-class ResnetFinalEpinet(network_base.EpistemicNetworkWithState):
+class ResnetFinalEpinet(networks_base.EnnArray):
   """ResNet + final layer MLP epinet."""
 
   def __init__(self, config: ResnetFinalEpinetConfig):
@@ -84,7 +84,7 @@ def make_checkpoint_from_config(
 @dataclasses.dataclass
 class _EpinetPieces:
   """Wraps the key components necessary to create either ENN or checkpoint."""
-  enn: network_base.EpistemicNetworkWithState  # Entire network (base+epi).
+  enn: networks_base.EnnArray  # Entire network (base+epi).
   epinet: epinet_base.EpinetWithState  # Epinet applied on top of base net.
 
 

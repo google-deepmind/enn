@@ -31,8 +31,8 @@ import jax
 import jax.numpy as jnp
 import typing_extensions
 
-_ENN = Union[networks.EpistemicNetwork,
-             networks.EpistemicNetworkWithState]
+_ENN = Union[networks.EnnNoState,
+             networks.EnnArray]
 
 
 @dataclasses.dataclass

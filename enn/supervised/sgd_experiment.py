@@ -44,8 +44,8 @@ class Experiment(supervised_base.BaseExperiment):
   """
 
   def __init__(self,
-               enn: networks.EpistemicNetworkWithState,
-               loss_fn: losses.LossFnWithState,
+               enn: networks.EnnArray,
+               loss_fn: losses.LossFnArray,
                optimizer: optax.GradientTransformation,
                dataset: base.BatchIterator,
                seed: int = 0,

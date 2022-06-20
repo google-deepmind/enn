@@ -22,7 +22,7 @@ from typing import Optional, Sequence
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import mlp
 import haiku as hk
@@ -33,7 +33,7 @@ def make_mlp_epinet(
     epinet_hiddens: Sequence[int],
     index_dim: int,
     expose_layers: Optional[Sequence[bool]] = None,
-    prior_scale: float = 1.) -> network_base.EpistemicNetworkWithState:
+    prior_scale: float = 1.) -> networks_base.EnnArray:
   """Factory method to create a standard MLP epinet."""
 
   def net_fn(x: chex.Array, z: base.Index) -> base.OutputWithPrior:
@@ -54,7 +54,7 @@ def make_mlp_epinet(
     )
 
   transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
-  return network_base.EpistemicNetworkWithState(
+  return networks_base.EnnArray(
       apply=transformed.apply,
       init=transformed.init,
       indexer=indexers.GaussianIndexer(index_dim),

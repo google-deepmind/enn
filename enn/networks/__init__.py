@@ -16,13 +16,13 @@
 
 """Exposing the public methods of the networks."""
 # Base
-from enn.networks.base import ApplyFn
-from enn.networks.base import ApplyFnWithState
+from enn.networks.base import ApplyArray
+from enn.networks.base import ApplyNoState
+from enn.networks.base import EnnArray
+from enn.networks.base import EnnNoState
 from enn.networks.base import EpistemicModule
-from enn.networks.base import EpistemicNetwork
-from enn.networks.base import EpistemicNetworkWithState
-from enn.networks.base import InitFn
-from enn.networks.base import InitFnWithState
+from enn.networks.base import InitArray
+from enn.networks.base import InitNoState
 # BBB
 from enn.networks.bbb import make_bbb_enn
 # Categorical regression ensemble

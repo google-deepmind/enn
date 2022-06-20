@@ -19,7 +19,7 @@ from typing import Callable, Optional, Sequence, Tuple
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import priors
 import haiku as hk
@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class Ensemble(network_base.EpistemicNetwork):
+class Ensemble(networks_base.EnnNoState):
   """Ensemble ENN that uses a dot product in param space.
 
   Repeats parameters by an additional *ensemble* dimension in axis=0.
@@ -56,7 +56,7 @@ class Ensemble(network_base.EpistemicNetwork):
     super().__init__(apply, init, indexer)
 
 
-class EnsembleWithState(network_base.EpistemicNetworkWithState):
+class EnsembleWithState(networks_base.EnnArray):
   """Ensemble ENN that uses a dot product in param space.
 
   Per Ensemble but with added state variable.
@@ -153,7 +153,7 @@ def make_random_gp_ensemble_prior_fns(
   return prior_fns
 
 
-class MLPEnsembleMatchedPrior(network_base.EpistemicNetworkWithState):
+class MLPEnsembleMatchedPrior(networks_base.EnnArray):
   """Ensemble of MLPs with matched prior functions."""
 
   def __init__(self,

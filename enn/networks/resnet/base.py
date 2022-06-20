@@ -49,7 +49,7 @@ def resnet_model(
   return forward_fn
 
 
-class EnsembleResNetENN(networks_base.EpistemicNetworkWithState):
+class EnsembleResNetENN(networks_base.EnnArray):
   """Ensemble of ResNet Networks created using einsum ensemble."""
 
   def __init__(self,

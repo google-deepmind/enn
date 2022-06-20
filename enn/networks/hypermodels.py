@@ -20,7 +20,7 @@ from typing import Callable, Optional, Sequence, Type
 
 import chex
 from enn import base
-from enn.networks import base as network_base
+from enn.networks import base as networks_base
 from enn.networks import priors
 from enn.networks import utils as network_utils
 import haiku as hk
@@ -34,7 +34,7 @@ import numpy as np
 # this can easily be converted into a form that works with batched index.
 
 
-class MLPHypermodel(network_base.EpistemicNetworkWithState):
+class MLPHypermodel(networks_base.EnnArray):
   """MLP hypermodel for transformed_base as EpistemicNetwork."""
 
   def __init__(
@@ -76,7 +76,7 @@ def hypermodel_module(
     diagonal_linear_hyper: bool = False,
     return_generated_params: bool = False,
     scale: bool = True,
-) -> Type[network_base.EpistemicModule]:
+) -> Type[networks_base.EpistemicModule]:
   """Generates an haiku module for a hypermodel of a transformed base network.
 
   A hypermodel uses the index z to predict parameters for the base model defined
@@ -183,7 +183,7 @@ def hypermodel_module(
 # pytype: enable=bad-return-type
 
 
-class MLPHypermodelWithHypermodelPrior(network_base.EpistemicNetworkWithState):
+class MLPHypermodelWithHypermodelPrior(networks_base.EnnArray):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(
@@ -353,7 +353,7 @@ class PriorMLPIndependentLayers(hk.Module):
     return out
 
 
-class MLPHypermodelPriorIndependentLayers(network_base.EpistemicNetworkWithState
+class MLPHypermodelPriorIndependentLayers(networks_base.EnnArray
                                          ):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 

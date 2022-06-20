@@ -47,12 +47,12 @@ def transform_to_2hot(target: chex.Array,
 
 # TODO(author3): Remove this module. We should use Cat2HotRegressionWithState.
 @dataclasses.dataclass
-class Cat2HotRegression(losses_base.SingleIndexLossFn):
+class Cat2HotRegression(losses_base.SingleLossFnNoState):
   """Apply categorical loss to 2-hot regression target."""
 
-  def __call__(self, apply: networks.ApplyFn, params: hk.Params,
+  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
                batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutput:
+               index: base.Index) -> losses_base.LossOutputNoState:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))
 
@@ -77,10 +77,11 @@ class Cat2HotRegression(losses_base.SingleIndexLossFn):
 
 
 @dataclasses.dataclass
-class Cat2HotRegressionWithState(losses_base.SingleIndexLossFnWithState):
+class Cat2HotRegressionWithState(losses_base.SingleLossFnArray):
   """Apply categorical loss to 2-hot regression target."""
 
-  def __call__(self, apply: networks.ApplyFnWithState, params: hk.Params,
+  def __call__(self, apply: networks.ApplyArray,
+               params: hk.Params,
                state: hk.State,
                batch: base.Batch,
                index: base.Index) -> base.LossOutput:
