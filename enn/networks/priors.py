@@ -38,9 +38,9 @@ class EnnWithAdditivePrior(networks_base.EnnNoState):
                prior_fn: PriorFn,
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
-    enn_state = network_utils.wrap_enn_as_enn_with_state(enn)
+    enn_state = network_utils.wrap_enn_no_state_as_enn(enn)
     enn_state_p = EnnStateWithAdditivePrior(enn_state, prior_fn, prior_scale)
-    enn_prior = network_utils.wrap_enn_with_state_as_enn(enn_state_p)
+    enn_prior = network_utils.wrap_enn_as_enn_no_state(enn_state_p)
     super().__init__(enn_prior.apply, enn_prior.init, enn_prior.indexer)
 
 

@@ -94,16 +94,16 @@ from enn.networks.resnet.priors import ResnetMlpPrior
 # Utils
 from enn.networks.utils import epistemic_network_from_module
 from enn.networks.utils import make_centered_enn
-from enn.networks.utils import make_centered_enn_with_state
+from enn.networks.utils import make_centered_enn_no_state
 from enn.networks.utils import parse_net_output
 from enn.networks.utils import parse_to_output_with_prior
 from enn.networks.utils import scale_enn_output
-from enn.networks.utils import wrap_apply_as_apply_with_state
-from enn.networks.utils import wrap_enn_as_enn_with_state
-from enn.networks.utils import wrap_enn_with_state_as_enn
-from enn.networks.utils import wrap_init_as_init_with_state
+from enn.networks.utils import wrap_apply_no_state_as_apply
+from enn.networks.utils import wrap_enn_as_enn_no_state
+from enn.networks.utils import wrap_enn_no_state_as_enn
+from enn.networks.utils import wrap_init_no_state_as_init
 from enn.networks.utils import wrap_transformed_as_enn
-from enn.networks.utils import wrap_transformed_as_enn_with_state
+from enn.networks.utils import wrap_transformed_as_enn_no_state
 # VGG (Cifar10)
 from enn.networks.vgg import EnsembleVGGENN
 from enn.networks.vgg import VGG

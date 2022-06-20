@@ -70,8 +70,8 @@ def make_einsum_ensemble_mlp_enn(
   indexer = indexers.EnsembleIndexer(num_ensemble)
 
   # TODO(author3): Change apply and init fns above to work with state.
-  apply = network_utils.wrap_apply_as_apply_with_state(apply)
-  init = network_utils.wrap_init_as_init_with_state(init)
+  apply = network_utils.wrap_apply_no_state_as_apply(apply)
+  init = network_utils.wrap_init_no_state_as_init(init)
   return networks_base.EnnArray(apply, init, indexer)
 
 

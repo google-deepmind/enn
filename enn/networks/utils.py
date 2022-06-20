@@ -55,7 +55,7 @@ def epistemic_network_from_module(
   return networks_base.EnnArray(transformed.apply, transformed.init, indexer)
 
 
-def wrap_transformed_as_enn(
+def wrap_transformed_as_enn_no_state(
     transformed: hk.Transformed) -> networks_base.EnnNoState:
   """Wraps a simple transformed function y = f(x) as an ENN."""
   return networks_base.EnnNoState(
@@ -65,14 +65,14 @@ def wrap_transformed_as_enn(
   )
 
 
-def wrap_transformed_as_enn_with_state(
+def wrap_transformed_as_enn(
     transformed: hk.Transformed
 ) -> networks_base.EnnArray:
   """Wraps a simple transformed function y = f(x) as an ENN."""
   apply = lambda params, x, z: transformed.apply(params, x)
-  apply = wrap_apply_as_apply_with_state(apply)
+  apply = wrap_apply_no_state_as_apply(apply)
   init = lambda key, x, z: transformed.init(key, x)
-  init = wrap_init_as_init_with_state(init)
+  init = wrap_init_no_state_as_init(init)
   return networks_base.EnnArray(
       apply=apply,
       init=init,
@@ -80,19 +80,19 @@ def wrap_transformed_as_enn_with_state(
   )
 
 
-def wrap_enn_as_enn_with_state(
+def wrap_enn_no_state_as_enn(
     enn: networks_base.EnnNoState
 ) -> networks_base.EnnArray:
   """Wraps a standard ENN as an ENN with a dummy network state."""
 
   return networks_base.EnnArray(
-      apply=wrap_apply_as_apply_with_state(enn.apply),
-      init=wrap_init_as_init_with_state(enn.init),
+      apply=wrap_apply_no_state_as_apply(enn.apply),
+      init=wrap_init_no_state_as_init(enn.init),
       indexer=enn.indexer,
   )
 
 
-def wrap_enn_with_state_as_enn(
+def wrap_enn_as_enn_no_state(
     enn: networks_base.EnnArray,
     constant_state: Optional[hk.State] = None,
 ) -> networks_base.EnnNoState:
@@ -117,7 +117,7 @@ def wrap_enn_with_state_as_enn(
   )
 
 
-def wrap_apply_as_apply_with_state(
+def wrap_apply_no_state_as_apply(
     apply: networks_base.ApplyNoState,) -> networks_base.ApplyArray:
   """Wraps a legacy enn apply as an apply for enn with state."""
   def new_apply(
@@ -130,7 +130,7 @@ def wrap_apply_as_apply_with_state(
   return new_apply
 
 
-def wrap_init_as_init_with_state(
+def wrap_init_no_state_as_init(
     init: networks_base.InitNoState) -> networks_base.InitArray:
   """Wraps a legacy enn init as an init for enn with state."""
 
@@ -169,7 +169,7 @@ def scale_enn_output(
   )
 
 
-def make_centered_enn(
+def make_centered_enn_no_state(
     enn: networks_base.EnnNoState,
     x_train: chex.Array) -> networks_base.EnnNoState:
   """Returns an ENN that centers input according to x_train."""
@@ -184,7 +184,7 @@ def make_centered_enn(
   return networks_base.EnnNoState(centered_apply, enn.init, enn.indexer)
 
 
-def make_centered_enn_with_state(
+def make_centered_enn(
     enn: networks_base.EnnArray,
     x_train: chex.Array) -> networks_base.EnnArray:
   """Returns an ENN that centers input according to x_train."""

@@ -124,7 +124,7 @@ class MLPDropoutENN(networks_base.EnnArray):
       net_out = transformed.apply(params, x, z)
       return net_out
 
-    apply = network_utils.wrap_apply_as_apply_with_state(apply)
-    init = network_utils.wrap_init_as_init_with_state(transformed.init)
+    apply = network_utils.wrap_apply_no_state_as_apply(apply)
+    init = network_utils.wrap_init_no_state_as_init(transformed.init)
 
     super().__init__(apply, init, indexer)

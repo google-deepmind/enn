@@ -106,8 +106,8 @@ class IndexMLPWithGpPrior(networks_base.EnnArray):
       return net_out._replace(prior=prior_scale * prior_fn)
 
     # TODO(author3): Change transformed above to work with state.
-    apply = network_utils.wrap_apply_as_apply_with_state(apply)
-    init = network_utils.wrap_init_as_init_with_state(transformed.init)
+    apply = network_utils.wrap_apply_no_state_as_apply(apply)
+    init = network_utils.wrap_init_no_state_as_init(transformed.init)
 
     super().__init__(
         apply=apply,

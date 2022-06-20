@@ -40,7 +40,7 @@ class EpinetTest(parameterized.TestCase):
     def net_fn(x):
       return mlp.ExposedMLP(output_sizes)(x)
     transformed = hk.without_apply_rng(hk.transform(net_fn))
-    enn = network_utils.wrap_transformed_as_enn_with_state(transformed)
+    enn = network_utils.wrap_transformed_as_enn(transformed)
 
     experiment = test_experiment.experiment_ctor(enn)
     experiment.train(10)

@@ -89,8 +89,8 @@ class GaussianNoiseEnn(networks_base.EnnArray):
     init = lambda rng, x, z: transformed.init(rng, x)
 
     # TODO(author3): Change apply and init fns above to work with state.
-    apply = network_utils.wrap_apply_as_apply_with_state(apply)
-    init = network_utils.wrap_init_as_init_with_state(init)
+    apply = network_utils.wrap_apply_no_state_as_apply(apply)
+    init = network_utils.wrap_init_no_state_as_init(init)
 
     super().__init__(apply, init, indexer=indexers.PrngIndexer(),)
 

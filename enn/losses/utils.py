@@ -192,7 +192,7 @@ def wrap_loss_no_state_as_loss(
       batch: base.Batch,
       key: chex.PRNGKey
   ) -> base.LossOutput:
-    enn = networks.wrap_enn_with_state_as_enn(enn)
+    enn = networks.wrap_enn_as_enn_no_state(enn)
     loss, metrics = loss_fn(enn, params, batch, key)
     return loss, (constant_state, metrics)
 
