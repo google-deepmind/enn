@@ -353,8 +353,7 @@ class PriorMLPIndependentLayers(hk.Module):
     return out
 
 
-class MLPHypermodelPriorIndependentLayers(networks_base.EnnArray
-                                         ):
+class MLPHypermodelPriorIndependentLayers(networks_base.EnnArray):
   """MLP hypermodel with hypermodel prior as EpistemicNetwork."""
 
   def __init__(self,

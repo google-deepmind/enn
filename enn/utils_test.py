@@ -16,7 +16,7 @@
 """Tests for enn.utils."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base_legacy
+from enn import base
 from enn import networks
 from enn import utils
 import jax
@@ -31,7 +31,7 @@ class UtilsTest(parameterized.TestCase):
       [networks.GaussianWithUnitIndexer(5), 40],
       [networks.EnsembleIndexer(13), 50],
   ])
-  def test_batch_indexer(self, indexer: base_legacy.EpistemicIndexer,
+  def test_batch_indexer(self, indexer: base.EpistemicIndexer,
                          batch_size: int):
     batch_indexer = utils.make_batch_indexer(indexer, batch_size)
     batch_index = batch_indexer(jax.random.PRNGKey(0))

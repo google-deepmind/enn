@@ -18,7 +18,7 @@
 
 from typing import Dict, Tuple
 
-from enn import base_legacy as enn_base
+from enn import base as enn_base
 from enn.datasets import base
 import numpy as np
 import tensorflow.compat.v2 as tf
