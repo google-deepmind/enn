@@ -41,10 +41,10 @@ def combine_epinet_and_prior(
       inputs: chex.Array,  # ENN inputs = x
       index: base.Index,  # ENN index = z
       hidden: chex.Array,  # Base net hiddens = phi(x)
-  ) -> Tuple[base.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks.OutputWithPrior, hk.State]:
     epi_out, epi_state = epinet.apply(params, state, inputs, index, hidden)
     prior_out = prior_fn(inputs, index)
-    combined_out = base.OutputWithPrior(
+    combined_out = networks.OutputWithPrior(
         train=epi_out.train,
         prior=epi_out.prior + prior_out * prior_scale,
         extra=epi_out.extra

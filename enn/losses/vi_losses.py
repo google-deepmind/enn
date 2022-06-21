@@ -30,7 +30,7 @@ tfd = tfp.distributions
 
 
 def get_awgn_loglike_fn(
-    sigma_w: float) -> Callable[[base.Output, base.Batch], float]:
+    sigma_w: float) -> Callable[[networks.Output, base.Batch], float]:
   """Returns a function that computes the simple unnormalized log likelihood.
 
   It assumes response variable is perturbed with additive iid Gaussian noise.
@@ -42,7 +42,7 @@ def get_awgn_loglike_fn(
     A function that computes the log likelihood given data and output.
   """
 
-  def log_likelihood_fn(out: base.Output, batch: base.Batch):
+  def log_likelihood_fn(out: networks.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
     err_sq = jnp.mean(jnp.square(networks.parse_net_output(out) - batch.y))
     return -0.5 * err_sq / sigma_w**2
@@ -52,7 +52,7 @@ def get_awgn_loglike_fn(
 
 def get_categorical_loglike_fn(
     num_classes: int
-) -> Callable[[base.Output, base.Batch], float]:
+) -> Callable[[networks.Output, base.Batch], float]:
   """Returns a function that computes the unnormalized log likelihood.
 
   It assumes response variable has a categorical distribution.
@@ -64,7 +64,7 @@ def get_categorical_loglike_fn(
     A function that computes the log likelihood given data and prediction.
   """
 
-  def log_likelihood_fn(out: base.Output, batch: base.Batch):
+  def log_likelihood_fn(out: networks.Output, batch: base.Batch):
     chex.assert_shape(batch.y, (None, 1))
     logits = networks.parse_net_output(out)
     labels = jax.nn.one_hot(batch.y[:, 0], num_classes)
@@ -127,7 +127,7 @@ class _KlLossFn(typing_extensions.Protocol):
 
   def __call__(
       self,
-      out: base.Output,
+      out: networks.Output,
       params: hk.Params,
       index: base.Index,
   ) -> float:
@@ -149,7 +149,7 @@ def get_sample_based_model_prior_kl_fn(
       scale * Normal(0, sigma_1) + (1 - scale) * Normal(0, sigma_2)
   """
 
-  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+  def model_prior_kl_fn(out: networks.Output, params: hk.Params,
                         index: base.Index) -> float:
     """Compute the KL distance between model and prior densities using samples."""
     del index
@@ -195,7 +195,7 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     model_prior_kl_fn
   """
 
-  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+  def model_prior_kl_fn(out: networks.Output, params: hk.Params,
                         index: base.Index) -> float:
     """Compute the KL distance between model and prior densities in a linear HM.
 
@@ -247,7 +247,7 @@ def get_analytical_linear_model_prior_kl_fn(
     num_samples: effective number of samples.
     sigma_0: Standard deviation of the Gaussian latent (params) prior.
   """
-  def model_prior_kl_fn(out: base.Output, params: hk.Params,
+  def model_prior_kl_fn(out: networks.Output, params: hk.Params,
                         index: base.Index) -> float:
     """Compute the KL distance between model and prior densities in a linear HM.
 

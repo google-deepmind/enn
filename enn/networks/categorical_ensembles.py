@@ -21,7 +21,6 @@ Next step is to integrate more with the rest of the ENN code.
 from typing import Sequence
 
 import chex
-from enn import base
 from enn.networks import base as networks_base
 from enn.networks import ensembles
 from enn.networks import priors
@@ -30,7 +29,7 @@ import jax
 import jax.numpy as jnp
 
 
-class CatOutputWithPrior(base.OutputWithPrior):
+class CatOutputWithPrior(networks_base.OutputWithPrior):
   """Categorical outputs with a real-valued prior."""
 
   @property

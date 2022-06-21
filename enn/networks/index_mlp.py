@@ -45,7 +45,7 @@ class ConcatIndexMLP(networks_base.EpistemicModule):
     self.variance_dim = variance_dim
 
   def __call__(self, inputs: chex.Array,
-               index: base.Index) -> base.OutputWithPrior:
+               index: base.Index) -> networks_base.OutputWithPrior:
     """Index must be of shape (index_dim,) intended to be Gaussian."""
     batch_size = inputs.shape[0]
     batched_index = jnp.repeat(jnp.expand_dims(index, 0), batch_size, axis=0)
@@ -62,7 +62,7 @@ class ConcatIndexMLP(networks_base.EpistemicModule):
         [self.variance_dim], activate_final=True)(flat_inputs)
     var_embedding = jnp.concatenate([out_no_index, input_projection], axis=1)
     var_pred = hk.nets.MLP([self.variance_dim, self.output_dim])(var_embedding)
-    return base.OutputWithPrior(
+    return networks_base.OutputWithPrior(
         train=hk.Linear(self.output_dim)(out),
         extra={'log_var': var_pred},
     )
@@ -98,7 +98,7 @@ class IndexMLPWithGpPrior(networks_base.EnnArray):
           input_dim, output_dim, num_feat, next(rng), gamma))
 
     def apply(params: hk.Params, inputs: chex.Array,
-              index: base.Index) -> base.OutputWithPrior:
+              index: base.Index) -> networks_base.OutputWithPrior:
       """Forward the SpecialMLP and also the prior network with index."""
       net_out = transformed.apply(params, inputs, index)
       all_priors = [prior(inputs) for prior in prior_fns]

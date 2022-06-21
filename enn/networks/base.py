@@ -17,21 +17,37 @@
 """Base classes for networks."""
 import abc
 import dataclasses
+import typing as tp
 
 import chex
 from enn import base
 import haiku as hk
+import jax
+import numpy as np
 import typing_extensions
 
 
-################################################################################
-# Sepcializing the network definitions from base.py to work with Array inputs
-################################################################################
-ApplyArray = base.ApplyFn[chex.Array]
+# Special Enn output with prior
+class OutputWithPrior(tp.NamedTuple):
+  """Output wrapper for networks with prior functions."""
+  train: chex.Array
+  prior: chex.Array = np.zeros(1)
+  extra: tp.Dict[str, chex.Array] = {}
+
+  @property
+  def preds(self) -> chex.Array:
+    return self.train + jax.lax.stop_gradient(self.prior)
+
+Output = tp.Union[chex.Array, OutputWithPrior]
+
+# Sepcializing the network definitions from base.py to work with
+# 1. Array inputs
+# 2. Output with priors defined above
+ApplyArray = base.ApplyFn[chex.Array, Output]
 InitArray = base.InitFn[chex.Array]
-EnnArray = base.EpistemicNetwork[chex.Array]
+EnnArray = base.EpistemicNetwork[chex.Array, Output]
 
-
+################################################################################
 # The default network definitions above assume that the network has a state.
 # Since a network might not have a state, below we provide definitions for
 # Epistemic Networks without state, specialized to work with Array inputs.
@@ -42,7 +58,7 @@ class ApplyNoState(typing_extensions.Protocol):
 
   def __call__(self, params: hk.Params,
                inputs: chex.Array,
-               index: base.Index) -> base.Output:
+               index: base.Index) -> Output:
     """Applies the ENN at given parameters, inputs, index."""
 
 
@@ -67,5 +83,5 @@ class EpistemicModule(abc.ABC, hk.Module):
   """Epistemic neural network abstract base class as Haiku module."""
 
   @abc.abstractmethod
-  def __call__(self, inputs: chex.Array, index: base.Index) -> base.Output:
+  def __call__(self, inputs: chex.Array, index: base.Index) -> Output:
     """Forwards the epsitemic network y = f(x,z)."""

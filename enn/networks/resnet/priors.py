@@ -37,7 +37,7 @@ class ResnetMlpPrior(networks_base.EnnArray):
                is_training: bool = True):
 
     def net_fn(x: chex.Array,
-               index: base.Index) -> base.OutputWithPrior:
+               index: base.Index) -> networks_base.OutputWithPrior:
       del index
       output = resnet_base.resnet_model(num_classes)(x, is_training=is_training)
 
@@ -46,7 +46,7 @@ class ResnetMlpPrior(networks_base.EnnArray):
         x = jnp.transpose(x, (3, 0, 1, 2))  # HWCN -> NHWC
       x = hk.Flatten()(x)
       prior = hk.nets.MLP(list(hidden_sizes) + [num_classes,], name='prior')(x)
-      return base.OutputWithPrior(
+      return networks_base.OutputWithPrior(
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
@@ -71,7 +71,7 @@ class ResnetCnnPrior(networks_base.EnnArray):
     assert len(output_channels) == len(kernel_sizes) == len(strides)
 
     def net_fn(x: chex.Array,
-               index: base.Index) -> base.OutputWithPrior:
+               index: base.Index) -> networks_base.OutputWithPrior:
       del index
       output = resnet_base.resnet_model(num_classes)(x, is_training=is_training)
 
@@ -89,7 +89,7 @@ class ResnetCnnPrior(networks_base.EnnArray):
         x = jax.nn.relu(x)
       x = hk.Flatten()(x)
       prior = hk.nets.MLP([num_classes], name='prior')(x)
-      return base.OutputWithPrior(
+      return networks_base.OutputWithPrior(
           train=output.train, prior=prior_scale * prior, extra=output.extra)
 
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))

@@ -41,7 +41,7 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
 
     def epinet_fn(inputs: chex.Array,
                   index: base.Index,
-                  hidden: chex.Array) -> base.OutputWithPrior:
+                  hidden: chex.Array) -> networks.OutputWithPrior:
       # Creating networks
       train_epinet = networks.ProjectedMLP(
           epinet_hiddens, num_classes, index_dim, name='train_epinet')
@@ -57,7 +57,7 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
       # Wiring networks: add linear epinet (+ prior) from final output layer.
       epi_train = train_epinet(epi_inputs, index)
       epi_prior = prior_epinet(epi_inputs, index)
-      return base.OutputWithPrior(
+      return networks.OutputWithPrior(
           train=epi_train,
           prior=prior_scale * epi_prior,
       )
@@ -69,11 +69,11 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
 
 
 def parse_base_hidden(
-    base_out: base.Output,
+    base_out: networks.Output,
     hidden_name: str = 'final_out',
 ) -> chex.Array:
   """Parses the final hidden layer from the base network output."""
   # TODO(author2): improve type checking on base_out
-  assert isinstance(base_out, base.OutputWithPrior)
+  assert isinstance(base_out, networks.OutputWithPrior)
   assert hidden_name in base_out.extra
   return base_out.extra[hidden_name]

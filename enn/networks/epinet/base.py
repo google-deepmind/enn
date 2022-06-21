@@ -37,7 +37,7 @@ class EpinetApplyWithState(Protocol):
       inputs: chex.Array,  # ENN inputs = x
       index: base.Index,  # ENN index = z
       hidden: chex.Array,  # Base net hiddens = phi(x)
-  ) -> Tuple[base.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
     """Applies the epinet at given parameters and state."""
 
 
@@ -62,7 +62,7 @@ class EpinetWithState:
   indexer: base.EpistemicIndexer
 
 
-BaseHiddenParser = Callable[[base.Output], chex.Array]
+BaseHiddenParser = Callable[[networks_base.Output], chex.Array]
 
 
 def combine_base_epinet_as_enn(
@@ -93,10 +93,12 @@ def combine_base_epinet_as_enn(
   if base_index is None:
     base_index = base_enn.indexer(jax.random.PRNGKey(0))
 
-  def apply(params: hk.Params,
-            state: hk.State,
-            inputs: chex.Array,
-            index: base.Index) -> Tuple[base.OutputWithPrior, hk.State]:
+  def apply(
+      params: hk.Params,
+      state: hk.State,
+      inputs: chex.Array,
+      index: base.Index,
+  ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
     """Applies the base network and epinet."""
     if freeze_base:
       base_params, base_state = base_params_init, base_state_init
@@ -112,7 +114,7 @@ def combine_base_epinet_as_enn(
     epi_out, epi_state = epinet.apply(
         params, state, inputs, index, parse_hidden(base_out))
 
-    output = base.OutputWithPrior(
+    output = networks_base.OutputWithPrior(
         train=base_out.train * base_scale + epi_out.train,
         prior=base_out.prior * base_scale + epi_out.prior,
     )

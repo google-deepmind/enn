@@ -142,9 +142,9 @@ class ElboLossWithState(losses_base.SingleLossFnArray):
   distribution to be close to the latent prior as measured by KL.
   """
 
-  log_likelihood_fn: Callable[[base.Output, base.Batch], float]
+  log_likelihood_fn: Callable[[networks.Output, base.Batch], float]
   model_prior_kl_fn: Callable[
-      [base.Output, hk.Params, base.Index], float]
+      [networks.Output, hk.Params, base.Index], float]
   temperature: Optional[float] = None
   input_dim: Optional[int] = None
 
@@ -169,9 +169,9 @@ class ElboLossWithState(losses_base.SingleLossFnArray):
 @dataclasses.dataclass
 class VaeLossWithState(losses_base.SingleLossFnArray):
   """VAE loss."""
-  log_likelihood_fn: Callable[[base.OutputWithPrior, base.Batch],
+  log_likelihood_fn: Callable[[networks.OutputWithPrior, base.Batch],
                               float]
-  latent_kl_fn: Callable[[base.OutputWithPrior], float]
+  latent_kl_fn: Callable[[networks.OutputWithPrior], float]
 
   def __call__(
       self,

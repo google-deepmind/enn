@@ -22,10 +22,10 @@ from enn import utils
 import haiku as hk
 import jax
 import jax.numpy as jnp
-import typing_extensions
+import typing_extensions as te
 
 
-class SingleLossFn(typing_extensions.Protocol[base.Input, base.Data]):
+class SingleLossFn(te.Protocol[base.Input, base.Output, base.Data,]):
   """Calculates a loss based on one batch of data per index.
 
   You can use average_single_index_loss to make a base.LossFn out of the
@@ -34,7 +34,7 @@ class SingleLossFn(typing_extensions.Protocol[base.Input, base.Data]):
 
   def __call__(
       self,
-      apply: base.ApplyFn[base.Input],
+      apply: base.ApplyFn[base.Input, base.Output],
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -44,9 +44,9 @@ class SingleLossFn(typing_extensions.Protocol[base.Input, base.Data]):
 
 
 def average_single_index_loss(
-    single_loss: SingleLossFn[base.Input, base.Data],
+    single_loss: SingleLossFn[base.Input, base.Output, base.Data],
     num_index_samples: int = 1,
-) -> base.LossFn[base.Input, base.Data]:
+) -> base.LossFn[base.Input, base.Output, base.Data]:
   """Average a single index loss over multiple index samples.
 
   Note that the *network state* is also averaged over indices. This is not going
@@ -61,7 +61,7 @@ def average_single_index_loss(
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetwork[base.Input],
+  def loss_fn(enn: base.EpistemicNetwork[base.Input, base.Output],
               params: hk.Params,
               state: hk.State,
               batch: base.Data,
@@ -97,10 +97,10 @@ def average_single_index_loss(
 
 
 # Loss modules specialized to work only with Array inputs and Batch data.
-LossFnArray = base.LossFn[chex.Array, base.Batch]
-SingleLossFnArray = SingleLossFn[chex.Array, base.Batch]
+LossFnArray = base.LossFn[chex.Array, networks.Output, base.Batch]
+SingleLossFnArray = SingleLossFn[chex.Array, networks.Output, base.Batch]
 
-
+################################################################################
 # The default loss definitions above assume that the enn has a state.
 # Since an enn might not have a state, below we provide definitions for
 # loss functions which work with networks.EnnNoState, specialized to work with
@@ -110,7 +110,7 @@ SingleLossFnArray = SingleLossFn[chex.Array, base.Batch]
 LossOutputNoState = Tuple[chex.Array, base.LossMetrics]
 
 
-class LossFnNoState(typing_extensions.Protocol):
+class LossFnNoState(te.Protocol):
   """Calculates a loss based on one batch of data per random key."""
 
   def __call__(self,
@@ -121,7 +121,7 @@ class LossFnNoState(typing_extensions.Protocol):
     """Computes a loss based on one batch of data and a random key."""
 
 
-class SingleLossFnNoState(typing_extensions.Protocol):
+class SingleLossFnNoState(te.Protocol):
   """Calculates a loss based on one batch of data per index.
 
   You can use average_single_index_loss_no_state defined below to make a

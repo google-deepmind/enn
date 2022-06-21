@@ -48,7 +48,7 @@ class ExposedMLP(hk.Module):
       self.expose_layers = [True] * len(output_sizes)
     assert len(self.expose_layers) == len(self.layers)
 
-  def __call__(self, inputs: chex.Array) -> base.OutputWithPrior:
+  def __call__(self, inputs: chex.Array) -> networks_base.OutputWithPrior:
     """Standard MLP but exposes 'exposed_features' in .extra output."""
     layers_features = []
     out = inputs
@@ -68,7 +68,7 @@ class ExposedMLP(hk.Module):
     if self.stop_gradient:
       exposed_features = jax.lax.stop_gradient(exposed_features)
     extra = {'exposed_features': exposed_features}
-    return base.OutputWithPrior(train=out, extra=extra)
+    return networks_base.OutputWithPrior(train=out, extra=extra)
 
 
 class ProjectedMLP(networks_base.EpistemicModule):

@@ -15,38 +15,20 @@
 # ============================================================================
 
 """Base classes for Epistemic Neural Network design in JAX / Haiku."""
-# TODO(author2, author3): Slim down the base interfaces.
-# Current code has drifted away from desired code quality with feature creep.
-# We want to rethink this interface and get it down to something more clear.
 
 import dataclasses
 import typing as tp
 
 import chex
 import haiku as hk
-import jax
-import numpy as np
 import typing_extensions
 
 ################################################################################
 # ENN definition
 
 Input = tp.TypeVar('Input')  # Inputs to neural network
+Output = tp.TypeVar('Output')  # Outputs of neural network
 Index = tp.Any  # Epistemic index
-
-
-# TODO(author3): Change Output interface to be only OutputWithPrior.
-class OutputWithPrior(tp.NamedTuple):
-  """Output wrapper for networks with prior functions."""
-  train: chex.Array
-  prior: chex.Array = np.zeros(1)
-  extra: tp.Dict[str, chex.Array] = {}
-
-  @property
-  def preds(self) -> chex.Array:
-    return self.train + jax.lax.stop_gradient(self.prior)
-
-Output = tp.Union[chex.Array, OutputWithPrior]
 
 
 class EpistemicIndexer(typing_extensions.Protocol):
@@ -56,7 +38,7 @@ class EpistemicIndexer(typing_extensions.Protocol):
     """Samples a single index for the epistemic network."""
 
 
-class ApplyFn(typing_extensions.Protocol[Input]):
+class ApplyFn(typing_extensions.Protocol[Input, Output]):
   """Applies the ENN at given parameters, state, inputs, index."""
 
   def __call__(self,
@@ -78,9 +60,9 @@ class InitFn(typing_extensions.Protocol[Input]):
 
 
 @dataclasses.dataclass
-class EpistemicNetwork(tp.Generic[Input]):
+class EpistemicNetwork(tp.Generic[Input, Output]):
   """Convenient pairing of Haiku transformed function and index sampler."""
-  apply: ApplyFn[Input]
+  apply: ApplyFn[Input, Output]
   init: InitFn[Input]
   indexer: EpistemicIndexer
 
@@ -89,11 +71,24 @@ class EpistemicNetwork(tp.Generic[Input]):
 # Loss functions and training
 DataIndex = chex.Array  # Integer identifiers used for bootstrapping
 Data = tp.TypeVar('Data')  # General training data
+LossMetrics = tp.Dict[str, chex.Array]  # Metrics reported in training.
+
+# Output of loss function includes (loss, (state, metrics))
+LossOutput = tp.Tuple[chex.Array, tp.Tuple[hk.State, LossMetrics]]
 
 
-# TODO(author3): Make Batch generic in input. This requires multiple
-# inheritance for NamedTuple which is not supported in Python 3.9 yet:
-# https://bugs.python.org/issue43923
+class LossFn(typing_extensions.Protocol[Input, Output, Data]):
+  """Calculates a loss based on one batch of data per random key."""
+
+  def __call__(self,
+               enn: EpistemicNetwork[Input, Output],
+               params: hk.Params,
+               state: hk.State,
+               batch: Data,
+               key: chex.PRNGKey) -> LossOutput:
+    """Computes a loss based on one batch of data and a random key."""
+
+
 class Batch(tp.NamedTuple):
   x: chex.Array  # Inputs
   y: chex.Array  # Targets
@@ -102,20 +97,3 @@ class Batch(tp.NamedTuple):
   extra: tp.Dict[str, chex.Array] = {}  # You can put other optional stuff here
 
 BatchIterator = tp.Iterator[Batch]  # Equivalent to the dataset we loop through
-LossMetrics = tp.Dict[str, chex.Array]  # Metrics reported in training.
-
-# Output of loss function includes (loss, (state, metrics))
-LossOutput = tp.Tuple[chex.Array, tp.Tuple[hk.State, LossMetrics]]
-
-
-class LossFn(typing_extensions.Protocol[Input, Data]):
-  """Calculates a loss based on one batch of data per random key."""
-
-  def __call__(self,
-               enn: EpistemicNetwork[Input],
-               params: hk.Params,
-               state: hk.State,
-               batch: Data,
-               key: chex.PRNGKey) -> LossOutput:
-    """Computes a loss based on one batch of data and a random key."""
-

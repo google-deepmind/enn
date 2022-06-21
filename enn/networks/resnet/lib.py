@@ -21,7 +21,7 @@ import functools
 from typing import Any, Optional, Sequence
 
 import chex
-from enn import base
+from enn.networks import base as networks_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -213,7 +213,7 @@ class ResNet(hk.Module):
   def __call__(self,
                inputs: chex.Array,
                is_training: bool,
-               test_local_stats: bool = False) -> base.OutputWithPrior:
+               test_local_stats: bool = False) -> networks_base.OutputWithPrior:
     # Holds the output of hidden layers.
     extra = {}
 
@@ -239,7 +239,7 @@ class ResNet(hk.Module):
     extra['final_out'] = pool
 
     logits = self.final_fc(pool)
-    return base.OutputWithPrior(
+    return networks_base.OutputWithPrior(
         train=logits, prior=jnp.zeros_like(logits), extra=extra)
 
 

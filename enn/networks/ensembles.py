@@ -18,7 +18,6 @@
 from typing import Callable, Optional, Sequence, Tuple
 
 import chex
-from enn import base
 from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import priors
@@ -46,7 +45,7 @@ class Ensemble(networks_base.EnnNoState):
       return batched_init(jax.random.split(key, num_ensemble), inputs)
 
     def apply(params: hk.Params, inputs: chex.Array,
-              index: int) -> base.Output:
+              index: int) -> networks_base.Output:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(param_selector, params)
@@ -77,7 +76,7 @@ class EnsembleWithState(networks_base.EnnArray):
       return params, states
 
     def apply(params: hk.Params, states: hk.State, inputs: chex.Array,
-              index: int) -> Tuple[base.Output, hk.State]:
+              index: int) -> Tuple[networks_base.Output, hk.State]:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       particle_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
       sub_params = jax.tree_map(particle_selector, params)

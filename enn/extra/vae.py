@@ -103,7 +103,7 @@ def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
                  latent_dim: int) -> networks.EnnNoState:
   """Factory method to create and transform ENN from encoder/decoder."""
 
-  def net_fn(x: chex.Array, z: base.Index) -> base.OutputWithPrior:
+  def net_fn(x: chex.Array, z: base.Index) -> networks.OutputWithPrior:
     # Encoder
     latent_mean, latent_log_var = encoder(x)
     chex.assert_shape([latent_mean, latent_log_var], [x.shape[0], latent_dim])
@@ -116,7 +116,7 @@ def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
     out_mean, out_log_var = decoder(latent)
     vae_outputs = {'latent_mean': latent_mean, 'latent_log_var': latent_log_var,
                    'out_mean': out_mean, 'out_log_var': out_log_var}
-    return base.OutputWithPrior(train=out_mean, extra=vae_outputs)
+    return networks.OutputWithPrior(train=out_mean, extra=vae_outputs)
 
   transformed = hk.without_apply_rng(hk.transform(net_fn))
   indexer = networks.GaussianIndexer(latent_dim)

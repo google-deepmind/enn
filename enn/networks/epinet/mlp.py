@@ -36,7 +36,7 @@ def make_mlp_epinet(
     prior_scale: float = 1.) -> networks_base.EnnArray:
   """Factory method to create a standard MLP epinet."""
 
-  def net_fn(x: chex.Array, z: base.Index) -> base.OutputWithPrior:
+  def net_fn(x: chex.Array, z: base.Index) -> networks_base.OutputWithPrior:
     base_mlp = mlp.ExposedMLP(output_sizes, expose_layers, name='base_mlp')
     num_classes = output_sizes[-1]
     train_epinet = mlp.ProjectedMLP(
@@ -48,7 +48,7 @@ def make_mlp_epinet(
     features = base_out.extra['exposed_features']
     epi_train = train_epinet(features, z)
     epi_prior = prior_epinet(features, z)
-    return base.OutputWithPrior(
+    return networks_base.OutputWithPrior(
         train=base_out.train + epi_train,
         prior=prior_scale * epi_prior,
     )

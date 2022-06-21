@@ -48,7 +48,7 @@ def make_einsum_ensemble_mlp_enn(
     EpistemicNetwork as an ensemble of MLP.
   """
 
-  def ensemble_forward(x: chex.Array) -> base.OutputWithPrior:
+  def ensemble_forward(x: chex.Array) -> networks_base.OutputWithPrior:
     """Forwards the entire ensemble at given input x."""
     model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias, activation)
     return model(x)
@@ -57,7 +57,7 @@ def make_einsum_ensemble_mlp_enn(
 
   # Apply function selects the appropriate index of the ensemble output.
   def apply(params: hk.Params, x: chex.Array,
-            z: base.Index) -> base.OutputWithPrior:
+            z: base.Index) -> networks_base.OutputWithPrior:
     net_out = transformed.apply(params, x)
     one_hot_index = jax.nn.one_hot(z, num_ensemble)
     return jnp.dot(net_out, one_hot_index)
@@ -107,10 +107,10 @@ def make_ensemble_mlp_with_prior_enn(
       state: hk.State,
       x: chex.Array,
       z: base.Index,
-  ) -> Tuple[base.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
     ensemble_train, state = enn.apply(params, state, x, z)
     ensemble_prior, _ = enn.apply(prior_params, prior_state, x, z)
-    output = base.OutputWithPrior(
+    output = networks_base.OutputWithPrior(
         train=ensemble_train, prior=ensemble_prior * prior_scale)
     return output, state
 

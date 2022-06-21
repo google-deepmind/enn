@@ -78,7 +78,7 @@ def variance_kl(var: chex.Array,
 def generate_batched_forward_at_data(
     num_index_sample: int, x: chex.Array,
     enn: networks.EnnNoState, params: hk.Params,
-    key: chex.PRNGKey) -> base.Output:
+    key: chex.PRNGKey) -> networks.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, 0])
@@ -89,7 +89,7 @@ def generate_batched_forward_at_data(
 def generate_batched_forward_at_data_with_state(
     num_index_sample: int, x: chex.Array,
     enn: networks.EnnArray, params: hk.Params,
-    key: chex.PRNGKey) -> base.Output:
+    key: chex.PRNGKey) -> networks.Output:
   """Generate enn output for batch of data with indices based on random key."""
   batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_sample)
   batched_forward = jax.vmap(enn.apply, in_axes=[None, None, None, 0])
@@ -99,9 +99,9 @@ def generate_batched_forward_at_data_with_state(
   return batched_out
 
 
-def l2_training_penalty(batched_out: base.Output):
+def l2_training_penalty(batched_out: networks.Output):
   """Penalize the L2 magnitude of the training network."""
-  if isinstance(batched_out, base.OutputWithPrior):
+  if isinstance(batched_out, networks.OutputWithPrior):
     return 0.5 * jnp.mean(jnp.square(batched_out.train))
   else:
     logging.warning('L2 weight penalty only works for OutputWithPrior.')
@@ -109,8 +109,8 @@ def l2_training_penalty(batched_out: base.Output):
 
 
 def distill_mean_regression(
-    batched_out: base.Output,
-    distill_out: base.Output) -> chex.Array:
+    batched_out: networks.Output,
+    distill_out: networks.Output) -> chex.Array:
   """Train the mean of the regression to the distill network."""
   observed_mean = jnp.mean(networks.parse_net_output(batched_out), axis=0)
   distill_mean = jnp.squeeze(networks.parse_net_output(distill_out))
@@ -118,8 +118,8 @@ def distill_mean_regression(
 
 
 def distill_mean_classification(
-    batched_out: base.Output,
-    distill_out: base.Output) -> chex.Array:
+    batched_out: networks.Output,
+    distill_out: networks.Output) -> chex.Array:
   """Train the mean of the classification to the distill network."""
   batched_logits = networks.parse_net_output(batched_out)
   batched_probs = jax.nn.softmax(batched_logits, axis=-1)
@@ -130,19 +130,19 @@ def distill_mean_classification(
       jnp.sum(mean_probs * jnp.log(mean_probs / distill_probs), axis=1))
 
 
-def distill_var_regression(batched_out: base.Output,
-                           distill_out: base.Output) -> chex.Array:
+def distill_var_regression(batched_out: networks.Output,
+                           distill_out: networks.Output) -> chex.Array:
   """Train the variance of the regression to the distill network."""
-  assert isinstance(distill_out, base.OutputWithPrior)
+  assert isinstance(distill_out, networks.OutputWithPrior)
   observed_var = jnp.var(networks.parse_net_output(batched_out), axis=0)
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))
 
 
 def distill_var_classification(
-    batched_out: base.Output,
-    distill_out: base.Output) -> chex.Array:
+    batched_out: networks.Output,
+    distill_out: networks.Output) -> chex.Array:
   """Train the variance of the classification to the distill network."""
-  assert isinstance(distill_out, base.OutputWithPrior)
+  assert isinstance(distill_out, networks.OutputWithPrior)
   batched_logits = networks.parse_net_output(batched_out)
   observed_var = jnp.var(jax.nn.softmax(batched_logits, axis=-1))
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))

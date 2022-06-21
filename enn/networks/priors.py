@@ -57,7 +57,7 @@ class EnnStateWithAdditivePrior(networks_base.EnnArray):
         state: hk.State,
         inputs: chex.Array,
         index: base.Index
-    ) -> Tuple[base.OutputWithPrior, hk.State]:
+    ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
       net_out, state_out = enn.apply(params, state, inputs, index)
       net_out = network_utils.parse_to_output_with_prior(net_out)
       prior = prior_scale * prior_fn(inputs, index)
@@ -79,7 +79,7 @@ def convert_enn_to_prior_fn(enn: networks_base.EnnArray,
   prior_params, prior_state = enn.init(init_key, dummy_input, index)
 
   def prior_fn(x: chex.Array,
-               z: base.Index) -> base.Output:
+               z: base.Index) -> networks_base.Output:
     output, unused_state = enn.apply(prior_params, prior_state, x, z)
     return output
   return prior_fn

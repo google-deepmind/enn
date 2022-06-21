@@ -70,7 +70,7 @@ class MLPDropoutENN(networks_base.EnnArray):
     """MLP with dropout as an ENN."""
 
     def enn_fn(inputs: chex.Array,
-               z: base.Index) -> base.Output:
+               z: base.Index) -> networks_base.Output:
 
       assert inputs.ndim == 2
       unused_batch, input_size = inputs.shape
@@ -120,7 +120,7 @@ class MLPDropoutENN(networks_base.EnnArray):
     # Apply function for enn_fn requires a rng key to generate masks. We use
     # the index z in f(x,z) as the rng key.
     def apply(params: hk.Params, x: chex.Array,
-              z: base.Index) -> base.Output:
+              z: base.Index) -> networks_base.Output:
       net_out = transformed.apply(params, x, z)
       return net_out
 

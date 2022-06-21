@@ -136,7 +136,7 @@ def load_checkpoint_as_logit_fn(
     num_enn_samples: int = 1,
     temperature_rescale: bool = False,
     seed: int = 0,
-) -> Callable[[chex.Array], base.OutputWithPrior]:
+) -> Callable[[chex.Array], networks.OutputWithPrior]:
   """Loads an ENN as a simple forward function: images --> logits."""
   enn_sampler = make_enn_sampler_from_checkpoint(
       checkpoint, num_enn_samples, temperature_rescale)
@@ -145,7 +145,7 @@ def load_checkpoint_as_logit_fn(
     logits = enn_sampler(inputs, jax.random.PRNGKey(seed))
     ave_logits = average_logits(logits)
     # Wrap the output with prior
-    return base.OutputWithPrior(ave_logits)
+    return networks.OutputWithPrior(ave_logits)
 
   return jax.jit(forward_fn)
 

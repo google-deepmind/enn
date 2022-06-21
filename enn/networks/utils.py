@@ -23,21 +23,21 @@ import haiku as hk
 import jax.numpy as jnp
 
 
-def parse_net_output(net_out: base.Output) -> chex.Array:
+def parse_net_output(net_out: networks_base.Output) -> chex.Array:
   """Convert network output to scalar prediction value."""
-  if isinstance(net_out, base.OutputWithPrior):
+  if isinstance(net_out, networks_base.OutputWithPrior):
     return net_out.preds
   else:
     return net_out
 
 
 def parse_to_output_with_prior(
-    net_out: base.Output) -> base.OutputWithPrior:
-  """Convert network output to base.OutputWithPrior."""
-  if isinstance(net_out, base.OutputWithPrior):
+    net_out: networks_base.Output) -> networks_base.OutputWithPrior:
+  """Convert network output to networks_base.OutputWithPrior."""
+  if isinstance(net_out, networks_base.OutputWithPrior):
     return net_out
   else:
-    return base.OutputWithPrior(
+    return networks_base.OutputWithPrior(
         train=net_out, prior=jnp.zeros_like(net_out))
 
 
@@ -48,7 +48,7 @@ def epistemic_network_from_module(
   """Convert an Enn module to epistemic network with paired index."""
 
   def enn_fn(inputs: chex.Array,
-             index: base.Index) -> base.Output:
+             index: base.Index) -> networks_base.Output:
     return enn_ctor()(inputs, index)
 
   transformed = hk.without_apply_rng(hk.transform_with_state(enn_fn))
@@ -106,7 +106,7 @@ def wrap_enn_as_enn_no_state(
     return params
 
   def apply(params: hk.Params, x: chex.Array,
-            z: base.Index) -> base.Output:
+            z: base.Index) -> networks_base.Output:
     output, unused_state = enn.apply(params, constant_state, x, z)
     return output
 
@@ -125,7 +125,7 @@ def wrap_apply_no_state_as_apply(
       unused_state: hk.State,
       inputs: chex.Array,
       index: base.Index,
-  ) -> Tuple[base.Output, hk.State]:
+  ) -> Tuple[networks_base.Output, hk.State]:
     return (apply(params, inputs, index), {})
   return new_apply
 
@@ -150,10 +150,10 @@ def scale_enn_output(
   """Returns an ENN with output scaled by a scaling factor."""
   def scaled_apply(
       params: hk.Params, state: hk.State, inputs: chex.Array,
-      index: base.Index) -> Tuple[base.Output, hk.State]:
+      index: base.Index) -> Tuple[networks_base.Output, hk.State]:
     out, state = enn.apply(params, state, inputs, index)
-    if isinstance(out, base.OutputWithPrior):
-      scaled_out = base.OutputWithPrior(
+    if isinstance(out, networks_base.OutputWithPrior):
+      scaled_out = networks_base.OutputWithPrior(
           train=out.train * scale,
           prior=out.prior * scale,
           extra=out.extra,
@@ -177,7 +177,7 @@ def make_centered_enn_no_state(
   x_mean = jnp.mean(x_train, axis=0)
   x_std = jnp.std(x_train, axis=0)
   def centered_apply(params: hk.Params, x: chex.Array,
-                     z: base.Index) -> base.Output:
+                     z: base.Index) -> networks_base.Output:
     normalized_x = (x - x_mean) / (x_std + 1e-9)
     return enn.apply(params, normalized_x, z)
 
@@ -192,7 +192,7 @@ def make_centered_enn(
   x_mean = jnp.mean(x_train, axis=0)
   x_std = jnp.std(x_train, axis=0)
   def centered_apply(params: hk.Params, state: hk.State, x: chex.Array,
-                     z: base.Index) -> base.Output:
+                     z: base.Index) -> networks_base.Output:
     normalized_x = (x - x_mean) / (x_std + 1e-9)
     return enn.apply(params, state, normalized_x, z)
 

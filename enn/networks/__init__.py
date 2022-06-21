@@ -23,6 +23,8 @@ from enn.networks.base import EnnNoState
 from enn.networks.base import EpistemicModule
 from enn.networks.base import InitArray
 from enn.networks.base import InitNoState
+from enn.networks.base import Output
+from enn.networks.base import OutputWithPrior
 # BBB
 from enn.networks.bbb import make_bbb_enn
 # Categorical regression ensemble

@@ -169,7 +169,7 @@ def hypermodel_module(
     # Output the original base function(inputs) with these generated params
     out = transformed_base.apply(generated_params_scaled, inputs)
     if return_generated_params:
-      out = base.OutputWithPrior(
+      out = networks_base.OutputWithPrior(
           train=transformed_base.apply(generated_params_scaled, inputs),
           extra={
               'hyper_net_out': generated_params,

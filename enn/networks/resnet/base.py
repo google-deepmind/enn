@@ -16,7 +16,6 @@
 """Network definitions for ResNet."""
 
 import chex
-from enn import base
 from enn.networks import base as networks_base
 from enn.networks import ensembles
 from enn.networks import utils as networks_utils
@@ -36,9 +35,10 @@ def resnet_model(
   should_transpose_images = (
       enable_double_transpose and jax.local_devices()[0].platform == 'tpu')
 
-  def forward_fn(inputs: chex.Array,
-                 is_training: bool,
-                 test_local_stats: bool = False) -> base.OutputWithPrior:
+  def forward_fn(
+      inputs: chex.Array,
+      is_training: bool,
+      test_local_stats: bool = False) -> networks_base.OutputWithPrior:
     # If enabled, there should be a matching NHWC->HWCN transpose in the data.
     if should_transpose_images:
       inputs = jnp.transpose(inputs, (3, 0, 1, 2))  # HWCN -> NHWC
@@ -60,7 +60,7 @@ class EnsembleResNetENN(networks_base.EnnArray):
                enable_double_transpose: bool = True,
                config: lib.ResNetConfig = lib.CanonicalResNets.RESNET_50.value):
 
-    def net_fn(x: chex.Array) -> base.OutputWithPrior:
+    def net_fn(x: chex.Array) -> networks_base.OutputWithPrior:
       forward_fn = resnet_model(num_output_classes=num_output_classes,
                                 enable_double_transpose=enable_double_transpose,
                                 config=config)
