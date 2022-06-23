@@ -38,7 +38,7 @@ _ENN = Union[networks.EnnNoState,
 @dataclasses.dataclass
 class BootstrapNoise(data_noise_base.DataNoise):
   """Apply bootstrap reweighting to a batch of data."""
-  # TODO(vikranthd): just pass indexer instead of the enn
+  # TODO(author5): just pass indexer instead of the enn
   enn: _ENN
   distribution: str
   seed: int = 0
@@ -93,7 +93,7 @@ def null_bootstrap(data_index: base.DataIndex,
   return jnp.ones_like(data_index)
 
 
-# TODO(vikranthd): Pass just the indexer instead of entire enn
+# TODO(author5): Pass just the indexer instead of entire enn
 def make_boot_fn(enn: _ENN,
                  distribution: str,
                  seed: int = 0) -> BootstrapFn:
