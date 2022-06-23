@@ -67,7 +67,6 @@ from enn.losses.utils import combine_losses_no_state_as_metric
 from enn.losses.utils import combine_single_index_losses_as_metric
 from enn.losses.utils import combine_single_index_losses_no_state_as_metric
 from enn.losses.utils import CombineLossConfig
-from enn.losses.utils import CombineLossConfigArray
 from enn.losses.utils import CombineLossConfigNoState
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
