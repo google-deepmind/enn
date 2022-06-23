@@ -56,7 +56,8 @@ EnnArray = base.EpistemicNetwork[chex.Array, Output]
 class ApplyNoState(typing_extensions.Protocol):
   """Applies the ENN at given parameters, inputs, index."""
 
-  def __call__(self, params: hk.Params,
+  def __call__(self,
+               params: hk.Params,
                inputs: chex.Array,
                index: base.Index) -> Output:
     """Applies the ENN at given parameters, inputs, index."""
@@ -65,7 +66,8 @@ class ApplyNoState(typing_extensions.Protocol):
 class InitNoState(typing_extensions.Protocol):
   """Initializes the ENN at given rng_key, inputs, index."""
 
-  def __call__(self, rng_key: chex.PRNGKey,
+  def __call__(self,
+               rng_key: chex.PRNGKey,
                inputs: chex.Array,
                index: base.Index) -> hk.Params:
     """Initializes the ENN at given rng_key, inputs, index."""

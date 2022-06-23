@@ -100,13 +100,12 @@ def wrap_enn_as_enn_no_state(
   if constant_state is None:
     constant_state = {}
 
-  def init(key: chex.PRNGKey, x: chex.Array,
-           z: base.Index) -> hk.Params:
+  def init(key: chex.PRNGKey, x: chex.Array, z: base.Index) -> hk.Params:
     params, unused_state = enn.init(key, x, z)
     return params
 
-  def apply(params: hk.Params, x: chex.Array,
-            z: base.Index) -> networks_base.Output:
+  def apply(
+      params: hk.Params, x: chex.Array, z: base.Index) -> networks_base.Output:
     output, unused_state = enn.apply(params, constant_state, x, z)
     return output
 
