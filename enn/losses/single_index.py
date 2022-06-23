@@ -31,7 +31,9 @@ import jax.numpy as jnp
 class L2Loss(losses_base.SingleLossFnNoState):
   """L2 regression applied to a single epistemic index."""
 
-  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
+  def __call__(self,
+               apply: networks.ApplyNoState,
+               params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> losses_base.LossOutputNoState:
     """L2 regression applied to a single epistemic index."""
@@ -56,7 +58,9 @@ class XentLoss(losses_base.SingleLossFnNoState):
   def __post_init__(self):
     chex.assert_scalar_non_negative(self.num_classes - 2.0)
 
-  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
+  def __call__(self,
+               apply: networks.ApplyNoState,
+               params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> losses_base.LossOutputNoState:
     chex.assert_shape(batch.y, (None, 1))
@@ -80,7 +84,9 @@ class AccuracyErrorLoss(losses_base.SingleLossFnNoState):
   """Evaluates the accuracy error of a greedy logit predictor."""
   num_classes: int
 
-  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
+  def __call__(self,
+               apply: networks.ApplyNoState,
+               params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> losses_base.LossOutputNoState:
     chex.assert_shape(batch.y, (None, 1))
@@ -110,7 +116,9 @@ class ElboLoss(losses_base.SingleLossFnNoState):
   temperature: Optional[float] = None
   input_dim: Optional[int] = None
 
-  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
+  def __call__(self,
+               apply: networks.ApplyNoState,
+               params: hk.Params,
                batch: base.Batch,
                index: base.Index) -> losses_base.LossOutputNoState:
     """This function returns a one-sample MC estimate of the ELBO."""
@@ -126,8 +134,7 @@ class ElboLoss(losses_base.SingleLossFnNoState):
 @dataclasses.dataclass
 class VaeLoss(losses_base.SingleLossFnNoState):
   """VAE loss."""
-  log_likelihood_fn: Callable[[networks.OutputWithPrior, base.Batch],
-                              float]
+  log_likelihood_fn: Callable[[networks.OutputWithPrior, base.Batch], float]
   latent_kl_fn: Callable[[networks.OutputWithPrior], float]
 
   def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
