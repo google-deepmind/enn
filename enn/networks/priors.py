@@ -30,7 +30,7 @@ import jax.numpy as jnp
 PriorFn = Callable[[chex.Array, base.Index], chex.Array]
 
 
-class EnnWithAdditivePrior(networks_base.EnnNoState):
+class EnnNoStateWithAdditivePrior(networks_base.EnnNoState):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
@@ -39,12 +39,12 @@ class EnnWithAdditivePrior(networks_base.EnnNoState):
                prior_scale: float = 1.):
     """Create an ENN with additive prior_fn applied to outputs."""
     enn_state = network_utils.wrap_enn_no_state_as_enn(enn)
-    enn_state_p = EnnStateWithAdditivePrior(enn_state, prior_fn, prior_scale)
+    enn_state_p = EnnWithAdditivePrior(enn_state, prior_fn, prior_scale)
     enn_prior = network_utils.wrap_enn_as_enn_no_state(enn_state_p)
     super().__init__(enn_prior.apply, enn_prior.init, enn_prior.indexer)
 
 
-class EnnStateWithAdditivePrior(networks_base.EnnArray):
+class EnnWithAdditivePrior(networks_base.EnnArray):
   """Create an ENN with additive prior_fn applied to outputs."""
 
   def __init__(self,
@@ -194,9 +194,9 @@ def get_random_mlp_with_index(x_sample: chex.Array,
 
 # TODO(author2): Forming Modules with Prior is prone to bugs as the "prior"
 # parameters will get returned in the init. In general, you should try and
-# use the EnnWithAdditivePrior above instead.
+# use the EnnNoStateWithAdditivePrior above instead.
 WARN = ('WARNING: prior parameters will be included as hk.Params for module.'
-        'If possible, you should use EnnWithAdditivePrior instead.')
+        'If possible, you should use EnnNoStateWithAdditivePrior instead.')
 
 
 @dataclasses.dataclass

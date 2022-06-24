@@ -173,7 +173,7 @@ class MLPEnsembleMatchedPrior(networks_base.EnnArray):
     transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
 
     ensemble = EnsembleWithState(transformed, num_ensemble)
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn=ensemble,
         prior_fn=combine_functions_choice_via_index(mlp_priors),
         prior_scale=prior_scale,

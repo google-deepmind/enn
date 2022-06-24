@@ -87,7 +87,7 @@ class CatMLPEnsembleGpPrior(networks_base.EnnArray):
     """An ensemble of categorical MLP with a real-valued GP prior."""
     gp_priors = ensembles.make_random_gp_ensemble_prior_fns(
         input_dim, 1, num_feat, gamma, num_ensemble, seed)
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
         prior_fn=ensembles.combine_functions_choice_via_index(gp_priors),
         prior_scale=prior_scale,
@@ -108,7 +108,7 @@ class CatMLPEnsembleMlpPrior(networks_base.EnnArray):
     """An ensemble of categorical MLP with real-valued MLP prior."""
     mlp_priors = ensembles.make_mlp_ensemble_prior_fns(
         output_sizes, dummy_input, num_ensemble, seed)
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn=CatMLPEnsemble(output_sizes, atoms, num_ensemble),
         prior_fn=ensembles.combine_functions_choice_via_index(mlp_priors),
         prior_scale=prior_scale,

@@ -240,7 +240,7 @@ class MLPHypermodelWithHypermodelPrior(networks_base.EnnArray):
         scale=scale)
 
     # Defining the ENN with the prior `prior_fn`
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn_wo_prior, prior_fn, prior_scale=prior_scale)
 
     super().__init__(enn.apply, enn.init, enn.indexer)
@@ -420,7 +420,7 @@ class MLPHypermodelPriorIndependentLayers(networks_base.EnnArray):
         scale=scale)
 
     # Defining the ENN with the prior `prior_fn`
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn_wo_prior, prior_fn, prior_scale=prior_scale)
 
     super().__init__(enn.apply, enn.init, enn.indexer)

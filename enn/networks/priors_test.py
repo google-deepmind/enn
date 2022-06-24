@@ -58,7 +58,7 @@ class PriorsTest(parameterized.TestCase):
     prior_params = transformed.init(
         jax.random.PRNGKey(0), test_experiment.dummy_input)
     prior_fn = lambda x, z: transformed.apply(prior_params, x)
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn=train_enn,
         prior_fn=prior_fn,
         prior_scale=1.,
@@ -100,7 +100,7 @@ class PriorsTest(parameterized.TestCase):
         x_sample=dummy_x, z_sample=dummy_z, rng=next(rng_seq),
         prior_output_sizes=output_sizes)
 
-    enn = priors.EnnStateWithAdditivePrior(
+    enn = priors.EnnWithAdditivePrior(
         enn=train_enn,
         prior_fn=prior_fn,
         prior_scale=1.,

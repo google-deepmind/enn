@@ -74,7 +74,7 @@ from enn.networks.mlp import ExposedMLP
 from enn.networks.mlp import ProjectedMLP
 # Priors
 from enn.networks.priors import convert_enn_to_prior_fn
-from enn.networks.priors import EnnStateWithAdditivePrior
+from enn.networks.priors import EnnNoStateWithAdditivePrior
 from enn.networks.priors import EnnWithAdditivePrior
 from enn.networks.priors import get_random_mlp_with_index
 from enn.networks.priors import make_null_prior
