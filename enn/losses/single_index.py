@@ -181,7 +181,6 @@ class VaeLoss(losses_base.SingleLossFnArray):
     return kl_term - log_likelihood, (state, {})
 
 
-# TODO(author3): Remove the modules below and use the above ones.
 ################################################################################
 # The default single loss definitions above assume that the apply fn takes a
 # state. Below we provide a wrapper to convert above single loss definitions to

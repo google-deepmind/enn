@@ -14,11 +14,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""Prior losses are losses that regulate towards the prior.
-
-These might take the form of weight regularization, or sampling "fake data".
-These prior_losses are used in e.g. supervised/prior_experiment.py.
-"""
+"""Prior losses are losses that regulate towards the prior."""
 
 import dataclasses
 
