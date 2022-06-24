@@ -69,6 +69,7 @@ from enn.losses.utils import CombineLossConfigNoState
 from enn.losses.utils import l2_weights_with_predicate
 from enn.losses.utils import PredicateFn
 from enn.losses.utils import wrap_loss_no_state_as_loss
+from enn.losses.utils import wrap_single_loss_no_state_as_single_loss
 
 # VAE losses
 from enn.losses.vae_losses import binary_log_likelihood
