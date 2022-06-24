@@ -27,27 +27,24 @@ from enn.losses.base import SingleLossFnNoState
 
 # Categorical regression
 from enn.losses.categorical_regression import Cat2HotRegression
-from enn.losses.categorical_regression import Cat2HotRegressionWithState
 from enn.losses.categorical_regression import transform_to_2hot
 
 # Prior losses
 from enn.losses.prior_losses import ClassificationPriorLoss
-from enn.losses.prior_losses import ClassificationPriorLossWithState
 from enn.losses.prior_losses import generate_batched_forward_at_data
 from enn.losses.prior_losses import generate_batched_forward_at_data_with_state
 from enn.losses.prior_losses import make_gaussian_dataset
 from enn.losses.prior_losses import MatchingGaussianData
 from enn.losses.prior_losses import RegressionPriorLoss
-from enn.losses.prior_losses import RegressionPriorLossWithState
 
 # Single Index
-from enn.losses.single_index import AccuracyErrorLossWithState
-from enn.losses.single_index import ElboLossWithState
-from enn.losses.single_index import L2LossWithState
-from enn.losses.single_index import VaeLossWithState
+from enn.losses.single_index import AccuracyErrorLoss
+from enn.losses.single_index import ElboLoss
+from enn.losses.single_index import L2Loss
+from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import wrap_single_loss_as_single_loss_no_state
-from enn.losses.single_index import xent_loss_with_state_custom_labels
-from enn.losses.single_index import XentLossWithState
+from enn.losses.single_index import xent_loss_with_custom_labels
+from enn.losses.single_index import XentLoss
 
 # Utils
 from enn.losses.utils import add_data_noise

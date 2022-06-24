@@ -122,7 +122,7 @@ class L2LossTest(absltest.TestCase):
     # y is zero, hence the loss is just the mean square of the output.
     expected_loss = np.mean(np.square(output))
 
-    loss_fn = single_index.L2LossWithState()
+    loss_fn = single_index.L2Loss()
     loss, (unused_new_state, unused_metrics) = loss_fn(
         apply=apply,
         params=self._params,
@@ -149,7 +149,7 @@ class XentLossTest(parameterized.TestCase):
   def test_null_bootstrapping(self, num_classes: int):
     """Test computed loss is correct when there is no bootstrapping."""
 
-    loss_fn = single_index.XentLossWithState(num_classes)
+    loss_fn = single_index.XentLoss(num_classes)
 
     batch_size = 4
     batch = base.Batch(
@@ -196,7 +196,7 @@ class XentLossTest(parameterized.TestCase):
   def test_zero_bootstrapping(self, num_classes: int):
     """Test computed loss is zero when bootstrap weights are zero."""
 
-    loss_fn = single_index.XentLossWithState(num_classes)
+    loss_fn = single_index.XentLoss(num_classes)
     batch_size = 4
     batch = base.Batch(
         x=np.expand_dims(np.arange(batch_size), 1),
@@ -243,7 +243,7 @@ class ElboLossTest(absltest.TestCase):
     log_likelihood_fn = lambda out, batch: out
     model_prior_kl_fn = lambda out, params, index: np.zeros_like(out)
 
-    elbo_loss = single_index.ElboLossWithState(
+    elbo_loss = single_index.ElboLoss(
         log_likelihood_fn=log_likelihood_fn,
         model_prior_kl_fn=model_prior_kl_fn)
 

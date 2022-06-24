@@ -38,10 +38,10 @@ def make_test_experiment(regression: bool) -> TestExperiment:
   optimizer = optax.adam(1e-3)
   if regression:
     num_outputs = 1
-    single_loss = losses.L2LossWithState()
+    single_loss = losses.L2Loss()
   else:
     num_outputs = 2
-    single_loss = losses.XentLossWithState(num_outputs)
+    single_loss = losses.XentLoss(num_outputs)
 
   loss_fn = losses.average_single_index_loss(
       single_loss, num_index_samples=1)

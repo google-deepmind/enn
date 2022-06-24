@@ -36,9 +36,9 @@ class ExperimentTest(parameterized.TestCase):
     # Creat ENN and loss functions
 
     if num_classes == 1:
-      single_loss = losses.L2LossWithState()
+      single_loss = losses.L2Loss()
     else:
-      single_loss = losses.XentLossWithState(num_classes)
+      single_loss = losses.XentLoss(num_classes)
     loss_fn = losses.average_single_index_loss(single_loss, 2)
 
     # Create two different training losses

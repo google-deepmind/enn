@@ -148,37 +148,8 @@ def distill_var_classification(
   return jnp.mean(variance_kl(observed_var, distill_out.extra['log_var']))
 
 
-# TODO(author3): Remove this module. Use RegressionPriorLossWithState.
 @dataclasses.dataclass
-class RegressionPriorLoss(losses_base.LossFnNoState):
-  """Regress fake data back to prior, and distill mean/var to mean_index."""
-  num_index_sample: int
-  input_generator: FakeInputGenerator = MatchingGaussianData()
-  scale: float = 1.
-  distill_index: bool = False
-
-  def __call__(self, enn: networks.EnnNoState, params: hk.Params,
-               batch: base.Batch,
-               key: chex.PRNGKey) -> losses_base.LossOutputNoState:
-    index_key, data_key = jax.random.split(key)
-    fake_x = self.input_generator(batch, data_key)
-    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
-    batched_out = generate_batched_forward_at_data(
-        self.num_index_sample, fake_x, enn, params, index_key)
-
-    # Regularize towards prior output
-    loss = self.scale * l2_training_penalty(batched_out)
-
-    # Distill aggregate stats to the "mean_index"
-    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
-      distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
-      loss += distill_mean_regression(batched_out, distill_out)
-      loss += distill_var_regression(batched_out, distill_out)
-    return loss, {}
-
-
-@dataclasses.dataclass
-class RegressionPriorLossWithState(losses_base.LossFnArray):
+class RegressionPriorLoss(losses_base.LossFnArray):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()
@@ -210,38 +181,8 @@ class RegressionPriorLossWithState(losses_base.LossFnArray):
     return loss, (state, {})
 
 
-# TODO(author3): Remove this module. Use ClassificationPriorLossWithState.
 @dataclasses.dataclass
-class ClassificationPriorLoss(losses_base.LossFnNoState):
-  """Penalize fake data back to prior, and distill mean/var to mean_index."""
-  num_index_sample: int
-  input_generator: FakeInputGenerator = MatchingGaussianData()
-  scale: float = 1.
-  distill_index: bool = False
-
-  def __call__(self, enn: networks.EnnNoState, params: hk.Params,
-               batch: base.Batch,
-               key: chex.PRNGKey) -> losses_base.LossOutputNoState:
-
-    index_key, data_key = jax.random.split(key)
-    fake_x = self.input_generator(batch, data_key)
-    # TODO(author2): Complete prior loss refactor --> MultilossExperiment
-    batched_out = generate_batched_forward_at_data(
-        self.num_index_sample, fake_x, enn, params, index_key)
-
-    # Regularize towards prior output
-    loss = self.scale * l2_training_penalty(batched_out)
-
-    # Distill aggregate stats to the "mean_index"
-    if hasattr(enn.indexer, 'mean_index') and self.distill_index:
-      distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
-      loss += distill_mean_classification(batched_out, distill_out)
-      loss += distill_var_classification(batched_out, distill_out)
-    return loss, {}
-
-
-@dataclasses.dataclass
-class ClassificationPriorLossWithState(losses_base.LossFnArray):
+class ClassificationPriorLoss(losses_base.LossFnArray):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
   input_generator: FakeInputGenerator = MatchingGaussianData()

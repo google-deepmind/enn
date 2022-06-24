@@ -45,39 +45,8 @@ def transform_to_2hot(target: chex.Array,
   return  lower_one_hot + upper_one_hot
 
 
-# TODO(author3): Remove this module. We should use Cat2HotRegressionWithState.
 @dataclasses.dataclass
-class Cat2HotRegression(losses_base.SingleLossFnNoState):
-  """Apply categorical loss to 2-hot regression target."""
-
-  def __call__(self, apply: networks.ApplyNoState, params: hk.Params,
-               batch: base.Batch,
-               index: base.Index) -> losses_base.LossOutputNoState:
-    chex.assert_shape(batch.y, (None, 1))
-    chex.assert_shape(batch.data_index, (None, 1))
-
-    # Forward network and check type
-    net_out = apply(params, batch.x, index)
-    assert isinstance(net_out, networks.CatOutputWithPrior)
-
-    # Form the target values in real space
-    target_val = batch.y - net_out.prior
-
-    # Convert values to 2-hot target probabilities
-    probs = jax.vmap(transform_to_2hot, in_axes=[0, None])(
-        jnp.squeeze(target_val), net_out.extra['atoms'])
-    probs = jnp.expand_dims(probs, 1)
-    xent_loss = -jnp.sum(probs * jax.nn.log_softmax(net_out.train), axis=-1)
-    if batch.weights is None:
-      batch_weights = jnp.ones_like(batch.data_index)
-    else:
-      batch_weights = batch.weights
-    chex.assert_equal_shape([batch_weights, xent_loss])
-    return jnp.mean(batch_weights * xent_loss), {}
-
-
-@dataclasses.dataclass
-class Cat2HotRegressionWithState(losses_base.SingleLossFnArray):
+class Cat2HotRegression(losses_base.SingleLossFnArray):
   """Apply categorical loss to 2-hot regression target."""
 
   def __call__(self, apply: networks.ApplyArray,

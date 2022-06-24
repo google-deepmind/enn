@@ -46,9 +46,9 @@ class ExperimentTest(parameterized.TestCase):
 
     optimizer = optax.adam(1e-3)
     if num_outputs == 1:
-      single_loss = losses.L2LossWithState()
+      single_loss = losses.L2Loss()
     elif num_outputs > 1:
-      single_loss = losses.XentLossWithState(num_outputs)
+      single_loss = losses.XentLoss(num_outputs)
     else:
       raise ValueError(f'num_outputs should be >= 1. It is {num_outputs}.')
     loss_fn = losses.average_single_index_loss(

@@ -137,7 +137,7 @@ def train_vae(encoder: PreTransformFn,
   dataset = utils.make_batch_iterator(base.Batch(data_x, dummy_y), batch_size)
 
   # Create loss function
-  single_loss = losses.VaeLossWithState(log_likelihood_fn, losses.latent_kl_fn)
+  single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)
   loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
 
   # Train VAE by gradient descent for num_batches and extract parameters.

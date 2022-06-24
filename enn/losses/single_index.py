@@ -28,7 +28,7 @@ import jax.numpy as jnp
 
 
 @dataclasses.dataclass
-class L2LossWithState(losses_base.SingleLossFnArray):
+class L2Loss(losses_base.SingleLossFnArray):
   """L2 regression applied to a single epistemic index."""
 
   def __call__(self,
@@ -52,7 +52,7 @@ class L2LossWithState(losses_base.SingleLossFnArray):
     return jnp.mean(batch_weights * sq_loss), (state, {})
 
 
-class XentLossWithState(losses_base.SingleLossFnArray):
+class XentLoss(losses_base.SingleLossFnArray):
   """Cross-entropy single index loss with network state as auxiliary."""
 
   def __init__(self, num_classes: int):
@@ -60,7 +60,7 @@ class XentLossWithState(losses_base.SingleLossFnArray):
     super().__init__()
     self.num_classes = num_classes
     labeller = lambda x: jax.nn.one_hot(x, self.num_classes)
-    self._loss = xent_loss_with_state_custom_labels(labeller)
+    self._loss = xent_loss_with_custom_labels(labeller)
 
   def __call__(
       self,
@@ -73,7 +73,7 @@ class XentLossWithState(losses_base.SingleLossFnArray):
     return self._loss(apply, params, state, batch, index)
 
 
-def xent_loss_with_state_custom_labels(
+def xent_loss_with_custom_labels(
     labeller: Callable[[chex.Array], chex.Array]
 ) -> losses_base.SingleLossFnArray:
   """Factory method to create a loss function with custom labelling."""
@@ -106,7 +106,7 @@ def xent_loss_with_state_custom_labels(
 
 
 @dataclasses.dataclass
-class AccuracyErrorLossWithState(losses_base.SingleLossFnArray):
+class AccuracyErrorLoss(losses_base.SingleLossFnArray):
   """Evaluates the accuracy error of a greedy logit predictor."""
   num_classes: int
 
@@ -125,7 +125,7 @@ class AccuracyErrorLossWithState(losses_base.SingleLossFnArray):
 
 
 @dataclasses.dataclass
-class ElboLossWithState(losses_base.SingleLossFnArray):
+class ElboLoss(losses_base.SingleLossFnArray):
   """Standard VI loss (negative of evidence lower bound).
 
   Given latent variable u with model density q(u), prior density p_0(u)
@@ -161,7 +161,7 @@ class ElboLossWithState(losses_base.SingleLossFnArray):
 
 
 @dataclasses.dataclass
-class VaeLossWithState(losses_base.SingleLossFnArray):
+class VaeLoss(losses_base.SingleLossFnArray):
   """VAE loss."""
   log_likelihood_fn: Callable[[networks.OutputWithPrior, base.Batch],
                               float]
