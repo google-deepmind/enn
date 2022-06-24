@@ -46,14 +46,14 @@ class ExperimentTest(parameterized.TestCase):
 
     optimizer = optax.adam(1e-3)
     if num_outputs == 1:
-      single_loss = losses.L2Loss()
+      single_loss = losses.L2LossWithState()
     elif num_outputs > 1:
-      single_loss = losses.XentLoss(num_outputs)
+      single_loss = losses.XentLossWithState(num_outputs)
     else:
       raise ValueError(f'num_outputs should be >= 1. It is {num_outputs}.')
-    loss_fn = losses.average_single_index_loss_no_state(
+    loss_fn = losses.average_single_index_loss(
         single_loss, num_index_samples=10)
-    loss_fn = losses.wrap_loss_no_state_as_loss(loss_fn)
+
     experiment = Experiment(enn, loss_fn, optimizer, dataset, seed)
     init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
     initial_loss = experiment.loss(next(dataset), init_key)

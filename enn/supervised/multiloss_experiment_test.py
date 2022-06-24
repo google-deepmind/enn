@@ -36,11 +36,11 @@ class ExperimentTest(parameterized.TestCase):
     # Creat ENN and loss functions
 
     if num_classes == 1:
-      single_loss = losses.L2Loss()
+      single_loss = losses.L2LossWithState()
     else:
-      single_loss = losses.XentLoss(num_classes)
-    loss_fn = losses.average_single_index_loss_no_state(single_loss, 2)
-    loss_fn = losses.wrap_loss_no_state_as_loss(loss_fn)
+      single_loss = losses.XentLossWithState(num_classes)
+    loss_fn = losses.average_single_index_loss(single_loss, 2)
+
     # Create two different training losses
     train_dataset = utils.make_test_data(30)
     base_trainer = multiloss_experiment.MultilossTrainer(
