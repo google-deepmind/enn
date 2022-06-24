@@ -41,17 +41,12 @@ from enn.losses.prior_losses import RegressionPriorLoss
 from enn.losses.prior_losses import RegressionPriorLossWithState
 
 # Single Index
-from enn.losses.single_index import AccuracyErrorLoss
 from enn.losses.single_index import AccuracyErrorLossWithState
-from enn.losses.single_index import ElboLoss
 from enn.losses.single_index import ElboLossWithState
-from enn.losses.single_index import L2Loss
 from enn.losses.single_index import L2LossWithState
-from enn.losses.single_index import VaeLoss
 from enn.losses.single_index import VaeLossWithState
 from enn.losses.single_index import wrap_single_loss_as_single_loss_no_state
 from enn.losses.single_index import xent_loss_with_state_custom_labels
-from enn.losses.single_index import XentLoss
 from enn.losses.single_index import XentLossWithState
 
 # Utils
