@@ -24,16 +24,8 @@ from enn.supervised.multiloss_experiment import MultilossExperiment
 from enn.supervised.multiloss_experiment import MultilossTrainer
 from enn.supervised.multiloss_experiment import TrainingState
 
-# Multiloss legacy
-from enn.supervised.multiloss_experiment_legacy import MultilossExperiment as MultilossExperimentLegacy
-from enn.supervised.multiloss_experiment_legacy import MultilossTrainer as MultilossTrainerLegacy
-from enn.supervised.multiloss_experiment_legacy import TrainingState as TrainingStateLegacy
-
 # Experiments
 from enn.supervised.sgd_experiment import Experiment
-
-# Experiments
-from enn.supervised.sgd_experiment_legacy import Experiment as ExperimentLegacy
 
 # Testing
 from enn.supervised.testing import make_test_experiment

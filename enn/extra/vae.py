@@ -100,7 +100,7 @@ def get_mlp_vae_encoder_decoder(
 
 
 def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
-                 latent_dim: int) -> networks.EnnNoState:
+                 latent_dim: int) -> networks.EnnArray:
   """Factory method to create and transform ENN from encoder/decoder."""
 
   def net_fn(x: chex.Array, z: base.Index) -> networks.OutputWithPrior:
@@ -118,9 +118,9 @@ def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
                    'out_mean': out_mean, 'out_log_var': out_log_var}
     return networks.OutputWithPrior(train=out_mean, extra=vae_outputs)
 
-  transformed = hk.without_apply_rng(hk.transform(net_fn))
+  transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
   indexer = networks.GaussianIndexer(latent_dim)
-  return networks.EnnNoState(transformed.apply, transformed.init, indexer)
+  return networks.EnnArray(transformed.apply, transformed.init, indexer)
 
 
 def train_vae(encoder: PreTransformFn,
@@ -137,12 +137,11 @@ def train_vae(encoder: PreTransformFn,
   dataset = utils.make_batch_iterator(base.Batch(data_x, dummy_y), batch_size)
 
   # Create loss function
-  single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)
-  loss_fn = losses.average_single_index_loss_no_state(
-      single_loss, num_index_samples=1)
+  single_loss = losses.VaeLossWithState(log_likelihood_fn, losses.latent_kl_fn)
+  loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
 
   # Train VAE by gradient descent for num_batches and extract parameters.
-  experiment = supervised.ExperimentLegacy(
+  experiment = supervised.Experiment(
       enn=make_vae_enn(encoder, decoder, latent_dim),
       loss_fn=loss_fn,
       optimizer=optimizer,
