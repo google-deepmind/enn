@@ -33,16 +33,23 @@ def make_mlp_epinet(
     epinet_hiddens: Sequence[int],
     index_dim: int,
     expose_layers: Optional[Sequence[bool]] = None,
-    prior_scale: float = 1.) -> networks_base.EnnArray:
+    prior_scale: float = 1.,
+    name: Optional[str] = None,
+) -> networks_base.EnnArray:
   """Factory method to create a standard MLP epinet."""
+  if name is None:
+    prefix = ''
+  else:
+    prefix = name + '_'
 
   def net_fn(x: chex.Array, z: base.Index) -> networks_base.OutputWithPrior:
-    base_mlp = mlp.ExposedMLP(output_sizes, expose_layers, name='base_mlp')
+    base_mlp = mlp.ExposedMLP(
+        output_sizes, expose_layers, name=prefix+'base_mlp')
     num_classes = output_sizes[-1]
     train_epinet = mlp.ProjectedMLP(
-        epinet_hiddens, num_classes, index_dim, name='train_epinet')
+        epinet_hiddens, num_classes, index_dim, name=prefix+'train_epinet')
     prior_epinet = mlp.ProjectedMLP(
-        epinet_hiddens, num_classes, index_dim, name='prior_epinet')
+        epinet_hiddens, num_classes, index_dim, name=prefix+'prior_epinet')
 
     base_out = base_mlp(x)
     features = base_out.extra['exposed_features']
