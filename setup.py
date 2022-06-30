@@ -42,7 +42,7 @@ setuptools.setup(
     install_requires=[
         'absl-py',
         'chex',
-        'dm-acme @ git+https://git@github.com/deepmind/acme',
+        'dm-acme==0.4.0',
         'dm-haiku',
         'dataclasses',  # Back-port for Python 3.6.
         'jax',
