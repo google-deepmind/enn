@@ -77,8 +77,7 @@ class EnsembleWithState(networks_base.EnnArray):
 
     def apply(params: hk.Params, states: hk.State, inputs: chex.Array,
               index: int) -> Tuple[networks_base.Output, hk.State]:
-      one_hot_index = jax.nn.one_hot(index, num_ensemble)
-      particle_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
+      particle_selector = lambda x: jnp.take(x, index, axis=0)
       sub_params = jax.tree_map(particle_selector, params)
       sub_states = jax.tree_map(particle_selector, states)
       out, new_sub_states = model.apply(sub_params, sub_states, inputs)
