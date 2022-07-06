@@ -59,7 +59,7 @@ setuptools.setup(
         'scikit-image',
         'scikit-learn',
         'six',
-        'tensorflow==2.8.0',
+        'tensorflow>=2.9',
         'tensorflow-datasets==4.5.2',
         'termcolor',
         'typing-extensions',
