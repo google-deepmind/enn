@@ -52,7 +52,8 @@ class Experiment(supervised_base.BaseExperiment):
                logger: Optional[loggers.Logger] = None,
                train_log_freq: int = 1,
                eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
-               eval_log_freq: int = 1):
+               eval_log_freq: int = 1,
+               init_x: Optional[chex.Array] = None):
     self.enn = enn
     self.dataset = dataset
     self.rng = hk.PRNGSequence(seed)
@@ -74,17 +75,17 @@ class Experiment(supervised_base.BaseExperiment):
 
     # Define the SGD step on the loss
     def sgd_step(
-        state: TrainingState,
+        training_state: TrainingState,
         batch: base.Batch,
         key: chex.PRNGKey,
     ) -> Tuple[TrainingState, base.LossMetrics]:
       # Calculate the loss, metrics and gradients
       loss_output, grads = jax.value_and_grad(self._loss, has_aux=True)(
-          state.params, state.network_state, batch, key)
+          training_state.params, training_state.network_state, batch, key)
       loss, (network_state, metrics) = loss_output
       metrics.update({'loss': loss})
-      updates, new_opt_state = optimizer.update(grads, state.opt_state)
-      new_params = optax.apply_updates(state.params, updates)
+      updates, new_opt_state = optimizer.update(grads, training_state.opt_state)
+      new_params = optax.apply_updates(training_state.params, updates)
       new_state = TrainingState(
           params=new_params,
           network_state=network_state,
@@ -94,9 +95,11 @@ class Experiment(supervised_base.BaseExperiment):
     self._sgd_step = jax.jit(sgd_step)
 
     # Initialize networks
-    batch = next(self.dataset)
+    if init_x is None:
+      batch = next(self.dataset)
+      init_x = batch.x
     index = self.enn.indexer(next(self.rng))
-    params, network_state = self.enn.init(next(self.rng), batch.x, index)
+    params, network_state = self.enn.init(next(self.rng), init_x, index)
     opt_state = optimizer.init(params)
     self.state = TrainingState(params, network_state, opt_state)
     self.step = 0
@@ -121,7 +124,11 @@ class Experiment(supervised_base.BaseExperiment):
       if self._eval_datasets and self.step % self._eval_log_freq == 0:
         for name, dataset in self._eval_datasets.items():
           loss, (unused_network_state, metrics) = self._loss(
-              self.state.params, next(dataset), next(self.rng))
+              self.state.params,
+              self.state.network_state,
+              next(dataset),
+              next(self.rng),
+          )
           metrics.update({
               'dataset': name,
               'step': self.step,
@@ -130,8 +137,7 @@ class Experiment(supervised_base.BaseExperiment):
           })
           self.logger.write(metrics)
 
-  def predict(self, inputs: chex.Array,
-              key: chex.PRNGKey) -> chex.Array:
+  def predict(self, inputs: chex.Array, key: chex.PRNGKey) -> chex.Array:
     """Evaluate the trained model at given inputs."""
     return self._forward(
         self.state.params,
