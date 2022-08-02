@@ -78,10 +78,9 @@ def convert_enn_to_prior_fn(enn: networks_base.EnnArray,
   index = enn.indexer(index_key)
   prior_params, prior_state = enn.init(init_key, dummy_input, index)
 
-  def prior_fn(x: chex.Array,
-               z: base.Index) -> networks_base.Output:
+  def prior_fn(x: chex.Array, z: base.Index) -> chex.Array:
     output, unused_state = enn.apply(prior_params, prior_state, x, z)
-    return output
+    return network_utils.parse_net_output(output)
   return prior_fn
 
 
