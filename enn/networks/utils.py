@@ -55,6 +55,35 @@ def epistemic_network_from_module(
   return networks_base.EnnArray(transformed.apply, transformed.init, indexer)
 
 
+def wrap_net_fn_as_enn(
+    net_fn: Callable[[base.Input], base.Output],  # pre-transformed
+) -> base.EpistemicNetwork[base.Input, base.Output]:
+  """Wrap a pre-transformed function as an ENN with dummy index.
+
+  Args:
+    net_fn: A pre-transformed net function y = f(x). We assume that the network
+      doesn't use rng during apply internally.
+  Returns:
+    An ENN that wraps around f(x) with a dummy indexer.
+  """
+  transformed = hk.without_apply_rng(hk.transform_with_state(net_fn))
+
+  def apply(
+      params: hk.Params,
+      state: hk.State,
+      inputs: base.Input,
+      index: base.Index,
+  ) -> Tuple[base.Output, hk.State]:
+    del index
+    return transformed.apply(params, state, inputs)
+
+  return base.EpistemicNetwork[base.Input, base.Output](
+      apply=apply,
+      init=lambda k, x, z: transformed.init(k, x),
+      indexer=lambda k: k,
+  )
+
+
 def wrap_transformed_as_enn_no_state(
     transformed: hk.Transformed) -> networks_base.EnnNoState:
   """Wraps a simple transformed function y = f(x) as an ENN."""
