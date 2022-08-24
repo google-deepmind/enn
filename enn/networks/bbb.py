@@ -52,7 +52,8 @@ def make_bbb_enn(
   transformed_base = make_transformed_base(base_output_sizes)
 
   base_params = transformed_base.init(jax.random.PRNGKey(0), dummy_input)
-  num_base_params = sum(jax.tree_leaves(jax.tree_map(jnp.size, base_params)))
+  num_base_params = sum(
+      jax.tree_leaves(jax.tree_util.tree_map(jnp.size, base_params)))
 
   # VI loss computed by vi_losses.get_linear_hypermodel_elbo_fn assumes the
   # index to be Gaussian with the same variance as the latent prior variance.

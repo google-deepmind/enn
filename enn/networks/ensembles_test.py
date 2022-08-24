@@ -54,7 +54,7 @@ class EnsemblesENNTest(parameterized.TestCase):
                      (num_ensemble, input_dim, output_dim))
 
     # overwrite random params
-    params = jax.tree_map(lambda p: np.ones_like(p), params)  # pylint: disable=[unnecessary-lambda]
+    params = jax.tree_util.tree_map(lambda p: np.ones_like(p), params)  # pylint: disable=[unnecessary-lambda]
     dummy_inputs = np.ones(shape=(1, input_dim), dtype=np.float32)
     expected_output = (1 + input_dim) * np.ones(shape=(1, output_dim),
                                                 dtype=np.float32)
@@ -105,7 +105,7 @@ class EnsemblesWithStateENNTest(parameterized.TestCase):
     self.assertEqual(state['~']['counter'].shape, (num_ensemble,) + state_shape)
 
     # overwrite random params
-    params = jax.tree_map(lambda p: np.ones_like(p), params)  # pylint: disable=[unnecessary-lambda]
+    params = jax.tree_util.tree_map(lambda p: np.ones_like(p), params)  # pylint: disable=[unnecessary-lambda]
     dummy_inputs = np.ones(shape=(1, input_dim), dtype=np.float32)
     expected_output = (1 + input_dim) * np.ones(shape=(1, output_dim),
                                                 dtype=np.float32)

@@ -103,7 +103,7 @@ class ExpectedCalibrationError(metrics_base.AggregateMetricCalculator):
       state = self._get_init_stats()
 
     # Update state
-    new_stats = jax.tree_map(jnp.add, state.extra, batch_stats)
+    new_stats = jax.tree_util.tree_map(jnp.add, state.extra, batch_stats)
     new_count = state.count + 1
     new_value = _map_stats_to_ece(new_stats)
     return metrics_base.MetricsState(

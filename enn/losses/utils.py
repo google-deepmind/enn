@@ -71,7 +71,7 @@ def add_l2_weight_decay(
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
     scale = jnp.sqrt(scale)
-    scale_fn = lambda ps: jax.tree_map(lambda p: scale * p, ps)
+    scale_fn = lambda ps: jax.tree_util.tree_map(lambda p: scale * p, ps)
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
 
@@ -250,7 +250,7 @@ def add_l2_weight_decay_no_state(
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
     scale = jnp.sqrt(scale)
-    scale_fn = lambda ps: jax.tree_map(lambda p: scale * p, ps)
+    scale_fn = lambda ps: jax.tree_util.tree_map(lambda p: scale * p, ps)
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
 

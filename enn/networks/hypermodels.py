@@ -107,9 +107,10 @@ def hypermodel_module(
     with only *one* epistemic index at a time (can vmap for batch).
   """
   base_params = transformed_base.init(jax.random.PRNGKey(0), dummy_input)
-  base_params_flat = jax.tree_map(jnp.ravel, base_params)
-  base_shapes = jax.tree_map(lambda x: np.array(jnp.shape(x)), base_params)
-  base_shapes_flat = jax.tree_map(len, base_params_flat)
+  base_params_flat = jax.tree_util.tree_map(jnp.ravel, base_params)
+  base_shapes = jax.tree_util.tree_map(lambda x: np.array(jnp.shape(x)),
+                                       base_params)
+  base_shapes_flat = jax.tree_util.tree_map(len, base_params_flat)
 
   # base params as 1D array. It can be used to initialize the hyper network
   base_params_array = jnp.concatenate(jax.tree_flatten(base_params_flat)[0])
@@ -148,15 +149,17 @@ def hypermodel_module(
       b_init = w_init = hk.initializers.VarianceScaling(
           mode='fan_avg', distribution='truncated_normal')
       # Generate a linear layer of size "base_shapes_flat"
-      final_layers = jax.tree_map(
+      final_layers = jax.tree_util.tree_map(
           lambda s: hk.Linear(s, w_init=w_init, b_init=b_init),
           base_shapes_flat)
 
       # Apply this linear output to the output of the hyper_torso
-      flat_output = jax.tree_map(lambda layer: layer(hyper_index), final_layers)
+      flat_output = jax.tree_util.tree_map(lambda layer: layer(hyper_index),
+                                           final_layers)
 
     # Reshape this flattened output to the original base shapes (unflatten)
-    generated_params = jax.tree_map(jnp.reshape, flat_output, base_shapes)
+    generated_params = jax.tree_util.tree_map(jnp.reshape, flat_output,
+                                              base_shapes)
 
     if scale:
       # Scale the generated params such that expected variance of the raw

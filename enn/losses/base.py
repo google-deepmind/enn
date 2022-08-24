@@ -82,10 +82,10 @@ def average_single_index_loss(
       # a clear way to deal with network "state" in the presence of epistemic
       # index. We choose to average the state across epistemic indices and
       # then perform basic error checking to make sure the shape is unchanged.
-      new_state = jax.tree_map(batch_mean, new_state)
-      jax.tree_map(
-          lambda x, y: chex.assert_equal_shape([x, y]), new_state, state)
-    mean_metrics = jax.tree_map(batch_mean, metrics)
+      new_state = jax.tree_util.tree_map(batch_mean, new_state)
+      jax.tree_util.tree_map(lambda x, y: chex.assert_equal_shape([x, y]),
+                             new_state, state)
+    mean_metrics = jax.tree_util.tree_map(batch_mean, metrics)
 
     # TODO(author2): Adding a logging method for keeping track of state counter.
     # This piece of code is only used for debugging/metrics.
@@ -157,5 +157,5 @@ def average_single_index_loss_no_state(
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])
     loss, metrics = batched_loss(enn.apply, params, batch, batched_indexer(key))
     batch_mean = lambda x: jnp.mean(x, axis=0)
-    return batch_mean(loss), jax.tree_map(batch_mean, metrics)
+    return batch_mean(loss), jax.tree_util.tree_map(batch_mean, metrics)
   return loss_fn

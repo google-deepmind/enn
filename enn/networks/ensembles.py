@@ -48,7 +48,7 @@ class Ensemble(networks_base.EnnNoState):
               index: int) -> networks_base.Output:
       one_hot_index = jax.nn.one_hot(index, num_ensemble)
       param_selector = lambda p: jnp.einsum('i...,i->...', p, one_hot_index)
-      sub_params = jax.tree_map(param_selector, params)
+      sub_params = jax.tree_util.tree_map(param_selector, params)
       return model.apply(sub_params, inputs)
 
     indexer = indexers.EnsembleIndexer(num_ensemble)
@@ -78,10 +78,10 @@ class EnsembleWithState(networks_base.EnnArray):
     def apply(params: hk.Params, states: hk.State, inputs: chex.Array,
               index: int) -> Tuple[networks_base.Output, hk.State]:
       particle_selector = lambda x: jnp.take(x, index, axis=0)
-      sub_params = jax.tree_map(particle_selector, params)
-      sub_states = jax.tree_map(particle_selector, states)
+      sub_params = jax.tree_util.tree_map(particle_selector, params)
+      sub_states = jax.tree_util.tree_map(particle_selector, states)
       out, new_sub_states = model.apply(sub_params, sub_states, inputs)
-      new_states = jax.tree_map(
+      new_states = jax.tree_util.tree_map(
           lambda s, nss: s.at[index, ...].set(nss), states, new_sub_states)
       return out, new_states
 

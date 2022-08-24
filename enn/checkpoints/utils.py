@@ -77,8 +77,8 @@ def init_from_file(
   params, state = data['params'], data['state']
 
   # Map params and state from np.array to jnp.array
-  state = jax.tree_map(jnp.array, state)
-  params = jax.tree_map(jnp.array, params)
+  state = jax.tree_util.tree_map(jnp.array, state)
+  params = jax.tree_util.tree_map(jnp.array, params)
 
   return params, state
 

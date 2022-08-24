@@ -114,7 +114,7 @@ def sum_log_scale_mixture_normal(
 def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
   """Compute un-normalized log probability of a normal RV."""
   latent, _ = jax.tree_flatten(latent)
-  latent = jax.tree_map(lambda x: x.flatten(), latent)
+  latent = jax.tree_util.tree_map(lambda x: x.flatten(), latent)
   latent = jnp.concatenate(latent)
   latent_dim = len(latent)
   latent_l2_sq = jnp.sum(jnp.square(latent - mu))
