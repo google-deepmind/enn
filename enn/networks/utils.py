@@ -55,6 +55,7 @@ def epistemic_network_from_module(
   return networks_base.EnnArray(transformed.apply, transformed.init, indexer)
 
 
+# TODO(author4): Sort out issues with importing the function in networks/__init__.
 def wrap_net_fn_as_enn(
     net_fn: Callable[[base.Input], base.Output],  # pre-transformed
 ) -> base.EpistemicNetwork[base.Input, base.Output]:
