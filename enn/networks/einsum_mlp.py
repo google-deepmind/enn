@@ -161,7 +161,7 @@ class EnsembleBranch(hk.Module):
         'w', [input_size, self.output_size, self.num_ensemble], init=w_init)
     b = hk.get_parameter(
         'b', [self.output_size, self.num_ensemble], init=b_init)
-    return jnp.einsum('bi,ijk->bjk', inputs, w) + b
+    return jnp.einsum('bi,ijk->bjk', inputs, w) + jnp.expand_dims(b, axis=0)
 
 
 class EnsembleLinear(hk.Module):
@@ -180,7 +180,7 @@ class EnsembleLinear(hk.Module):
         'w', [input_size, self.output_size, self.num_ensemble], init=w_init)
     b = hk.get_parameter(
         'b', [self.output_size, self.num_ensemble], init=jnp.zeros)
-    return jnp.einsum('bik,ijk->bjk', inputs, w) + b
+    return jnp.einsum('bik,ijk->bjk', inputs, w) + jnp.expand_dims(b, axis=0)
 
 
 class EnsembleMLP(hk.Module):
