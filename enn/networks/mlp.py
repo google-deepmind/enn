@@ -32,12 +32,14 @@ class ExposedMLP(hk.Module):
                output_sizes: Sequence[int],
                expose_layers: Optional[Sequence[bool]] = None,
                stop_gradient: bool = True,
+               w_init: Optional[hk.initializers.Initializer] = None,
                name: Optional[str] = None):
     """ReLU MLP that also exposes the internals as output."""
     super().__init__(name=name)
     layers = []
     for index, output_size in enumerate(output_sizes):
-      layers.append(hk.Linear(output_size, name=f'linear_{index}'))
+      linear = hk.Linear(output_size, w_init=w_init, name=f'linear_{index}')
+      layers.append(linear)
     self.layers = tuple(layers)
     self.num_layers = len(self.layers)
     self.output_size = output_sizes[-1]
@@ -79,6 +81,7 @@ class ProjectedMLP(networks_base.EpistemicModule):
                final_out: int,
                index_dim: int,
                concat_index: bool = True,
+               w_init: Optional[hk.initializers.Initializer] = None,
                name: Optional[str] = None):
     super().__init__(name=name)
     self.hidden_sizes = hidden_sizes
@@ -86,7 +89,7 @@ class ProjectedMLP(networks_base.EpistemicModule):
     self.index_dim = index_dim
     self.concat_index = concat_index
     output_sizes = list(self.hidden_sizes) + [self.final_out * index_dim]
-    self.mlp = hk.nets.MLP(output_sizes)
+    self.mlp = hk.nets.MLP(output_sizes, w_init=w_init)
 
   def __call__(self,
                inputs: chex.Array,
