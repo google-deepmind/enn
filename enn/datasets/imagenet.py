@@ -176,6 +176,9 @@ def load(
       split=tfds_split,
       decoders={'image': tfds.decode.SkipDecoding()})
   ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
+  # TODO(author3): Since we have sharding, the data indices for each shard
+  # range from 0 to shard size. This means we have similar data index for
+  # actually different data.
   ds = ds_utils.add_data_index_to_dataset(ds)
 
   options = tf.data.Options()
