@@ -14,7 +14,7 @@
 # limitations under the License.
 # ============================================================================
 """Efficient ensemble implementations for JAX/Haiku via einsum."""
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Optional, Sequence, Tuple
 
 import chex
 from enn import base
@@ -142,40 +142,60 @@ class EnsembleBranch(hk.Module):
                num_ensemble: int,
                output_size: int,
                nonzero_bias: bool,
+               w_init: Optional[hk.initializers.Initializer] = None,
                name: str = 'ensemble_branch'):
     super().__init__(name=name)
     self.num_ensemble = num_ensemble
     self.output_size = output_size
     self.nonzero_bias = nonzero_bias
+    self.w_init = w_init
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:  # [B, H] -> [B, D, K]
     assert inputs.ndim == 2
     unused_batch, input_size = inputs.shape
+
     if self.nonzero_bias:
       b_init = hk.initializers.TruncatedNormal(
           stddev=(1. / jnp.sqrt(input_size)))
     else:
       b_init = jnp.zeros
-    w_init = hk.initializers.TruncatedNormal(stddev=(1. / jnp.sqrt(input_size)))
+
+    if self.w_init is not None:
+      w_init = self.w_init
+    else:
+      w_init = hk.initializers.TruncatedNormal(
+          stddev=(1. / jnp.sqrt(input_size)))
+
     w = hk.get_parameter(
         'w', [input_size, self.output_size, self.num_ensemble], init=w_init)
     b = hk.get_parameter(
         'b', [self.output_size, self.num_ensemble], init=b_init)
+
     return jnp.einsum('bi,ijk->bjk', inputs, w) + jnp.expand_dims(b, axis=0)
 
 
 class EnsembleLinear(hk.Module):
   """Keeps num_ensemble linear layers in parallel without interactions."""
 
-  def __init__(self, output_size: int, name: str = 'linear'):
+  def __init__(self,
+               output_size: int,
+               w_init: Optional[hk.initializers.Initializer] = None,
+               name: str = 'linear'):
     super().__init__(name=name)
     self.output_size = output_size
+    self.w_init = w_init
 
   def __call__(self,
                inputs: jnp.ndarray) -> jnp.ndarray:  # [B, H, K] -> [B. D, K]
     assert inputs.ndim == 3
     unused_batch, input_size, self.num_ensemble = inputs.shape
-    w_init = hk.initializers.TruncatedNormal(stddev=(1. / jnp.sqrt(input_size)))
+
+    if self.w_init is not None:
+      w_init = self.w_init
+    else:
+      w_init = hk.initializers.TruncatedNormal(
+          stddev=(1. / jnp.sqrt(input_size)))
+
     w = hk.get_parameter(
         'w', [input_size, self.output_size, self.num_ensemble], init=w_init)
     b = hk.get_parameter(
@@ -195,16 +215,19 @@ class EnsembleMLP(hk.Module):
                num_ensemble: int,
                nonzero_bias: bool = True,
                activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
+               w_init: Optional[hk.initializers.Initializer] = None,
                name: str = 'ensemble_mlp'):
     super().__init__(name=name)
     self.num_ensemble = num_ensemble
     self.activation = activation
+
     layers = []
     for index, output_size in enumerate(output_sizes):
       if index == 0:
-        layers.append(EnsembleBranch(num_ensemble, output_size, nonzero_bias))
+        layers.append(
+            EnsembleBranch(num_ensemble, output_size, nonzero_bias, w_init))
       else:
-        layers.append(EnsembleLinear(output_size))
+        layers.append(EnsembleLinear(output_size, w_init))
     self.layers = tuple(layers)
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:  # [B, H] -> [B, D, K]
