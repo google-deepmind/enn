@@ -40,7 +40,11 @@ class Experiment(supervised_base.BaseExperiment):
   """Class to handle supervised training.
 
   Optional eval_datasets which is a collection of datasets to *evaluate*
-  the loss on every eval_log_freq steps.
+  the loss on every eval_log_freq steps. Note that this evaluation assumes
+  that the dataset will only be for *one* batch. This means that, if you want
+  to evaluate on the whole test set, you should make that batch size the size
+  of the entire test set, and that it is *repeated* iterator, so you can sample
+  from it multiple times without reaching end of iterator.
   """
 
   def __init__(self,
@@ -54,6 +58,23 @@ class Experiment(supervised_base.BaseExperiment):
                eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
                eval_log_freq: int = 1,
                init_x: Optional[chex.Array] = None):
+    """Initializes an SGD experiment.
+
+    Args:
+      enn: ENN mapping arrays to any output.
+      loss_fn: Loss function that acts on an EnnArray. Note that if you want to
+        log extra metrics you should include this in the loss_metrics.
+      optimizer: optax optimizer.
+      dataset: iterator that produces a training batch.
+      seed: initializes random seed from jax.
+      logger: optional logger, defaults to acme logger.
+      train_log_freq: train logging frequency.
+      eval_datasets: Optional dict of extra datasets to evaluate on. Note that
+        these evaluate on *one* batch, so should be of appropriate batch size.
+      eval_log_freq: evaluation log frequency.
+      init_x: optional input array used to initialize networks. Default none
+        works by taking from the training dataset.
+    """
     self.enn = enn
     self.dataset = dataset
     self.rng = hk.PRNGSequence(seed)
@@ -69,7 +90,7 @@ class Experiment(supervised_base.BaseExperiment):
     def forward(params: hk.Params, state: hk.State, inputs: chex.Array,
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
-      out, state = self.enn.apply(params, state, inputs, index)
+      out, unused_state = self.enn.apply(params, state, inputs, index)
       return out
     self._forward = jax.jit(forward)
 
