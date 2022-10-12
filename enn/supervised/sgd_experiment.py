@@ -23,6 +23,7 @@ from acme.utils import loggers
 import chex
 from enn import base
 from enn import losses
+from enn import metrics
 from enn import networks
 from enn.supervised import base as supervised_base
 import haiku as hk
@@ -56,14 +57,15 @@ class Experiment(supervised_base.BaseExperiment):
                logger: Optional[loggers.Logger] = None,
                train_log_freq: int = 1,
                eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
+               eval_metrics: Optional[Dict[str, metrics.MetricCalculator]] = None,  # pylint:disable=line-too-long
+               eval_enn_samples: int = 100,
                eval_log_freq: int = 1,
                init_x: Optional[chex.Array] = None):
     """Initializes an SGD experiment.
 
     Args:
       enn: ENN mapping arrays to any output.
-      loss_fn: Loss function that acts on an EnnArray. Note that if you want to
-        log extra metrics you should include this in the loss_metrics.
+      loss_fn: Defines the loss for the ENN on a batch of data.
       optimizer: optax optimizer.
       dataset: iterator that produces a training batch.
       seed: initializes random seed from jax.
@@ -71,6 +73,9 @@ class Experiment(supervised_base.BaseExperiment):
       train_log_freq: train logging frequency.
       eval_datasets: Optional dict of extra datasets to evaluate on. Note that
         these evaluate on *one* batch, so should be of appropriate batch size.
+      eval_metrics: Optional dict of extra metrics that should be evaluated on
+        the eval_datasets.
+      eval_enn_samples: number of ENN samples to use in eval_metrics evaluation.
       eval_log_freq: evaluation log frequency.
       init_x: optional input array used to initialize networks. Default none
         works by taking from the training dataset.
@@ -82,17 +87,25 @@ class Experiment(supervised_base.BaseExperiment):
     # Internalize the loss_fn
     self._loss = jax.jit(functools.partial(loss_fn, self.enn))
 
-    # Internalize the eval datasets
+    # Internalize the eval datasets and metrics
     self._eval_datasets = eval_datasets
+    self._eval_metrics = eval_metrics
     self._eval_log_freq = eval_log_freq
+    self._eval_enn_samples = eval_enn_samples
+    self._should_eval = True if eval_metrics and eval_datasets else False
 
     # Forward network at random index
-    def forward(params: hk.Params, state: hk.State, inputs: chex.Array,
+    def forward(params: hk.Params,
+                state: hk.State,
+                inputs: chex.Array,
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
       out, unused_state = self.enn.apply(params, state, inputs, index)
       return out
     self._forward = jax.jit(forward)
+
+    # Batched forward at multiple random indices
+    self._batch_fwd = jax.vmap(forward, in_axes=[None, None, None, 0])
 
     # Define the SGD step on the loss
     def sgd_step(
@@ -103,8 +116,8 @@ class Experiment(supervised_base.BaseExperiment):
       # Calculate the loss, metrics and gradients
       loss_output, grads = jax.value_and_grad(self._loss, has_aux=True)(
           training_state.params, training_state.network_state, batch, key)
-      loss, (network_state, metrics) = loss_output
-      metrics.update({'loss': loss})
+      loss, (network_state, loss_metrics) = loss_output
+      loss_metrics.update({'loss': loss})
       updates, new_opt_state = optimizer.update(grads, training_state.opt_state)
       new_params = optax.apply_updates(training_state.params, updates)
       new_state = TrainingState(
@@ -112,7 +125,7 @@ class Experiment(supervised_base.BaseExperiment):
           network_state=network_state,
           opt_state=new_opt_state,
       )
-      return new_state, metrics
+      return new_state, loss_metrics
     self._sgd_step = jax.jit(sgd_step)
 
     # Initialize networks
@@ -129,7 +142,15 @@ class Experiment(supervised_base.BaseExperiment):
     self._train_log_freq = train_log_freq
 
   def train(self, num_batches: int):
-    """Train the ENN for num_batches."""
+    """Trains the experiment for specified number of batches.
+
+    Note that this training is *stateful*, the experiment keeps track of the
+    total number of training steps that have occured. This method *also* logs
+    the training and evaluation metrics periodically.
+
+    Args:
+      num_batches: the number of training batches, and SGD steps, to perform.
+    """
     for _ in range(num_batches):
       self.step += 1
       self.state, loss_metrics = self._sgd_step(
@@ -142,21 +163,25 @@ class Experiment(supervised_base.BaseExperiment):
         self.logger.write(loss_metrics)
 
       # Periodically evaluate the other datasets.
-      if self._eval_datasets and self.step % self._eval_log_freq == 0:
+      if self._should_eval and self.step % self._eval_log_freq == 0:
         for name, dataset in self._eval_datasets.items():
-          loss, (unused_network_state, metrics) = self._loss(
+          # Evaluation happens on a single batch
+          eval_batch = next(dataset)
+          eval_metrics = {'dataset': name, 'step': self.step, 'sgd': False}
+          # Forward the network once, then evaluate all the metrics
+          logits = self._batch_fwd(
               self.state.params,
               self.state.network_state,
-              next(dataset),
-              next(self.rng),
+              eval_batch.x,
+              jax.random.split(next(self.rng), self._eval_enn_samples),
           )
-          metrics.update({
-              'dataset': name,
-              'step': self.step,
-              'sgd': False,
-              'loss': loss,
-          })
-          self.logger.write(metrics)
+          for metric_name, metric_calc in self._eval_metrics.items():
+            loss_metrics.update({
+                metric_name: metric_calc(logits, eval_batch.y),
+            })
+
+          # Write all the metrics to the logger
+          self.logger.write(eval_metrics)
 
   def predict(self, inputs: chex.Array, key: chex.PRNGKey) -> chex.Array:
     """Evaluate the trained model at given inputs."""
@@ -167,8 +192,7 @@ class Experiment(supervised_base.BaseExperiment):
         key,
     )
 
-  def loss(self, batch: base.Batch,
-           key: chex.PRNGKey) -> chex.Array:
+  def loss(self, batch: base.Batch, key: chex.PRNGKey) -> chex.Array:
     """Evaluate the loss for one batch of data."""
     loss, (unused_network_state, unused_metrics) = self._loss(
         self.state.params,
