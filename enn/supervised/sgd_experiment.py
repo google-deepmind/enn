@@ -169,14 +169,15 @@ class Experiment(supervised_base.BaseExperiment):
           eval_batch = next(dataset)
           eval_metrics = {'dataset': name, 'step': self.step, 'sgd': False}
           # Forward the network once, then evaluate all the metrics
-          logits = self._batch_fwd(
+          net_out = self._batch_fwd(
               self.state.params,
               self.state.network_state,
               eval_batch.x,
               jax.random.split(next(self.rng), self._eval_enn_samples),
           )
+          logits = networks.parse_net_output(net_out)
           for metric_name, metric_calc in self._eval_metrics.items():
-            loss_metrics.update({
+            eval_metrics.update({
                 metric_name: metric_calc(logits, eval_batch.y),
             })
 
