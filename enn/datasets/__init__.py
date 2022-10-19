@@ -53,5 +53,6 @@ from enn.datasets.transforms.ood import sample_classes
 
 # Utils
 from enn.datasets.utils import add_data_index_to_dataset
+from enn.datasets.utils import change_ds_dict_to_enn_batch
 from enn.datasets.utils import OverrideTrainDataset
 
