@@ -21,6 +21,7 @@ from enn.datasets.base import Dataset
 from enn.datasets.base import DatasetGenerator
 from enn.datasets.base import DatasetTransformer
 from enn.datasets.base import DatasetWithTransform
+from enn.datasets.base import EVAL_TRANSFORMERS_DEFAULT
 from enn.datasets.base import OodVariant
 
 # CIFAR10
@@ -54,5 +55,6 @@ from enn.datasets.transforms.ood import sample_classes
 # Utils
 from enn.datasets.utils import add_data_index_to_dataset
 from enn.datasets.utils import change_ds_dict_to_enn_batch
+from enn.datasets.utils import get_per_device_batch_size
 from enn.datasets.utils import OverrideTrainDataset
-
+from enn.datasets.utils import slice_dataset_to_batches

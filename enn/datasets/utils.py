@@ -21,6 +21,7 @@ from typing import Dict, Sequence
 import chex
 from enn import base
 from enn.datasets import base as ds_base
+import jax
 import tensorflow.compat.v2 as tf
 
 
@@ -36,6 +37,45 @@ def add_data_index_to_dataset(ds: tf.data.Dataset) -> tf.data.Dataset:
   """Adds integer data_index into the batch dictionary."""
   ds = ds.enumerate()
   return ds.map(_add_data_index)
+
+
+def slice_dataset_to_batches(
+    dataset: tf.data.Dataset,
+    total_batch_size: int,
+    data_parallelism: bool,
+) -> tf.data.Dataset:
+  """Slices the data of a dataset into batches.
+
+  Args:
+    dataset: a tf.data dataset.
+    total_batch_size: the total batch size over all devices.
+    data_parallelism: a boolean specifying whether to add a leading axis for the
+      number of devices. If true, data batches have shape
+      (number_devices, total_batch_size / number_devices, ...); otherwise, the
+      have shape of (total_batch_size, ...).
+
+  Returns:
+    a tf.data dataset sliced into batches.
+  """
+  if data_parallelism:
+    per_device_batch_size = get_per_device_batch_size(total_batch_size)
+    dataset = dataset.batch(per_device_batch_size, drop_remainder=True)
+    dataset = dataset.batch(jax.local_device_count(), drop_remainder=True)
+  else:
+    dataset = dataset.batch(total_batch_size, drop_remainder=True)
+  return dataset
+
+
+def get_per_device_batch_size(total_batch_size: int) -> int:
+  """Calculates the batch size per device based on total batch size."""
+  num_devices = jax.device_count()
+  per_device_batch_size, ragged = divmod(total_batch_size, num_devices)
+
+  if ragged:
+    raise ValueError(
+        f'Global batch size {total_batch_size} must be divisible by the '
+        f'total number of devices {num_devices}')
+  return per_device_batch_size
 
 
 def _add_data_index(data_index: int, batch: base.Batch) -> base.Batch:

@@ -61,6 +61,11 @@ class Imagenet(ds_base.DatasetWithTransform):
   train_ds_transformer: ds_base.DatasetTransformer = lambda x: x
   eval_ds_transformers: Dict[
       str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT
+  # Whether to add a leading axis of number of devices to the batches. If true,
+  # data batches have shape (number_devices, batch_size / number_devices, ...);
+  # otherwise, they have shape of (batch_size, ...).
+  train_data_parallelism: bool = True  # Slices the train data into devices.
+  eval_data_parallelism: bool = False
 
   @property
   def num_classes(self) -> int:
@@ -74,14 +79,6 @@ class Imagenet(ds_base.DatasetWithTransform):
     """Returns the train dataset."""
     def build_train_input() -> ds_base.DatasetGenerator:
       """See base class."""
-      num_devices = jax.device_count()
-      global_batch_size = self.train_batch
-      per_device_batch_size, ragged = divmod(global_batch_size, num_devices)
-
-      if ragged:
-        raise ValueError(
-            f'Global batch size {global_batch_size} must be divisible by '
-            f'num devices {num_devices}')
       # double-transpose-trick is only needed on TPU.
       should_transpose_images = (
           self.enable_double_transpose and
@@ -91,7 +88,8 @@ class Imagenet(ds_base.DatasetWithTransform):
           Split.TRAIN_AND_VALID,
           is_training=True,
           transpose=should_transpose_images,
-          batch_dims=[jax.local_device_count(), per_device_batch_size],
+          total_batch_size=self.train_batch,
+          data_parallelism=self.train_data_parallelism,
           fake_data=self.fake_data,
           seed=self.dataset_seed,
           ds_transform=self.train_ds_transformer,
@@ -115,7 +113,8 @@ class Imagenet(ds_base.DatasetWithTransform):
           Split.TEST,
           is_training=False,
           transpose=should_transpose_images,
-          batch_dims=[self.eval_batch],
+          total_batch_size=self.eval_batch,
+          data_parallelism=self.eval_data_parallelism,
           fake_data=self.fake_data,
           seed=self.dataset_seed,
           ds_transform=eval_ds_transformer,)
@@ -130,7 +129,8 @@ def load(
     split: Split,
     *,
     is_training: bool,
-    batch_dims: Sequence[int],
+    total_batch_size: int,
+    data_parallelism: bool,
     dtype: jnp.dtype = jnp.float32,
     transpose: bool = False,
     fake_data: bool = False,
@@ -154,6 +154,12 @@ def load(
     # Splitting the rng - one is used as seed for shuffling, the other is
     # used as seed for random crop
     rngs = tf.random.experimental.stateless_split(rng, 2)
+
+  if data_parallelism:
+    per_device_batch_size = ds_utils.get_per_device_batch_size(total_batch_size)
+    batch_dims = [jax.local_device_count(), per_device_batch_size]
+  else:
+    batch_dims = [total_batch_size]
 
   if fake_data:
     images = np.zeros(tuple(batch_dims) + image_size + (3,), dtype=dtype)

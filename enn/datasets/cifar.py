@@ -71,6 +71,11 @@ class Cifar(ds_base.DatasetWithTransform):
   train_ds_transformer: ds_base.DatasetTransformer = lambda x: x
   eval_ds_transformers: Dict[
       str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT
+  # Whether to add a leading axis of number of devices to the batches. If true,
+  # data batches have shape (number_devices, batch_size / number_devices, ...);
+  # otherwise, they have shape of (batch_size, ...).
+  train_data_parallelism: bool = True  # Slices the train data into devices.
+  eval_data_parallelism: bool = False
 
   @property
   def num_classes(self) -> int:
@@ -83,15 +88,6 @@ class Cifar(ds_base.DatasetWithTransform):
   def train_dataset(self,) -> ds_base.DatasetGenerator:
     """Returns the train dataset."""
     def build_train_input():
-      num_devices = jax.device_count()
-      total_batch_size = self.train_batch
-      per_device_batch_size, ragged = divmod(total_batch_size, num_devices)
-
-      if ragged:
-        raise ValueError(
-            f'Global batch size {total_batch_size} must be divisible by the '
-            f'total number of devices {num_devices}')
-
       ds = tfds.load(
           name=self.cifar_variant.tfds_name,
           split=f'train[:{self.num_train}]',
@@ -114,8 +110,11 @@ class Cifar(ds_base.DatasetWithTransform):
           is_training=True,
       )
       ds = ds.map(train_preprocess, num_parallel_calls=AUTOTUNE)
-      ds = ds.batch(per_device_batch_size, drop_remainder=True)
-      ds = ds.batch(jax.local_device_count(), drop_remainder=True)
+      ds = ds_utils.slice_dataset_to_batches(
+          dataset=ds,
+          total_batch_size=self.train_batch,
+          data_parallelism=self.train_data_parallelism,
+      )
       ds = ds.prefetch(AUTOTUNE)
       return iter(tfds.as_numpy(ds))
 
@@ -131,7 +130,7 @@ class Cifar(ds_base.DatasetWithTransform):
       ds = tfds.load(name=self.cifar_variant.tfds_name, split='test')
       ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
       ds = ds_utils.add_data_index_to_dataset(ds)
-
+      ds = ds.shard(jax.process_count(), jax.process_index())
       # Preprocess
       eval_preprocess = functools.partial(
           preprocess_batch,
@@ -145,7 +144,11 @@ class Cifar(ds_base.DatasetWithTransform):
       ds = ds.map(eval_preprocess, num_parallel_calls=AUTOTUNE)
       # Apply evaluation transformer
       ds = eval_ds_transformer(ds)
-      ds = ds.batch(self.eval_batch, drop_remainder=True)
+      ds = ds_utils.slice_dataset_to_batches(
+          dataset=ds,
+          total_batch_size=self.eval_batch,
+          data_parallelism=self.eval_data_parallelism,
+      )
       ds = ds.prefetch(AUTOTUNE)
       return iter(tfds.as_numpy(ds))
 
