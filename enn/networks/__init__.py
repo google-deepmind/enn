@@ -86,6 +86,7 @@ from enn.networks.resnet.base import EnsembleResNetENN
 from enn.networks.resnet.base import resnet_model
 # ResNet Configs (Imagenet)
 from enn.networks.resnet.lib import CanonicalResNets
+from enn.networks.resnet.lib import ForwardFn
 from enn.networks.resnet.lib import ResBlockV1
 from enn.networks.resnet.lib import ResBlockV2
 from enn.networks.resnet.lib import ResNet
