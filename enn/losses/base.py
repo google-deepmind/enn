@@ -83,7 +83,7 @@ def average_single_index_loss(
       # index. We choose to average the state across epistemic indices and
       # then perform basic error checking to make sure the shape is unchanged.
       new_state = jax.tree_map(batch_mean, new_state)
-      jax.tree_multimap(
+      jax.tree_map(
           lambda x, y: chex.assert_equal_shape([x, y]), new_state, state)
     mean_metrics = jax.tree_map(batch_mean, metrics)
 

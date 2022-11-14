@@ -81,7 +81,7 @@ class EnsembleWithState(networks_base.EnnArray):
       sub_params = jax.tree_map(particle_selector, params)
       sub_states = jax.tree_map(particle_selector, states)
       out, new_sub_states = model.apply(sub_params, sub_states, inputs)
-      new_states = jax.tree_multimap(
+      new_states = jax.tree_map(
           lambda s, nss: s.at[index, ...].set(nss), states, new_sub_states)
       return out, new_states
 

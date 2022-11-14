@@ -156,7 +156,7 @@ def hypermodel_module(
       flat_output = jax.tree_map(lambda layer: layer(hyper_index), final_layers)
 
     # Reshape this flattened output to the original base shapes (unflatten)
-    generated_params = jax.tree_multimap(jnp.reshape, flat_output, base_shapes)
+    generated_params = jax.tree_map(jnp.reshape, flat_output, base_shapes)
 
     if scale:
       # Scale the generated params such that expected variance of the raw
