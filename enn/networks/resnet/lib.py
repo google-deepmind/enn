@@ -41,7 +41,7 @@ class ResBlock(abc.ABC, hk.Module, ForwardFn):
   """ResNet Block."""
 
   @abc.abstractmethod
-  def __call__(self,
+  def __call__(self,  # pytype: disable=signature-mismatch  # overriding-default-value-checks
                inputs: chex.Array,
                is_training: bool,
                test_local_stats: bool = True) -> Any:
