@@ -43,6 +43,7 @@ def slice_dataset_to_batches(
     dataset: tf.data.Dataset,
     total_batch_size: int,
     data_parallelism: bool,
+    drop_remainder: bool = True,
 ) -> tf.data.Dataset:
   """Slices the data of a dataset into batches.
 
@@ -50,19 +51,26 @@ def slice_dataset_to_batches(
     dataset: a tf.data dataset.
     total_batch_size: the total batch size over all devices.
     data_parallelism: a boolean specifying whether to add a leading axis for the
-      number of devices. If true, data batches have shape
-      (number_devices, total_batch_size / number_devices, ...); otherwise, the
-      have shape of (total_batch_size, ...).
+      number of devices. If true, data batches have shape (number_devices,
+      total_batch_size / number_devices, ...); otherwise, the have shape of
+      (total_batch_size, ...).
+    drop_remainder: a boolean specifying whether to drop the remainder of a
+      leftover batch. Usually set to true during training, but false if the user
+      would like to evaluate on the full eval dataset.
 
   Returns:
     a tf.data dataset sliced into batches.
   """
   if data_parallelism:
     per_device_batch_size = get_per_device_batch_size(total_batch_size)
-    dataset = dataset.batch(per_device_batch_size, drop_remainder=True)
+    dataset = dataset.batch(
+        per_device_batch_size, drop_remainder=drop_remainder
+    )
+    # drop_remainder set to True as the leading axis should always be equal to
+    # jax.local_device_count() so all devices are running on some data
     dataset = dataset.batch(jax.local_device_count(), drop_remainder=True)
   else:
-    dataset = dataset.batch(total_batch_size, drop_remainder=True)
+    dataset = dataset.batch(total_batch_size, drop_remainder=drop_remainder)
   return dataset
 
 
