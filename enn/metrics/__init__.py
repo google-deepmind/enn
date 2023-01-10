@@ -21,6 +21,7 @@ from enn.metrics.base import average_sampled_log_likelihood
 from enn.metrics.base import make_average_aggregator
 from enn.metrics.base import MetricCalculator
 from enn.metrics.base import MetricsState
+from enn.metrics.base import PerExampleMetric
 
 # Calibration
 from enn.metrics.calibration import ExpectedCalibrationError

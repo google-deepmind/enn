@@ -41,6 +41,24 @@ class MetricCalculator(typing_extensions.Protocol):
     """
 
 
+class PerExampleMetric(typing_extensions.Protocol):
+  """Interface for metric per example."""
+
+  def __call__(self, logits: chex.Array, labels: chex.Array) -> chex.Array:
+    """Calculates a metric based on logits and labels.
+
+    Args:
+      logits: An array of shape [A, B, C] where B is the batch size of data, C
+        is the number of outputs per data (for classification, this is
+        equal to number of classes), and A is the number of random samples for
+        each data.
+      labels: An array of shape [B, 1] where B is the batch size of data.
+
+    Returns:
+      A metric per example of shape [B,].
+    """
+
+
 class MetricsState(NamedTuple):
   """State for metrics aggregation, default value should work for init."""
   value: float = 0  # Should keep track of final metric value post aggregation
