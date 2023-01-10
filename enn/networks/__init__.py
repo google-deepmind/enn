@@ -46,6 +46,9 @@ from enn.networks.ensembles import Ensemble
 from enn.networks.ensembles import EnsembleWithState
 from enn.networks.ensembles import make_mlp_ensemble_prior_fns
 from enn.networks.ensembles import MLPEnsembleMatchedPrior
+# Forwarders
+from enn.networks.forwarders import EnnBatchFwd
+from enn.networks.forwarders import make_batch_fwd
 # Gaussian ENN
 from enn.networks.gaussian_enn import GaussianNoiseEnn
 from enn.networks.gaussian_enn import GaussianNoiseMLP
