@@ -26,6 +26,7 @@ from enn.networks import base as networks_base
 from enn.networks import indexers
 from enn.networks import mlp
 import haiku as hk
+import jax
 
 
 def make_mlp_epinet(
@@ -34,6 +35,7 @@ def make_mlp_epinet(
     index_dim: int,
     expose_layers: Optional[Sequence[bool]] = None,
     prior_scale: float = 1.,
+    stop_gradient: bool = False,
     name: Optional[str] = None,
 ) -> networks_base.EnnArray:
   """Factory method to create a standard MLP epinet."""
@@ -53,8 +55,13 @@ def make_mlp_epinet(
 
     base_out = base_mlp(x)
     features = base_out.extra['exposed_features']
-    epi_train = train_epinet(features, z)
-    epi_prior = prior_epinet(features, z)
+    if stop_gradient:
+      epi_inputs = jax.lax.stop_gradient(features)
+    else:
+      epi_inputs = features
+
+    epi_train = train_epinet(epi_inputs, z)
+    epi_prior = prior_epinet(epi_inputs, z)
     return networks_base.OutputWithPrior(
         train=base_out.train + epi_train,
         prior=prior_scale * epi_prior,
