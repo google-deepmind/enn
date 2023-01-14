@@ -13,18 +13,68 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Baseline last layer ENN which is a small mlp with dropout."""
-import typing as tp
+"""Last layer classification heads for BERT model."""
+import dataclasses
+from typing import Optional, Sequence, Tuple
 
 import chex
 from enn import base as enn_base
 from enn import networks
+from enn.networks import epinet
 import haiku as hk
 import jax.numpy as jnp
 
 
-def make_enn(num_classes: int, is_training: bool) -> networks.EnnArray:
-  """Makes an enn of a small mlp with dropout."""
+@dataclasses.dataclass
+class AgentConfig:
+  """Agent configuration."""
+  hiddens: Sequence[int] = (50, 50)
+  # For ensemble agent
+  num_ensemble: int = 10
+  # For dropout agent
+  dropout_rate: float = 0.1
+  # For epinet agent
+  index_dim: int = 30
+  prior_scale: float = 1
+
+
+def make_head_enn(
+    agent: str,
+    num_classes: int,
+    agent_config: Optional[AgentConfig] = None) -> networks.EnnArray:
+  """Returns a last layer (head) enn."""
+  if agent_config is None:
+    agent_config = AgentConfig()
+  output_sizes = list(agent_config.hiddens) + [num_classes]
+  if agent == 'epinet':
+    # We don't want to expose any layers. This means that only the inputs are
+    # passed to epinet.
+    expose_layers = [False] * len(output_sizes)
+    return epinet.make_mlp_epinet(output_sizes=output_sizes,
+                                  epinet_hiddens=agent_config.hiddens,
+                                  index_dim=agent_config.index_dim,
+                                  expose_layers=expose_layers,
+                                  prior_scale=agent_config.prior_scale,
+                                  stop_gradient=True)
+  elif agent == 'ensemble':
+    return networks.make_einsum_ensemble_mlp_enn(
+        output_sizes=output_sizes,
+        num_ensemble=agent_config.num_ensemble,
+    )
+  elif agent == 'dropout':
+    return networks.MLPDropoutENN(
+        output_sizes=output_sizes,
+        dropout_rate=agent_config.dropout_rate,
+        dropout_input=False,
+    )
+  else:
+    raise ValueError(f'Invalid agent: {agent}!')
+
+
+def make_baseline_head_enn(
+    num_classes: int, is_training: bool
+) -> networks.EnnArray:
+  """Makes an enn of the baseline classifier head."""
 
   def net_fn(inputs: chex.Array) -> networks.OutputWithPrior:
     """Forwards the network."""
@@ -45,11 +95,11 @@ def make_enn(num_classes: int, is_training: bool) -> networks.EnnArray:
       state: hk.State,
       inputs: chex.Array,
       index: enn_base.Index,
-  ) -> tp.Tuple[networks.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks.OutputWithPrior, hk.State]:
     return transformed.apply(params, state, index, inputs)
   def init(rng_key: chex.PRNGKey,
            inputs: chex.Array,
-           index: enn_base.Index) -> tp.Tuple[hk.Params, hk.State]:
+           index: enn_base.Index) -> Tuple[hk.Params, hk.State]:
     del index  # rng_key is duplicated in this case.
     return transformed.init(rng_key, inputs)
 
@@ -116,3 +166,4 @@ class CommonOutputLayer(hk.Module):
         self._num_classes,
         w_init=hk.initializers.RandomNormal(stddev=0.02))(output)
     return output
+

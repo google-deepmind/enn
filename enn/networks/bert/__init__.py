@@ -21,9 +21,11 @@ from enn.networks.bert.base import BertConfigs
 from enn.networks.bert.base import BertEnn
 from enn.networks.bert.base import BertInit
 from enn.networks.bert.base import BertInput
-from enn.networks.bert.baseline_head import CommonOutputLayer
-from enn.networks.bert.baseline_head import make_enn as make_baseline_enn
 from enn.networks.bert.bert import BERT
 from enn.networks.bert.bert import make_bert_enn
+from enn.networks.bert.cls_heads import AgentConfig
+from enn.networks.bert.cls_heads import CommonOutputLayer
+from enn.networks.bert.cls_heads import make_baseline_head_enn
+from enn.networks.bert.cls_heads import make_head_enn
 from enn.networks.bert.factory import combine_naive_enn
 from enn.networks.bert.factory import make_optimized_forward
