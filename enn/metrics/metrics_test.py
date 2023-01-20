@@ -97,6 +97,9 @@ class MetricsTest(parameterized.TestCase):
       num_batches: int,
   ):
     """Tests that CalibrationErrorCalculator is correct by comparing it with BatchCalibrationErrorCalculator."""
+    # We set this to `allow` (instead of the default `set`), because some
+    # internal broadcasting is being done in tfp_ece_calculator.
+    jax.config.update('jax_numpy_rank_promotion', 'allow')
 
     # Generate a set of random logits and labels
     rng = hk.PRNGSequence(seed)

@@ -24,6 +24,7 @@ from enn import losses
 from enn import supervised
 from enn import utils
 from enn.networks import categorical_ensembles
+import jax
 import numpy as np
 import optax
 
@@ -37,6 +38,10 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
   def test_categorical_ensemble(self, hiddens: List[int],
                                 atoms: chex.Array, num_ensemble: int):
     """Running with the naive L2 loss."""
+    # The combine_functions_choice_via_index introduces an additional dimension
+    # raises error when added to the net output. We set this to allow for now.
+    jax.config.update('jax_numpy_rank_promotion', 'allow')
+
     test_experiment = supervised.make_test_experiment(regression=True)
     enn = categorical_ensembles.CatMLPEnsembleGpPrior(
         output_sizes=hiddens + [1],
@@ -50,6 +55,9 @@ class CategoricalEnsemblesTest(parameterized.TestCase):
 
   def test_categorical_2hot_regression(self):
     """Running with the categorical regression loss."""
+    # The combine_functions_choice_via_index introduces an additional dimension
+    # raises error when added to the net output. We set this to allow for now.
+    jax.config.update('jax_numpy_rank_promotion', 'allow')
     dataset = utils.make_test_data()
     enn = categorical_ensembles.CatMLPEnsembleMlpPrior(
         output_sizes=[50, 50, 1],

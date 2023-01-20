@@ -91,7 +91,7 @@ class MLPDropoutENN(networks_base.EnnArray):
       # https://github.com/yaringal/DropoutUncertaintyExps/blob/master/net/net.py
       if dropout_input:
         mask = masks[0]
-        x *= mask
+        x = jnp.einsum('bi,i->bi', x, mask)
 
       for layer_index, output_size in enumerate(output_sizes):
         if layer_index == 0:
@@ -105,7 +105,7 @@ class MLPDropoutENN(networks_base.EnnArray):
           x = hk.Linear(output_size, w_init=w_init, b_init=b_init)(x)
         if layer_index < len(output_sizes) - 1:
           mask = masks[layer_index + 1]
-          x *= mask
+          x = jnp.einsum('bi,i->bi', x, mask)
           x = jax.nn.relu(x)
       return x
 

@@ -173,7 +173,8 @@ def hypermodel_module(
     out = transformed_base.apply(generated_params_scaled, inputs)
     if return_generated_params:
       out = networks_base.OutputWithPrior(
-          train=transformed_base.apply(generated_params_scaled, inputs),
+          train=out,
+          prior=jnp.zeros_like(out),
           extra={
               'hyper_net_out': generated_params,
               'base_net_params': generated_params_scaled,
@@ -294,8 +295,8 @@ class HyperLinear(hk.Module):
 
     weights = jnp.einsum('ohi,i->oh', w, z)
     bias = jnp.einsum('oi,i->o', b, z)
-
-    return jnp.einsum('oh,bh->bo', weights, x) + bias
+    broadcasted_bias = jnp.broadcast_to(bias, (x.shape[0],) + bias.shape)
+    return jnp.einsum('oh,bh->bo', weights, x) + broadcasted_bias
 
 
 class PriorMLPIndependentLayers(hk.Module):

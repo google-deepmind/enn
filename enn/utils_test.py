@@ -38,7 +38,10 @@ class UtilsTest(parameterized.TestCase):
     # Check that the batch index is of the right leading dimension
     assert batch_index.shape[0] == batch_size
     # Check that they are not all identical
-    assert not jnp.isclose(batch_index, batch_index[0]).all()
+    assert not jnp.isclose(
+        batch_index,
+        jnp.broadcast_to(batch_index[0], batch_index.shape),
+    ).all()
 
 
 if __name__ == '__main__':

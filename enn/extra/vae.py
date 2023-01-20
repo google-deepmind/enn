@@ -110,7 +110,7 @@ def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
 
     # Generate a random vector based on encoder outputs
     latent_std = jnp.exp(0.5 * latent_log_var)
-    latent = latent_mean + latent_std * z
+    latent = latent_mean + jnp.einsum('bi,i->bi', latent_std, z)
 
     # Decoder
     out_mean, out_log_var = decoder(latent)

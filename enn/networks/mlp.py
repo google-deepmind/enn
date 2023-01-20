@@ -70,7 +70,11 @@ class ExposedMLP(hk.Module):
     if self.stop_gradient:
       exposed_features = jax.lax.stop_gradient(exposed_features)
     extra = {'exposed_features': exposed_features}
-    return networks_base.OutputWithPrior(train=out, extra=extra)
+    return networks_base.OutputWithPrior(
+        train=out,
+        prior=jnp.zeros_like(out),
+        extra=extra
+    )
 
 
 class ProjectedMLP(networks_base.EpistemicModule):
