@@ -27,5 +27,6 @@ from enn.networks.bert.cls_heads import AgentConfig
 from enn.networks.bert.cls_heads import CommonOutputLayer
 from enn.networks.bert.cls_heads import make_baseline_head_enn
 from enn.networks.bert.cls_heads import make_head_enn
-from enn.networks.bert.factory import combine_naive_enn
-from enn.networks.bert.factory import make_optimized_forward
+# TODO(author3): Remove this and redirect dependencies to enn/networks.
+from enn.networks.combiners import combine_naive_enn
+from enn.networks.combiners import make_optimized_forward

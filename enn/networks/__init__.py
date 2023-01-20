@@ -32,6 +32,9 @@ from enn.networks.categorical_ensembles import CategoricalRegressionMLP
 from enn.networks.categorical_ensembles import CatMLPEnsembleGpPrior
 from enn.networks.categorical_ensembles import CatMLPEnsembleMlpPrior
 from enn.networks.categorical_ensembles import CatOutputWithPrior
+# Combiners
+from enn.networks.combiners import combine_naive_enn
+from enn.networks.combiners import make_optimized_forward
 # Dropout
 from enn.networks.dropout import MLPDropoutENN
 # Einsum MLP

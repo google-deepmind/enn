@@ -19,40 +19,43 @@ import typing as tp
 
 import chex
 from enn import base as enn_base
-from enn import networks
-from enn.networks.bert import base
+from enn.networks import base as networks_base
+from enn.networks import forwarders
+from enn.networks import utils
 import haiku as hk
 import jax
 
 
 def combine_naive_enn(
-    head_enn: networks.EnnArray,
-    base_enn: base.BertEnn,
-) -> base.BertEnn:
+    head_enn: networks_base.EnnArray,
+    base_enn: enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output],
+) -> enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output]:
   """Combines a base enn and a head enn naively without optimization.
 
   Note: It is assumed that the base enn has identity indexer.
+  It is also assumed that the head enn takes array inputs.
 
   Args:
     head_enn: An EnnArray which is applied to the output of the base_enn.
-    base_enn: A BertEnn which takes the inputs and returns the input for the
-      head_enn.
+    base_enn: An Enn with generic inputs which takes the inputs and returns the
+     input for the head_enn.
+
   Returns:
     A combined Enn.
   """
   def apply(
       params: hk.Params,
       state: hk.State,
-      inputs: base.BertInput,
+      inputs: enn_base.Input,
       index: enn_base.Index,
-  ) -> tp.Tuple[networks.OutputWithPrior, hk.State]:
+  ) -> tp.Tuple[networks_base.OutputWithPrior, hk.State]:
     """Applies the base enn and head enn."""
 
     # Forward the base enn
     # Since indexer is PrngIndexer, index is actually a random key.
     key = index
     base_out, base_state = base_enn.apply(params, state, inputs, key)
-    base_out = networks.parse_net_output(base_out)
+    base_out = utils.parse_net_output(base_out)
 
     # Forward the head enn
     head_index = head_enn.indexer(key)
@@ -65,7 +68,7 @@ def combine_naive_enn(
     return head_out, state
 
   def init(key: chex.PRNGKey,
-           inputs: base.BertInput,
+           inputs: enn_base.Input,
            index: enn_base.Index) -> tp.Tuple[hk.Params, hk.State]:
     """Initializes the base enn and the head enn."""
     base_key, head_enn_key = jax.random.split(key)
@@ -78,7 +81,7 @@ def combine_naive_enn(
     # initialize the head enn.
     base_out, unused_base_state = base_enn.apply(
         base_params, base_state, inputs, index)
-    base_out = networks.parse_net_output(base_out)
+    base_out = utils.parse_net_output(base_out)
 
     # initialize the head enn.
     head_index = head_enn.indexer(head_enn_key)
@@ -89,23 +92,25 @@ def combine_naive_enn(
     state = {**head_state, **base_state}
     return (params, state)
 
-  return base.BertEnn(apply, init, networks.PrngIndexer())
+  return enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output](
+      apply, init, base_enn.indexer
+  )
 
 
 def make_optimized_forward(
-    head_enn: networks.EnnArray,
-    base_enn: base.BertEnn,
+    head_enn: networks_base.EnnArray,
+    base_enn: enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output],
     num_enn_samples: int,
     key: chex.PRNGKey,
-) ->  networks.EnnBatchFwd:
+) ->  forwarders.EnnBatchFwd[enn_base.Input]:
   """Combines base enn and head enn for multiple ENN samples.
 
   Note: It is assumed that the base enn has identity indexer.
 
   Args:
     head_enn: An EnnArray which is applied to the output of the base_enn.
-    base_enn: A BertEnn which takes the inputs and returns the input for the
-      head_enn.
+    base_enn: An Enn with generic inputs which takes the inputs and returns the
+     input for the head_enn.
     num_enn_samples: Number of enn samples to return for each input.
     key: A random key.
 
@@ -116,14 +121,14 @@ def make_optimized_forward(
 
   def enn_batch_fwd(params: hk.Params,
                     state: hk.State,
-                    x: base.BertInput) -> chex.Array:
+                    x: enn_base.Input) -> chex.Array:
     base_out, _ = base_enn.apply(params, state, x, key)
-    base_out = networks.parse_net_output(base_out)
+    base_out = utils.parse_net_output(base_out)
 
     def sample_logits(sub_key: chex.PRNGKey) -> chex.Array:
       index = head_enn.indexer(sub_key)
       out, _ = head_enn.apply(params, state, base_out, index)
-      return networks.parse_net_output(out)
+      return utils.parse_net_output(out)
 
     return jax.vmap(sample_logits)(enn_keys)
 
