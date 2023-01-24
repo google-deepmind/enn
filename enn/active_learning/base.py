@@ -22,6 +22,7 @@ import chex
 from enn import base as enn_base
 from enn import networks
 import haiku as hk
+import typing_extensions
 
 
 class ActiveLearner(abc.ABC):
@@ -56,7 +57,7 @@ class ActiveLearner(abc.ABC):
 PriorityOutput = tp.Tuple[chex.Array, tp.Dict[str, chex.Array]]
 
 
-class PriorityFn(tp.Protocol):
+class PriorityFn(typing_extensions.Protocol):
 
   def __call__(
       self,
@@ -68,7 +69,7 @@ class PriorityFn(tp.Protocol):
     """Assigns a priority score to a batch."""
 
 
-class PriorityFnCtor(tp.Protocol):
+class PriorityFnCtor(typing_extensions.Protocol):
 
   def __call__(
       self,
@@ -77,7 +78,7 @@ class PriorityFnCtor(tp.Protocol):
     """Constructs a priority function base on an enn_batch_fwd."""
 
 
-class PerExamplePriority(tp.Protocol):
+class PerExamplePriority(typing_extensions.Protocol):
   """Interface for priority per example."""
 
   def __call__(
@@ -90,9 +91,8 @@ class PerExamplePriority(tp.Protocol):
 
     Args:
       logits: An array of shape [A, B, C] where B is the batch size of data, C
-        is the number of outputs per data (for classification, this is
-        equal to number of classes), and A is the number of random samples for
-        each data.
+        is the number of outputs per data (for classification, this is equal to
+        number of classes), and A is the number of random samples for each data.
       labels: An array of shape [B, 1] where B is the batch size of data.
       key: A random key.
 
