@@ -23,7 +23,7 @@ import setuptools
 testing_require = [
     'mock',
     'pytest-xdist',
-    'pytype',
+    'pytype==2021.8.11',
 ]
 
 setuptools.setup(
