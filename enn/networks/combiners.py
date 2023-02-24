@@ -26,19 +26,27 @@ import haiku as hk
 import jax
 
 
+HeadInput = tp.TypeVar('HeadInput')  # Inputs to head enn
+BaseOutput = tp.TypeVar('BaseOutput')  # Outputs of base enn
+
+
 def combine_naive_enn(
-    head_enn: networks_base.EnnArray,
-    base_enn: enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output],
+    head_enn: enn_base.EpistemicNetwork[HeadInput, networks_base.Output],
+    base_enn: enn_base.EpistemicNetwork[enn_base.Input, BaseOutput],
+    parse_base_network: tp.Callable[
+        [BaseOutput], HeadInput
+    ] = utils.parse_net_output,
 ) -> enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output]:
   """Combines a base enn and a head enn naively without optimization.
 
   Note: It is assumed that the base enn has identity indexer.
-  It is also assumed that the head enn takes array inputs.
 
   Args:
     head_enn: An EnnArray which is applied to the output of the base_enn.
     base_enn: An Enn with generic inputs which takes the inputs and returns the
-     input for the head_enn.
+      input for the head_enn.
+    parse_base_network: A callable that parses the desired output from base_enn
+      to feed into head_enn.
 
   Returns:
     A combined Enn.
@@ -48,14 +56,14 @@ def combine_naive_enn(
       state: hk.State,
       inputs: enn_base.Input,
       index: enn_base.Index,
-  ) -> tp.Tuple[networks_base.OutputWithPrior, hk.State]:
+  ) -> tp.Tuple[networks_base.Output, hk.State]:
     """Applies the base enn and head enn."""
 
     # Forward the base enn
     # Since indexer is PrngIndexer, index is actually a random key.
     key = index
     base_out, base_state = base_enn.apply(params, state, inputs, key)
-    base_out = utils.parse_net_output(base_out)
+    base_out = parse_base_network(base_out)
 
     # Forward the head enn
     head_index = head_enn.indexer(key)
@@ -81,7 +89,7 @@ def combine_naive_enn(
     # initialize the head enn.
     base_out, unused_base_state = base_enn.apply(
         base_params, base_state, inputs, index)
-    base_out = utils.parse_net_output(base_out)
+    base_out = parse_base_network(base_out)
 
     # initialize the head enn.
     head_index = head_enn.indexer(head_enn_key)
@@ -98,11 +106,14 @@ def combine_naive_enn(
 
 
 def make_optimized_forward(
-    head_enn: networks_base.EnnArray,
-    base_enn: enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output],
+    head_enn: enn_base.EpistemicNetwork[HeadInput, networks_base.Output],
+    base_enn: enn_base.EpistemicNetwork[enn_base.Input, BaseOutput],
     num_enn_samples: int,
     key: chex.PRNGKey,
-) ->  forwarders.EnnBatchFwd[enn_base.Input]:
+    parse_base_network: tp.Callable[
+        [BaseOutput], HeadInput
+    ] = utils.parse_net_output,
+) -> forwarders.EnnBatchFwd[enn_base.Input]:
   """Combines base enn and head enn for multiple ENN samples.
 
   Note: It is assumed that the base enn has identity indexer.
@@ -110,9 +121,11 @@ def make_optimized_forward(
   Args:
     head_enn: An EnnArray which is applied to the output of the base_enn.
     base_enn: An Enn with generic inputs which takes the inputs and returns the
-     input for the head_enn.
+      input for the head_enn.
     num_enn_samples: Number of enn samples to return for each input.
     key: A random key.
+    parse_base_network: A callable that parses the desired output from base_enn
+      to feed into head_enn.
 
   Returns:
     An optimized forward function of combined Enns.
@@ -123,7 +136,7 @@ def make_optimized_forward(
                     state: hk.State,
                     x: enn_base.Input) -> chex.Array:
     base_out, _ = base_enn.apply(params, state, x, key)
-    base_out = utils.parse_net_output(base_out)
+    base_out = parse_base_network(base_out)
 
     def sample_logits(sub_key: chex.PRNGKey) -> chex.Array:
       index = head_enn.indexer(sub_key)
