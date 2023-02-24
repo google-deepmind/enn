@@ -213,7 +213,7 @@ def load(
                      example_rng: Optional[tf.Tensor] = None) -> base.Batch:
     image = _preprocess_image(batch.x, is_training, image_size,
                               example_rng)
-    return batch._replace(x=image)
+    return dataclasses.replace(batch, x=image)
 
   def _preprocess_with_per_example_rng(
       ds: tf.data.Dataset, *, rng: Optional[np.ndarray]) -> tf.data.Dataset:
@@ -246,11 +246,11 @@ def load(
     # model code. The compiler cannot make this optimization for us since our
     # data pipeline and model are compiled separately.
     transposed_x = tf.transpose(batch.x, (1, 2, 3, 0))
-    return batch._replace(x=transposed_x)
+    return dataclasses.replace(batch, x=transposed_x)
 
   def cast_fn(batch: base.Batch) -> base.Batch:
     x = tf.cast(batch.x, tf.dtypes.as_dtype(dtype))
-    return batch._replace(x=x)
+    return dataclasses.replace(batch, x=x)
 
   for i, batch_size in enumerate(reversed(batch_dims)):
     ds = ds.batch(batch_size, drop_remainder=True)

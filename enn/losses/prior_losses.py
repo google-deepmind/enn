@@ -58,7 +58,7 @@ def make_gaussian_dataset(batch_size: int,
     rng = hk.PRNGSequence(seed)
     while True:
       x = sample_fn(next(rng))
-      yield base.Batch(x, y=jnp.ones([x.shape[0], 1]))
+      yield base.Batch(x=x, y=jnp.ones([x.shape[0], 1]))
   return batch_iterator()
 
 

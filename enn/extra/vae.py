@@ -123,18 +123,22 @@ def make_vae_enn(encoder: PreTransformFn, decoder: PreTransformFn,
   return networks.EnnArray(transformed.apply, transformed.init, indexer)
 
 
-def train_vae(encoder: PreTransformFn,
-              decoder: PreTransformFn,
-              latent_dim: int,
-              data_x: chex.Array,
-              log_likelihood_fn: losses.LogLikelihoodFn,
-              optimizer: optax.GradientTransformation,
-              num_batches: int = 10_000,
-              batch_size: int = 1_000) -> TrainedVAE:
+def train_vae(
+    encoder: PreTransformFn,
+    decoder: PreTransformFn,
+    latent_dim: int,
+    data_x: chex.Array,
+    log_likelihood_fn: losses.LogLikelihoodFn,
+    optimizer: optax.GradientTransformation,
+    num_batches: int = 10_000,
+    batch_size: int = 1_000,
+) -> TrainedVAE:
   """Given a vae and data, this function outputs trained encoder, decoder."""
   num_train, input_dim = data_x.shape
   dummy_y = jnp.zeros(shape=(num_train,))
-  dataset = utils.make_batch_iterator(base.Batch(data_x, dummy_y), batch_size)
+  dataset = utils.make_batch_iterator(
+      base.Batch(x=data_x, y=dummy_y), batch_size
+  )
 
   # Create loss function
   single_loss = losses.VaeLoss(log_likelihood_fn, losses.latent_kl_fn)

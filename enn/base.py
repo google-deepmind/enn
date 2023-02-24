@@ -89,11 +89,15 @@ class LossFn(typing_extensions.Protocol[Input, Output, Data]):
     """Computes a loss based on one batch of data and a random key."""
 
 
-class Batch(tp.NamedTuple):
+@chex.dataclass(frozen=True)
+class Batch:
   x: chex.Array  # Inputs
   y: chex.Array  # Targets
   data_index: tp.Optional[DataIndex] = None  # Integer identifiers for data
   weights: tp.Optional[chex.Array] = None  # None defaults to weights = jnp.ones
-  extra: tp.Dict[str, chex.Array] = {}  # You can put other optional stuff here
+  extra: tp.Dict[str, chex.Array] = dataclasses.field(
+      default_factory=dict
+  )  # You can put other optional stuff here
+
 
 BatchIterator = tp.Iterator[Batch]  # Equivalent to the dataset we loop through

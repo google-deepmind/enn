@@ -48,7 +48,7 @@ class BootstrapNoise(data_noise_base.DataNoise):
     """Apply bootstrap reweighting to a batch of data."""
     boot_fn = make_boot_fn(self.enn, self.distribution, self.seed)
     boot_weights = boot_fn(data.data_index, index)
-    return data._replace(weights=boot_weights)
+    return dataclasses.replace(data, weights=boot_weights)
 
 
 ################################################################################

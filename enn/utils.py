@@ -14,6 +14,7 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
+import dataclasses
 from typing import Optional
 
 from absl import flags
@@ -46,15 +47,15 @@ def _clean_batch_data(data: base.Batch) -> base.Batch:
   """Checks some of the common shape/index issues for dummy data.."""
   # Make sure that the data has a separate batch dimension
   if data.y.ndim == 1:
-    data = data._replace(y=data.y[:, None])
+    data = dataclasses.replace(data, y=data.y[:, None])
 
   # Data index to identify each instance
   if data.data_index is None:
-    data = data._replace(data_index=np.arange(len(data.y))[:, None])
+    data = dataclasses.replace(data, data_index=np.arange(len(data.y))[:, None])
 
   # Weights to say how much each data.point is work
   if data.weights is None:
-    data = data._replace(weights=np.ones(len(data.y))[:, None])
+    data = dataclasses.replace(data, weights=np.ones(len(data.y))[:, None])
   return data
 
 
@@ -77,4 +78,4 @@ def make_batch_iterator(data: base.Batch,
 def make_test_data(n_samples: int = 20) -> base.BatchIterator:
   """Generate a simple dataset suitable for classification or regression."""
   x, y = datasets.make_moons(n_samples, noise=0.1, random_state=0)
-  return make_batch_iterator(base.Batch(x, y))
+  return make_batch_iterator(base.Batch(x=x, y=y))

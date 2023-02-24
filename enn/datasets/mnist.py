@@ -136,4 +136,4 @@ def preprocess_batch(batch: base.Batch,
         'Normalization mode should be one among custom, standard or identity.'
     )
 
-  return batch._replace(x=images)
+  return dataclasses.replace(batch, x=images)

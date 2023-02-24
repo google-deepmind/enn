@@ -19,6 +19,7 @@
 This is used to generate evaluation batches that are of the (kappa, N) format.
 """
 
+import dataclasses
 from typing import Callable, Optional
 
 from enn import base as enn_base
@@ -88,6 +89,6 @@ def make_dyadic_transform(
                                tf.image.ResizeMethod.BICUBIC)
     if flip:
       images = tf.image.random_flip_left_right(images)
-    return batch._replace(x=images)
+    return dataclasses.replace(batch, x=images)
 
   return make_repeat_sample_transform(num_repeat, perturb_fn, limit_data)

@@ -40,7 +40,7 @@ def make_dataset(num_sample: int = 10,
   swap_locs = np.where(swaps)[0]
   y[swap_locs] = 1 - y[swap_locs]
 
-  return utils.make_batch_iterator(base.Batch(x, y))
+  return utils.make_batch_iterator(base.Batch(x=x, y=y))
 
 
 def make_dataframe(

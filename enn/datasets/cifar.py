@@ -217,7 +217,7 @@ def preprocess_batch(batch: base.Batch,
       images = _cutout_single_image(
           probability=0.5, cutout_size=16, image=images)
 
-  return batch._replace(x=images)
+  return dataclasses.replace(batch, x=images)
 
 
 def _cutout_single_image(
