@@ -51,7 +51,7 @@ def make_einsum_ensemble_mlp_enn(
   def ensemble_forward(x: chex.Array) -> networks_base.OutputWithPrior:
     """Forwards the entire ensemble at given input x."""
     model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias, activation)
-    return model(x)
+    return model(x)  # pytype: disable=bad-return-type  # jax-ndarray
 
   transformed = hk.without_apply_rng(hk.transform(ensemble_forward))
 
