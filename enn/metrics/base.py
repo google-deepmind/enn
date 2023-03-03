@@ -61,7 +61,7 @@ class PerExampleMetric(typing_extensions.Protocol):
 
 class MetricsState(NamedTuple):
   """State for metrics aggregation, default value should work for init."""
-  value: float = 0  # Should keep track of final metric value post aggregation
+  value: float = 0.  # Should keep track of final metric value post aggregation
   count: int = 0  # The number of times the aggregator has been called
   extra: Optional[Dict[str, chex.Array]] = None  # Extra sufficient statistics.
 
