@@ -55,7 +55,7 @@ def make_bert_enn(
     )
 
     # Embed and summarize the sequence.
-    return bert_model(
+    return bert_model(  # pytype: disable=wrong-arg-types  # jax-devicearray
         input_ids=inputs.token_ids,
         token_type_ids=inputs.segment_ids,
         input_mask=inputs.input_mask.astype(jnp.int32),
