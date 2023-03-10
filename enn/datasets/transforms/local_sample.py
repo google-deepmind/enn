@@ -22,13 +22,12 @@ This is used to generate evaluation batches that are of the (kappa, N) format.
 import dataclasses
 from typing import Callable, Optional
 
-from enn import base as enn_base
 from enn.datasets import base as ds_base
 import tensorflow.compat.v2 as tf
 
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-PerturbFn = Callable[[enn_base.Batch], enn_base.Batch]
+PerturbFn = Callable[[ds_base.ArrayBatch], ds_base.ArrayBatch]
 
 
 def make_repeat_sample_transform(
@@ -52,10 +51,10 @@ def make_repeat_sample_transform(
     dataset transformer.
   """
 
-  def repeat(batch: enn_base.Batch) -> enn_base.Batch:
+  def repeat(batch: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
     repeated_x = tf.stack([batch.x] * num_repeat)
     repeated_y = tf.stack([batch.y] * num_repeat)
-    return enn_base.Batch(x=repeated_x, y=repeated_y)
+    return ds_base.ArrayBatch(x=repeated_x, y=repeated_y)
 
   def transform(ds: tf.data.Dataset) -> tf.data.Dataset:
     ds = ds.map(repeat).unbatch()
@@ -74,7 +73,7 @@ def make_dyadic_transform(
     flip: bool = True,
 ) -> ds_base.DatasetTransformer:
   """Defines settings perturbing images with random crop/flip."""
-  def perturb_fn(batch: enn_base.Batch) -> enn_base.Batch:
+  def perturb_fn(batch: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
     images = batch.x
     if crop_offset > 0:
       image_height, image_width, image_depth = images.shape

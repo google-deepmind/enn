@@ -20,6 +20,7 @@ from typing import Dict, Text
 from absl.testing import absltest
 from absl.testing import parameterized
 from enn import base
+from enn import datasets
 from enn import networks
 from enn.losses import base as losses_base
 from enn.losses import single_index
@@ -45,7 +46,7 @@ class DummySingleLossFn(losses_base.SingleLossFnArray):
       apply: networks.ApplyArray,
       params: hk.Params,
       state: hk.State,
-      batch: base.Batch,
+      batch: datasets.ArrayBatch,
       index: base.Index,
   ) -> base.LossOutput:
     """Computes a loss based on one batch of data and one index."""
@@ -67,7 +68,7 @@ class AvgSingleIndexLossTest(absltest.TestCase):
     num_index_samples = 100
     loss_fn = losses_base.average_single_index_loss(
         single_loss_fn, num_index_samples)
-    dummy_batch = base.Batch(x=np.ones([1, 1]), y=np.ones([1, 1]))
+    dummy_batch = datasets.ArrayBatch(x=np.ones([1, 1]), y=np.ones([1, 1]))
     enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=[1],
         num_ensemble=num_ensemble,
@@ -100,7 +101,7 @@ class L2LossTest(absltest.TestCase):
   def setUpClass(cls):
     super().setUpClass()
     batch_size = 4
-    cls._batch = base.Batch(
+    cls._batch = datasets.ArrayBatch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.zeros(shape=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -152,7 +153,7 @@ class XentLossTest(parameterized.TestCase):
     loss_fn = single_index.XentLoss(num_classes)
 
     batch_size = 4
-    batch = base.Batch(
+    batch = datasets.ArrayBatch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -198,7 +199,7 @@ class XentLossTest(parameterized.TestCase):
 
     loss_fn = single_index.XentLoss(num_classes)
     batch_size = 4
-    batch = base.Batch(
+    batch = datasets.ArrayBatch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.random.random_integers(0, num_classes - 1, size=(batch_size, 1)),
         data_index=np.expand_dims(np.arange(batch_size), 1),
@@ -230,7 +231,7 @@ class ElboLossTest(absltest.TestCase):
     """
 
     batch_size = 4
-    batch = base.Batch(
+    batch = datasets.ArrayBatch(
         x=np.expand_dims(np.arange(batch_size), 1),
         y=np.arange(batch_size),
     )

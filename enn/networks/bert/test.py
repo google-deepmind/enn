@@ -17,7 +17,7 @@
 """Tests for BERT ENN."""
 from absl.testing import absltest
 from absl.testing import parameterized
-from enn import base as enn_base
+from enn import datasets
 from enn.networks import utils as networks_utils
 from enn.networks.bert import base
 from enn.networks.bert import bert
@@ -29,7 +29,7 @@ import jax.numpy as jnp
 def _fake_data(seed: int,
                num_train: int,
                num_classes: int,
-               sequence_len: int) -> enn_base.Batch:
+               sequence_len: int) -> datasets.ArrayBatch:
   """Generates a fake dataset."""
   rng = hk.PRNGSequence(seed)
 
@@ -41,7 +41,7 @@ def _fake_data(seed: int,
   batch_start = jax.random.randint(next(rng), [], 0, 1_000_000)
   data_index = jnp.arange(num_train) + batch_start
 
-  return enn_base.Batch(
+  return datasets.ArrayBatch(
       x=base.BertInput(token_ids, segment_ids, input_mask),
       y=jax.random.randint(next(rng), [num_train], 0, num_classes),
       data_index=data_index,

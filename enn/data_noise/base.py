@@ -16,6 +16,7 @@
 """Base classes for data noise process."""
 
 from enn import base
+from enn.datasets import base as ds_base
 import typing_extensions
 
 
@@ -30,7 +31,7 @@ class DataNoiseBase(typing_extensions.Protocol[base.Data]):
 
 
 # DataNoiseBase specialized to work only with Batch data.
-DataNoise = DataNoiseBase[base.Batch]
+DataNoise = DataNoiseBase[ds_base.ArrayBatch]
 
 
 def get_indexer(indexer: base.EpistemicIndexer):

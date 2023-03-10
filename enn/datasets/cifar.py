@@ -20,7 +20,6 @@ import enum
 import functools
 from typing import Dict, Sequence
 
-from enn import base
 from enn.datasets import base as ds_base
 from enn.datasets import utils as ds_utils
 import jax
@@ -172,13 +171,13 @@ class Cifar100(Cifar):
   keep_image_size: bool = True
 
 
-def preprocess_batch(batch: base.Batch,
+def preprocess_batch(batch: ds_base.ArrayBatch,
                      normalization_mode: str,
                      random_crop: bool,
                      random_flip: bool,
                      cutout: bool,
                      keep_image_size: bool,
-                     is_training: bool = False) -> base.Batch:
+                     is_training: bool = False) -> ds_base.ArrayBatch:
   """Pre-processing module."""
   images = batch.x
   images = tf.image.convert_image_dtype(images, tf.float32)

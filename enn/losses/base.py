@@ -14,11 +14,14 @@
 # limitations under the License.
 # ============================================================================
 """Base for losses."""
+
 from typing import Tuple
+
 import chex
 from enn import base
 from enn import networks
 from enn import utils
+from enn.datasets import base as ds_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -93,12 +96,15 @@ def average_single_index_loss(
       first_state_layer = new_state[list(new_state.keys())[0]]
       mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
     return mean_loss, (new_state, mean_metrics)
+
   return loss_fn
 
 
 # Loss modules specialized to work only with Array inputs and Batch data.
-LossFnArray = base.LossFn[chex.Array, networks.Output, base.Batch]
-SingleLossFnArray = SingleLossFn[chex.Array, networks.Output, base.Batch]
+LossFnArray = base.LossFn[chex.Array, networks.Output, ds_base.ArrayBatch]
+SingleLossFnArray = SingleLossFn[
+    chex.Array, networks.Output, ds_base.ArrayBatch
+]
 
 ################################################################################
 # The default loss definitions above assume that the enn has a state.
@@ -116,7 +122,7 @@ class LossFnNoState(te.Protocol):
   def __call__(self,
                enn: networks.EnnNoState,
                params: hk.Params,
-               batch: base.Batch,
+               batch: ds_base.ArrayBatch,
                key: chex.PRNGKey) -> LossOutputNoState:
     """Computes a loss based on one batch of data and a random key."""
 
@@ -131,7 +137,7 @@ class SingleLossFnNoState(te.Protocol):
   def __call__(self,
                apply: networks.ApplyNoState,
                params: hk.Params,
-               batch: base.Batch,
+               batch: ds_base.ArrayBatch,
                index: base.Index) -> LossOutputNoState:
     """Computes a loss based on one batch of data and one index."""
 
@@ -151,7 +157,7 @@ def average_single_index_loss_no_state(
 
   def loss_fn(enn: networks.EnnNoState,
               params: hk.Params,
-              batch: base.Batch,
+              batch: ds_base.ArrayBatch,
               key: chex.PRNGKey) -> LossOutputNoState:
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, 0])

@@ -21,7 +21,7 @@ https://arxiv.org/abs/1312.6114 (Kingma & Welling, 2014).
 from typing import Callable
 
 import chex
-from enn import base
+from enn import datasets
 from enn import networks
 import jax.numpy as jnp
 from tensorflow_probability.substrates import jax as tfp
@@ -106,7 +106,7 @@ def latent_kl_fn(net_out: networks.OutputWithPrior) -> float:
   return latent_kl_divergence(extra['latent_mean'], extra['latent_log_var'])
 
 
-LogLikelihoodFn = Callable[[networks.OutputWithPrior, base.Batch],
+LogLikelihoodFn = Callable[[networks.OutputWithPrior, datasets.ArrayBatch],
                            float]
 
 
@@ -121,7 +121,7 @@ def get_log_likelihood_fn(bernoulli_decoder: bool) -> LogLikelihoodFn:
   """
 
   def log_likelihood_fn(net_out: networks.OutputWithPrior,
-                        batch: base.Batch) -> float:
+                        batch: datasets.ArrayBatch) -> float:
     extra = net_out.extra
     assert 'out_mean' in extra
     assert 'out_log_var' in extra

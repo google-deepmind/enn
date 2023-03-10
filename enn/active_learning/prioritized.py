@@ -18,7 +18,7 @@
 import typing as tp
 
 import chex
-from enn import base as enn_base
+from enn import datasets
 from enn import networks
 from enn.active_learning import base
 from enn.active_learning import priorities
@@ -47,9 +47,9 @@ class PrioritizedBatcher(base.ActiveLearner):
       self,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
+      batch: datasets.ArrayBatch,
       key: chex.PRNGKey,
-  ) -> enn_base.Batch:
+  ) -> datasets.ArrayBatch:
     """Acquires data. This is the function per device (can get pmaped)."""
     pool_size = len(batch.y)
 

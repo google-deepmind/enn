@@ -18,7 +18,6 @@
 
 from typing import Dict, Tuple
 
-from enn import base as enn_base
 from enn.datasets import base
 import numpy as np
 import tensorflow.compat.v2 as tf
@@ -104,9 +103,9 @@ def _make_ds_transform(
   if not ood_labels.any():
     return lambda ds: ds
 
-  def in_dist_predicate(batch: enn_base.Batch) -> bool:
+  def in_dist_predicate(batch: base.ArrayBatch) -> bool:
     return tf.reduce_all(tf.not_equal(batch.y, ood_labels))
-  def out_dist_predicate(batch: enn_base.Batch) -> bool:
+  def out_dist_predicate(batch: base.ArrayBatch) -> bool:
     return not in_dist_predicate(batch)
 
   if ood_proportion == 0.:

@@ -19,13 +19,13 @@ import abc
 import dataclasses
 
 import chex
-from enn import base
+from enn.datasets import base as ds_base
 
 
 @dataclasses.dataclass
 class BaseExperiment(abc.ABC):
   """Base interface for experiment classes."""
-  dataset: base.BatchIterator
+  dataset: ds_base.ArrayBatchIterator
 
   @abc.abstractmethod
   def train(self, num_batches: int):
@@ -37,6 +37,6 @@ class BaseExperiment(abc.ABC):
     """Evaluate the trained model at given inputs."""
 
   @abc.abstractmethod
-  def loss(self, batch: base.Batch,
+  def loss(self, batch: ds_base.ArrayBatch,
            key: chex.PRNGKey) -> chex.Array:
     """Calculate the loss at a given batch."""

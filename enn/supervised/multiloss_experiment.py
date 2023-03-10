@@ -23,6 +23,7 @@ from typing import Callable, Dict, NamedTuple, Optional, Sequence, Tuple
 from acme.utils import loggers
 import chex
 from enn import base
+from enn import datasets
 from enn import losses
 from enn import networks
 from enn.supervised import base as supervised_base
@@ -46,14 +47,14 @@ class MultilossTrainer:
       Apply one step of loss_fn on a batch = next(dataset).
   """
   loss_fn: losses.LossFnArray  # Loss function
-  dataset: base.BatchIterator  # Dataset to pull batch from
+  dataset: datasets.ArrayBatchIterator  # Dataset to pull batch from
   should_train: Callable[[int], bool] = lambda _: True  # Which steps to train
   name: str = 'loss'  # Name used for logging
 
 
 # Type definition for loss function after internalizing the ENN
 PureLoss = Callable[
-    [hk.Params, hk.State, base.Batch, chex.PRNGKey],
+    [hk.Params, hk.State, datasets.ArrayBatch, chex.PRNGKey],
     base.LossOutput]
 
 
@@ -71,15 +72,17 @@ class MultilossExperiment(supervised_base.BaseExperiment):
   the loss on every eval_log_freq steps.
   """
 
-  def __init__(self,
-               enn: networks.EnnArray,
-               trainers: Sequence[MultilossTrainer],
-               optimizer: optax.GradientTransformation,
-               seed: int = 0,
-               logger: Optional[loggers.Logger] = None,
-               train_log_freq: int = 1,
-               eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
-               eval_log_freq: int = 1):
+  def __init__(
+      self,
+      enn: networks.EnnArray,
+      trainers: Sequence[MultilossTrainer],
+      optimizer: optax.GradientTransformation,
+      seed: int = 0,
+      logger: Optional[loggers.Logger] = None,
+      train_log_freq: int = 1,
+      eval_datasets: Optional[Dict[str, datasets.ArrayBatchIterator]] = None,
+      eval_log_freq: int = 1,
+  ):
     self.enn = enn
     self.pure_trainers = _purify_trainers(trainers, enn)
     self.rng = hk.PRNGSequence(seed)
@@ -100,7 +103,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
     def sgd_step(
         pure_loss: PureLoss,
         state: TrainingState,
-        batch: base.Batch,
+        batch: datasets.ArrayBatch,
         key: chex.PRNGKey,
     ) -> Tuple[TrainingState, base.LossMetrics]:
       # Calculate the loss, metrics and gradients
@@ -178,7 +181,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
         key,
     )
 
-  def loss(self, batch: base.Batch,
+  def loss(self, batch: datasets.ArrayBatch,
            key: chex.PRNGKey) -> chex.Array:
     """Evaluate the first loss for one batch of data."""
     pure_loss = self.pure_trainers[0].pure_loss
@@ -190,7 +193,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
 class _PureTrainer:
   """An intermediate representation of MultilossTrainer with pure loss."""
   pure_loss: PureLoss  # Pure loss function after internalizing enn
-  dataset: base.BatchIterator  # Dataset to pull batch from
+  dataset: datasets.ArrayBatchIterator  # Dataset to pull batch from
   should_train: Callable[[int], bool]  # Whether should train on step
   name: str = 'loss'  # Name used for logging
 

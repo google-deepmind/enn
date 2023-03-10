@@ -20,6 +20,7 @@ import dataclasses
 
 import chex
 from enn import base
+from enn import datasets
 from enn import networks
 from enn.losses import base as losses_base
 import haiku as hk
@@ -52,7 +53,7 @@ class Cat2HotRegression(losses_base.SingleLossFnArray):
   def __call__(self, apply: networks.ApplyArray,
                params: hk.Params,
                state: hk.State,
-               batch: base.Batch,
+               batch: datasets.ArrayBatch,
                index: base.Index) -> base.LossOutput:
     chex.assert_shape(batch.y, (None, 1))
     chex.assert_shape(batch.data_index, (None, 1))

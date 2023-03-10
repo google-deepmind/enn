@@ -19,18 +19,39 @@
 import abc
 import dataclasses
 import enum
-from typing import Callable, Dict, Generator, List, Sequence, Union
-from enn import base
+import typing as tp
+
+import chex
 import numpy as np
 import tensorflow.compat.v2 as tf
 
-Array = Union[np.ndarray, tf.Tensor]
+
+Array = tp.Union[np.ndarray, tf.Tensor]
 # DatasetDict is a Dict with "images" and "labels" as keys
-DatasetDict = Dict[str, Array]
+DatasetDict = tp.Dict[str, Array]
+DataIndex = chex.Array  # Integer identifiers used for bootstrapping
+
+
+@chex.dataclass(frozen=True)
+class ArrayBatch:
+  """A Batch with array input and target."""
+  x: chex.Array  # Inputs
+  y: chex.Array  # Targets
+  data_index: tp.Optional[DataIndex] = None  # Integer identifiers for data
+  weights: tp.Optional[chex.Array] = None  # None defaults to weights = jnp.ones
+  extra: tp.Dict[str, chex.Array] = dataclasses.field(
+      default_factory=dict
+  )  # You can put other optional stuff here
+
+
+ArrayBatchIterator = tp.Iterator[
+    ArrayBatch
+]  # Equivalent to the dataset we loop through.
 
 # TODO(author3): Describe DatasetGenerator
-DatasetGenerator = Generator[base.Batch, None, None]
-DatasetTransformer = Callable[[tf.data.Dataset], tf.data.Dataset]
+DatasetGenerator = tp.Generator[ArrayBatch, None, None]
+# DatasetGenerator = tp.Generator[ArrayBatch, None, None]
+DatasetTransformer = tp.Callable[[tf.data.Dataset], tf.data.Dataset]
 
 
 class Dataset(abc.ABC):
@@ -43,7 +64,7 @@ class Dataset(abc.ABC):
 
   @property
   @abc.abstractmethod
-  def eval_input_shape(self) -> Sequence[int]:
+  def eval_input_shape(self) -> tp.Sequence[int]:
     """Returns the shape of a single eval input from the dataset."""
 
   @abc.abstractmethod
@@ -51,7 +72,7 @@ class Dataset(abc.ABC):
     """Returns the train dataset."""
 
   @abc.abstractmethod
-  def eval_datasets(self) -> Dict[str, DatasetGenerator]:
+  def eval_datasets(self) -> tp.Dict[str, DatasetGenerator]:
     """Returns a dictionary of eval datasets.
 
     The keys for these datasets should correspond to the self.mode in jaxline.
@@ -66,7 +87,7 @@ class DatasetWithTransform(Dataset):
   so that we can more easily implement OOD experiments.
   """
   train_ds_transformer: DatasetTransformer
-  eval_ds_transformers: Dict[str, DatasetTransformer]
+  eval_ds_transformers: tp.Dict[str, DatasetTransformer]
 
 
 class OodVariant(enum.Enum):
@@ -75,7 +96,7 @@ class OodVariant(enum.Enum):
   OUT_DISTRIBUTION: str = 'eval_out_dist'
 
   @classmethod
-  def valid_values(cls) -> List[str]:
+  def valid_values(cls) -> tp.List[str]:
     return list(map(lambda c: c.value, cls))
 
 

@@ -69,7 +69,6 @@ class EpistemicNetwork(tp.Generic[Input, Output]):
 
 ################################################################################
 # Loss functions and training
-DataIndex = chex.Array  # Integer identifiers used for bootstrapping
 Data = tp.TypeVar('Data')  # General training data
 LossMetrics = tp.Dict[str, chex.Array]  # Metrics reported in training.
 
@@ -87,17 +86,3 @@ class LossFn(typing_extensions.Protocol[Input, Output, Data]):
                batch: Data,
                key: chex.PRNGKey) -> LossOutput:
     """Computes a loss based on one batch of data and a random key."""
-
-
-@chex.dataclass(frozen=True)
-class Batch:
-  x: chex.Array  # Inputs
-  y: chex.Array  # Targets
-  data_index: tp.Optional[DataIndex] = None  # Integer identifiers for data
-  weights: tp.Optional[chex.Array] = None  # None defaults to weights = jnp.ones
-  extra: tp.Dict[str, chex.Array] = dataclasses.field(
-      default_factory=dict
-  )  # You can put other optional stuff here
-
-
-BatchIterator = tp.Iterator[Batch]  # Equivalent to the dataset we loop through

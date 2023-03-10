@@ -15,12 +15,14 @@
 # ============================================================================
 
 """Helpful functions relating to losses."""
+
 import dataclasses
 from typing import Any, Callable, Dict, Generic, List, Optional, Sequence, Union
 
 import chex
 from enn import base
 from enn import data_noise
+from enn import datasets
 from enn import networks
 from enn.losses import base as losses_base
 import haiku as hk
@@ -191,7 +193,7 @@ def wrap_loss_no_state_as_loss(
       enn: networks.EnnArray,
       params: hk.Params,
       unused_state: hk.State,
-      batch: base.Batch,
+      batch: datasets.ArrayBatch,
       key: chex.PRNGKey
   ) -> base.LossOutput:
     enn = networks.wrap_enn_as_enn_no_state(enn)
@@ -212,7 +214,7 @@ def wrap_single_loss_no_state_as_single_loss(
       apply: networks.ApplyArray,
       params: hk.Params,
       unused_state: hk.State,
-      batch: base.Batch,
+      batch: datasets.ArrayBatch,
       index: base.Index,
   ) -> base.LossOutput:
     def apply_no_state(params: hk.Params,
@@ -235,7 +237,7 @@ def add_data_noise_no_state(
 
   def noisy_loss(apply: networks.ApplyNoState,
                  params: hk.Params,
-                 batch: base.Batch,
+                 batch: datasets.ArrayBatch,
                  index: base.Index) -> losses_base.LossOutputNoState:
     noisy_batch = noise_fn(batch, index)
     return single_loss(apply, params, noisy_batch, index)
@@ -256,7 +258,7 @@ def add_l2_weight_decay_no_state(
 
   def new_loss(enn: networks.EnnNoState,
                params: hk.Params,
-               batch: base.Batch,
+               batch: datasets.ArrayBatch,
                key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     loss, metrics = loss_fn(enn, params, batch, key)
     decay = l2_weights_with_predicate(scale_fn(params), predicate)
@@ -274,7 +276,7 @@ def combine_single_index_losses_no_state_as_metric(
   """Combines train_loss for training with extra_losses in metrics."""
 
   def combined_loss(apply: networks.ApplyNoState,
-                    params: hk.Params, batch: base.Batch,
+                    params: hk.Params, batch: datasets.ArrayBatch,
                     index: base.Index) -> losses_base.LossOutputNoState:
     loss, metrics = train_loss(apply, params, batch, index)
     for name, loss_fn in extra_losses.items():
@@ -295,7 +297,7 @@ def combine_losses_no_state_as_metric(
 
   def combined_loss(enn: networks.EnnNoState,
                     params: hk.Params,
-                    batch: base.Batch,
+                    batch: datasets.ArrayBatch,
                     key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     loss, metrics = train_loss(enn, params, batch, key)
     for name, loss_fn in extra_losses.items():
@@ -327,7 +329,7 @@ def combine_losses_no_state(
 
   def loss_fn(enn: networks.EnnNoState,
               params: hk.Params,
-              batch: base.Batch,
+              batch: datasets.ArrayBatch,
               key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     combined_loss = 0.
     combined_metrics = {}

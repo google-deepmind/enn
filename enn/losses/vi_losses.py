@@ -19,6 +19,7 @@ from typing import Callable
 
 import chex
 from enn import base
+from enn import datasets
 from enn import networks
 import haiku as hk
 import jax
@@ -30,7 +31,7 @@ tfd = tfp.distributions
 
 
 def get_awgn_loglike_fn(
-    sigma_w: float) -> Callable[[networks.Output, base.Batch], float]:
+    sigma_w: float) -> Callable[[networks.Output, datasets.ArrayBatch], float]:
   """Returns a function that computes the simple unnormalized log likelihood.
 
   It assumes response variable is perturbed with additive iid Gaussian noise.
@@ -42,7 +43,7 @@ def get_awgn_loglike_fn(
     A function that computes the log likelihood given data and output.
   """
 
-  def log_likelihood_fn(out: networks.Output, batch: base.Batch):
+  def log_likelihood_fn(out: networks.Output, batch: datasets.ArrayBatch):
     chex.assert_shape(batch.y, (None, 1))
     err_sq = jnp.mean(jnp.square(networks.parse_net_output(out) - batch.y))
     return -0.5 * err_sq / sigma_w**2
@@ -52,7 +53,7 @@ def get_awgn_loglike_fn(
 
 def get_categorical_loglike_fn(
     num_classes: int
-) -> Callable[[networks.Output, base.Batch], float]:
+) -> Callable[[networks.Output, datasets.ArrayBatch], float]:
   """Returns a function that computes the unnormalized log likelihood.
 
   It assumes response variable has a categorical distribution.
@@ -64,7 +65,7 @@ def get_categorical_loglike_fn(
     A function that computes the log likelihood given data and prediction.
   """
 
-  def log_likelihood_fn(out: networks.Output, batch: base.Batch):
+  def log_likelihood_fn(out: networks.Output, batch: datasets.ArrayBatch):
     chex.assert_shape(batch.y, (None, 1))
     logits = networks.parse_net_output(out)
     labels = jax.nn.one_hot(batch.y[:, 0], num_classes)

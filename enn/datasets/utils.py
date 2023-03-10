@@ -19,18 +19,17 @@
 from typing import Dict, Sequence
 
 import chex
-from enn import base
 from enn.datasets import base as ds_base
 import jax
 import tensorflow.compat.v2 as tf
 
 
 def change_ds_dict_to_enn_batch(
-    ds_dict: Dict[str, chex.Array]) -> base.Batch:
+    ds_dict: Dict[str, chex.Array]) -> ds_base.ArrayBatch:
   """Changes a dictionary of (image, label) to an enn batch."""
   assert 'image' in ds_dict
   assert 'label' in ds_dict
-  return base.Batch(x=ds_dict['image'], y=ds_dict['label'])
+  return ds_base.ArrayBatch(x=ds_dict['image'], y=ds_dict['label'])
 
 
 def add_data_index_to_dataset(ds: tf.data.Dataset) -> tf.data.Dataset:
@@ -82,13 +81,16 @@ def get_per_device_batch_size(total_batch_size: int) -> int:
   if ragged:
     raise ValueError(
         f'Global batch size {total_batch_size} must be divisible by the '
-        f'total number of devices {num_devices}')
+        f'total number of devices {num_devices}'
+    )
   return per_device_batch_size
 
 
-def _add_data_index(data_index: int, batch: base.Batch) -> base.Batch:
+def _add_data_index(
+    data_index: int, batch: ds_base.ArrayBatch
+) -> ds_base.ArrayBatch:
   """Adds data_index into the batch."""
-  return base.Batch(x=batch.x, y=batch.y, data_index=data_index)
+  return ds_base.ArrayBatch(x=batch.x, y=batch.y, data_index=data_index)
 
 
 class OverrideTrainDataset(ds_base.DatasetWithTransform):

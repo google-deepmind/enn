@@ -22,6 +22,7 @@ from typing import Dict, NamedTuple, Optional, Tuple
 from acme.utils import loggers
 import chex
 from enn import base
+from enn import datasets
 from enn import losses
 from enn import metrics
 from enn import networks
@@ -48,19 +49,20 @@ class Experiment(supervised_base.BaseExperiment):
   from it multiple times without reaching end of iterator.
   """
 
-  def __init__(self,
-               enn: networks.EnnArray,
-               loss_fn: losses.LossFnArray,
-               optimizer: optax.GradientTransformation,
-               dataset: base.BatchIterator,
-               seed: int = 0,
-               logger: Optional[loggers.Logger] = None,
-               train_log_freq: int = 1,
-               eval_datasets: Optional[Dict[str, base.BatchIterator]] = None,
-               eval_metrics: Optional[Dict[str, metrics.MetricCalculator]] = None,  # pylint:disable=line-too-long
-               eval_enn_samples: int = 100,
-               eval_log_freq: int = 1,
-               init_x: Optional[chex.Array] = None):
+  def __init__(
+      self,
+      enn: networks.EnnArray,
+      loss_fn: losses.LossFnArray,
+      optimizer: optax.GradientTransformation,
+      dataset: datasets.ArrayBatchIterator,
+      seed: int = 0,
+      logger: Optional[loggers.Logger] = None,
+      train_log_freq: int = 1,
+      eval_datasets: Optional[Dict[str, datasets.ArrayBatchIterator]] = None,
+      eval_metrics: Optional[Dict[str, metrics.MetricCalculator]] = None,
+      eval_enn_samples: int = 100,
+      eval_log_freq: int = 1,
+      init_x: Optional[chex.Array] = None):
     """Initializes an SGD experiment.
 
     Args:
@@ -110,7 +112,7 @@ class Experiment(supervised_base.BaseExperiment):
     # Define the SGD step on the loss
     def sgd_step(
         training_state: TrainingState,
-        batch: base.Batch,
+        batch: datasets.ArrayBatch,
         key: chex.PRNGKey,
     ) -> Tuple[TrainingState, base.LossMetrics]:
       # Calculate the loss, metrics and gradients
@@ -193,7 +195,7 @@ class Experiment(supervised_base.BaseExperiment):
         key,
     )
 
-  def loss(self, batch: base.Batch, key: chex.PRNGKey) -> chex.Array:
+  def loss(self, batch: datasets.ArrayBatch, key: chex.PRNGKey) -> chex.Array:
     """Evaluate the loss for one batch of data."""
     loss, (unused_network_state, unused_metrics) = self._loss(
         self.state.params,

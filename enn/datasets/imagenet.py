@@ -20,7 +20,6 @@ import enum
 import itertools as it
 from typing import Dict, Optional, Sequence, Tuple
 
-from enn import base
 from enn.datasets import base as ds_base
 from enn.datasets import utils as ds_utils
 import jax
@@ -168,7 +167,7 @@ def load(
       axes = tuple(range(images.ndim))
       axes = axes[:-4] + axes[-3:] + (axes[-4],)  # NHWC -> HWCN
       images = np.transpose(images, axes)
-    batch = base.Batch(x=images, y=labels)
+    batch = ds_base.ArrayBatch(x=images, y=labels)
     yield from it.repeat(batch, end - start)
     return
 
@@ -201,46 +200,51 @@ def load(
       # Only cache if we are reading a subset of the dataset.
       ds = ds.cache()
     ds = ds.repeat()
-    seed_shuffle = tf.cast(rngs[0][0],
-                           tf.int64) if seed is not None else 0
+    seed_shuffle = tf.cast(rngs[0][0], tf.int64) if seed is not None else 0
     ds = ds.shuffle(buffer_size=10 * total_batch_size, seed=seed_shuffle)
 
   else:
     if split.num_examples % total_batch_size != 0:
       raise ValueError(f'Test/valid must be divisible by {total_batch_size}')
 
-  def _preprocess_fn(batch: base.Batch,
-                     example_rng: Optional[tf.Tensor] = None) -> base.Batch:
-    image = _preprocess_image(batch.x, is_training, image_size,
-                              example_rng)
+  def _preprocess_fn(
+      batch: ds_base.ArrayBatch, example_rng: Optional[tf.Tensor] = None
+  ) -> ds_base.ArrayBatch:
+    image = _preprocess_image(batch.x, is_training, image_size, example_rng)
     return dataclasses.replace(batch, x=image)
 
   def _preprocess_with_per_example_rng(
-      ds: tf.data.Dataset, *, rng: Optional[np.ndarray]) -> tf.data.Dataset:
-
-    def _fn(example_index: int, batch: base.Batch) -> base.Batch:
+      ds: tf.data.Dataset, *, rng: Optional[np.ndarray]
+  ) -> tf.data.Dataset:
+    def _fn(
+        example_index: int, batch: ds_base.ArrayBatch
+    ) -> ds_base.ArrayBatch:
       example_rng = None
       if rng is not None:
         example_index = tf.cast(example_index, tf.int32)
         example_rng = tf.random.experimental.stateless_fold_in(
-            tf.cast(rng, tf.int64), example_index)
+            tf.cast(rng, tf.int64), example_index
+        )
       processed = _preprocess_fn(batch, example_rng)
       return processed
 
     return ds.enumerate().map(
-        _fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        _fn, num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
 
   if seed is None:
     ds = ds.map(
-        _preprocess_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        _preprocess_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
   else:
     rng_process = tf.cast(rngs[1], tf.int64)
+    ds = _preprocess_with_per_example_rng(ds, rng=rng_process)
     ds = _preprocess_with_per_example_rng(ds, rng=rng_process)
 
   # TODO(author2): This transform needs to come after processing.
   ds = ds_transform(ds)
 
-  def transpose_fn(batch: base.Batch) -> base.Batch:
+  def transpose_fn(batch: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
     # We use double-transpose-trick to improve performance for TPUs. Note
     # that this (typically) requires a matching HWCN->NHWC transpose in your
     # model code. The compiler cannot make this optimization for us since our
@@ -248,7 +252,7 @@ def load(
     transposed_x = tf.transpose(batch.x, (1, 2, 3, 0))
     return dataclasses.replace(batch, x=transposed_x)
 
-  def cast_fn(batch: base.Batch) -> base.Batch:
+  def cast_fn(batch: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
     x = tf.cast(batch.x, tf.dtypes.as_dtype(dtype))
     return dataclasses.replace(batch, x=x)
 

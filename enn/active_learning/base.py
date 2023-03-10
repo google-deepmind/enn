@@ -19,8 +19,8 @@ import abc
 import typing as tp
 
 import chex
-from enn import base as enn_base
 from enn import networks
+from enn.datasets import base as ds_base
 import haiku as hk
 import typing_extensions
 
@@ -38,9 +38,9 @@ class ActiveLearner(abc.ABC):
       self,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
+      batch: ds_base.ArrayBatch,
       key: chex.PRNGKey,
-  ) -> enn_base.Batch:
+  ) -> ds_base.ArrayBatch:
     """Samples a batch from a pool of data for learning."""
 
   @property
@@ -63,7 +63,7 @@ class PriorityFn(typing_extensions.Protocol):
       self,
       params: hk.Params,
       state: hk.State,
-      batch: enn_base.Batch,
+      batch: ds_base.ArrayBatch,
       key: chex.PRNGKey,
   ) -> PriorityOutput:
     """Assigns a priority score to a batch."""

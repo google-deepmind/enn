@@ -20,6 +20,7 @@ from typing import Callable, NamedTuple, Sequence
 
 import chex
 from enn import base
+from enn import datasets
 from enn import losses
 from enn import networks
 from enn import supervised
@@ -137,7 +138,7 @@ def train_vae(
   num_train, input_dim = data_x.shape
   dummy_y = jnp.zeros(shape=(num_train,))
   dataset = utils.make_batch_iterator(
-      base.Batch(x=data_x, y=dummy_y), batch_size
+      datasets.ArrayBatch(x=data_x, y=dummy_y), batch_size
   )
 
   # Create loss function

@@ -21,6 +21,7 @@ import dataclasses
 from absl import logging
 import chex
 from enn import base
+from enn import datasets
 from enn import networks
 from enn import utils
 from enn.losses import base as losses_base
@@ -32,7 +33,7 @@ import typing_extensions
 
 class FakeInputGenerator(typing_extensions.Protocol):
 
-  def __call__(self, batch: base.Batch,
+  def __call__(self, batch: datasets.ArrayBatch,
                key: chex.PRNGKey) -> chex.Array:
     """Generates a fake batch of input=x for use in prior regularization."""
 
@@ -43,7 +44,7 @@ class MatchingGaussianData(FakeInputGenerator):
 
   scale: float = 1.
 
-  def __call__(self, batch: base.Batch,
+  def __call__(self, batch: datasets.ArrayBatch,
                key: chex.PRNGKey) -> chex.Array:
     """Generates a fake batch of input=x for use in prior regularization."""
     return jax.random.normal(key, batch.x.shape) * self.scale
@@ -51,14 +52,14 @@ class MatchingGaussianData(FakeInputGenerator):
 
 def make_gaussian_dataset(batch_size: int,
                           input_dim: int,
-                          seed: int = 0) -> base.BatchIterator:
+                          seed: int = 0) -> datasets.ArrayBatchIterator:
   """Returns a batch iterator over random Gaussian data."""
   sample_fn = jax.jit(lambda x: jax.random.normal(x, [batch_size, input_dim]))
   def batch_iterator():
     rng = hk.PRNGSequence(seed)
     while True:
       x = sample_fn(next(rng))
-      yield base.Batch(x=x, y=jnp.ones([x.shape[0], 1]))
+      yield datasets.ArrayBatch(x=x, y=jnp.ones([x.shape[0], 1]))
   return batch_iterator()
 
 
@@ -153,7 +154,7 @@ class RegressionPriorLoss(losses_base.LossFnArray):
   distill_index: bool = False
 
   def __call__(self, enn: networks.EnnArray,
-               params: hk.Params, state: hk.State, batch: base.Batch,
+               params: hk.Params, state: hk.State, batch: datasets.ArrayBatch,
                key: chex.PRNGKey) -> base.LossOutput:
     index_key, data_key = jax.random.split(key)
     fake_x = self.input_generator(batch, data_key)
@@ -190,7 +191,7 @@ class ClassificationPriorLoss(losses_base.LossFnArray):
       enn: networks.EnnArray,
       params: hk.Params,
       state: hk.State,
-      batch: base.Batch,
+      batch: datasets.ArrayBatch,
       key: chex.PRNGKey,
   ) -> base.LossOutput:
     index_key, data_key = jax.random.split(key)

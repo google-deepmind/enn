@@ -15,9 +15,10 @@
 # ============================================================================
 
 """Functions for 2D classification."""
+
 from typing import Optional, Tuple
 
-from enn import base
+from enn import datasets as enn_datasets
 from enn import networks
 from enn import utils
 from enn.supervised import base as supervised_base
@@ -31,7 +32,7 @@ from sklearn import datasets
 
 def make_dataset(num_sample: int = 10,
                  prob_swap: float = 0.,
-                 seed: int = 0) -> base.BatchIterator:
+                 seed: int = 0) -> enn_datasets.ArrayBatchIterator:
   """Make a 2 moons dataset with num_sample per class and prob_swap label."""
   x, y = datasets.make_moons(2 * num_sample, noise=0.1, random_state=seed)
 
@@ -40,11 +41,11 @@ def make_dataset(num_sample: int = 10,
   swap_locs = np.where(swaps)[0]
   y[swap_locs] = 1 - y[swap_locs]
 
-  return utils.make_batch_iterator(base.Batch(x=x, y=y))
+  return utils.make_batch_iterator(enn_datasets.ArrayBatch(x=x, y=y))
 
 
 def make_dataframe(
-    dataset: Optional[base.BatchIterator] = None) -> pd.DataFrame:
+    dataset: Optional[enn_datasets.ArrayBatchIterator] = None) -> pd.DataFrame:
   dataset = dataset or make_dataset()
   batch = next(dataset)
   vals = np.hstack([batch.x, batch.y])

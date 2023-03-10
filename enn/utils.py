@@ -14,12 +14,14 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
+# TODO(jafarnia): move this file to enn.datasets.
 import dataclasses
 from typing import Optional
 
 from absl import flags
 import chex
 from enn import base
+from enn.datasets import base as ds_base
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -43,7 +45,7 @@ def make_batch_indexer(indexer: base.EpistemicIndexer,
   return batch_indexer
 
 
-def _clean_batch_data(data: base.Batch) -> base.Batch:
+def _clean_batch_data(data: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
   """Checks some of the common shape/index issues for dummy data.."""
   # Make sure that the data has a separate batch dimension
   if data.y.ndim == 1:
@@ -59,9 +61,9 @@ def _clean_batch_data(data: base.Batch) -> base.Batch:
   return data
 
 
-def make_batch_iterator(data: base.Batch,
+def make_batch_iterator(data: ds_base.ArrayBatch,
                         batch_size: Optional[int] = None,
-                        seed: int = 0) -> base.BatchIterator:
+                        seed: int = 0) -> ds_base.ArrayBatchIterator:
   """Converts toy-like training data to batch_iterator for sgd training."""
   data = _clean_batch_data(data)
   n_data = len(data.y)
@@ -75,7 +77,7 @@ def make_batch_iterator(data: base.Batch,
   return iter(tfds.as_numpy(ds))
 
 
-def make_test_data(n_samples: int = 20) -> base.BatchIterator:
+def make_test_data(n_samples: int = 20) -> ds_base.ArrayBatchIterator:
   """Generate a simple dataset suitable for classification or regression."""
   x, y = datasets.make_moons(n_samples, noise=0.1, random_state=0)
-  return make_batch_iterator(base.Batch(x=x, y=y))
+  return make_batch_iterator(ds_base.ArrayBatch(x=x, y=y))

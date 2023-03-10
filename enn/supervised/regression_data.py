@@ -16,7 +16,7 @@
 
 """Functions for 1D regression data."""
 import chex
-from enn import base
+from enn import datasets
 from enn import networks
 from enn import utils
 from enn.supervised import base as supervised_base
@@ -37,10 +37,10 @@ def make_regression_df() -> pd.DataFrame:
   return pd.DataFrame({'x': x, 'y': y}).reset_index()
 
 
-def make_dataset(extra_input_dim: int = 1) -> base.BatchIterator:
+def make_dataset(extra_input_dim: int = 1) -> datasets.ArrayBatchIterator:
   """Factory method to produce an iterator of Batches."""
   df = make_regression_df()
-  data = base.Batch(
+  data = datasets.ArrayBatch(
       x=np.vstack([df['x'].values, np.ones((extra_input_dim, len(df)))]).T,
       y=df['y'].values[:, None],
   )

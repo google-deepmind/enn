@@ -18,7 +18,7 @@
 import typing as tp
 
 import chex
-from enn import base as enn_base
+from enn import datasets
 from enn import networks
 from enn.active_learning import base
 import haiku as hk
@@ -31,13 +31,13 @@ def make_priority_fn_ctor(
   """Makes a priority function constructor from a per example priority."""
 
   def make_priority_fn(
-      enn_batch_fwd: networks.EnnBatchFwd[enn_base.Batch],
+      enn_batch_fwd: networks.EnnBatchFwd[datasets.ArrayBatch],
   ) -> base.PriorityFn:
     """Makes a priority function."""
     def priority_fn(
         params: hk.Params,
         state: hk.State,
-        batch: enn_base.Batch,
+        batch: datasets.ArrayBatch,
         key: chex.PRNGKey,
     ) -> base.PriorityOutput:
       logits = enn_batch_fwd(params, state, batch.x)
