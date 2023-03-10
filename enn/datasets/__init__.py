@@ -21,7 +21,6 @@ from enn.datasets.base import ArrayBatch
 from enn.datasets.base import ArrayBatchIterator
 from enn.datasets.base import DataIndex
 from enn.datasets.base import Dataset
-from enn.datasets.base import DatasetGenerator
 from enn.datasets.base import DatasetTransformer
 from enn.datasets.base import DatasetWithTransform
 from enn.datasets.base import EVAL_TRANSFORMERS_DEFAULT

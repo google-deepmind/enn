@@ -48,9 +48,6 @@ ArrayBatchIterator = tp.Iterator[
     ArrayBatch
 ]  # Equivalent to the dataset we loop through.
 
-# TODO(author3): Describe DatasetGenerator
-DatasetGenerator = tp.Generator[ArrayBatch, None, None]
-# DatasetGenerator = tp.Generator[ArrayBatch, None, None]
 DatasetTransformer = tp.Callable[[tf.data.Dataset], tf.data.Dataset]
 
 
@@ -68,11 +65,11 @@ class Dataset(abc.ABC):
     """Returns the shape of a single eval input from the dataset."""
 
   @abc.abstractmethod
-  def train_dataset(self) -> DatasetGenerator:
+  def train_dataset(self) -> ArrayBatchIterator:
     """Returns the train dataset."""
 
   @abc.abstractmethod
-  def eval_datasets(self) -> tp.Dict[str, DatasetGenerator]:
+  def eval_datasets(self) -> tp.Dict[str, ArrayBatchIterator]:
     """Returns a dictionary of eval datasets.
 
     The keys for these datasets should correspond to the self.mode in jaxline.

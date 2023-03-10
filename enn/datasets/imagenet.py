@@ -74,9 +74,9 @@ class Imagenet(ds_base.DatasetWithTransform):
   def eval_input_shape(self) -> Sequence[int]:
     return (224, 224, 3)
 
-  def train_dataset(self) -> ds_base.DatasetGenerator:
+  def train_dataset(self) -> ds_base.ArrayBatchIterator:
     """Returns the train dataset."""
-    def build_train_input() -> ds_base.DatasetGenerator:
+    def build_train_input() -> ds_base.ArrayBatchIterator:
       """See base class."""
       # double-transpose-trick is only needed on TPU.
       should_transpose_images = (
@@ -97,12 +97,12 @@ class Imagenet(ds_base.DatasetWithTransform):
     train_input = utils.py_prefetch(build_train_input)
     return utils.double_buffer_on_gpu(train_input)
 
-  def eval_datasets(self) -> Dict[str, ds_base.DatasetGenerator]:
+  def eval_datasets(self) -> Dict[str, ds_base.ArrayBatchIterator]:
     """Returns the evaluation dataset."""
 
     def build_eval_dataset(
         eval_ds_transformer: ds_base.DatasetTransformer
-    ) -> ds_base.DatasetGenerator:
+    ) -> ds_base.ArrayBatchIterator:
       # double-transpose-trick is only needed on TPU.
       should_transpose_images = (
           self.enable_double_transpose and
@@ -137,7 +137,7 @@ def load(
     seed: Optional[int] = None,
     ds_transform: ds_base.DatasetTransformer = lambda x: x,
     num_examples: Optional[int] = None,
-) -> ds_base.DatasetGenerator:
+) -> ds_base.ArrayBatchIterator:
   """Loads the given split of the dataset."""
   start, end = _shard(
       split,

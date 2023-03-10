@@ -63,7 +63,7 @@ class Mnist(ds_base.DatasetWithTransform):
   def eval_input_shape(self) -> Sequence[int]:
     return (28, 28, 1)
 
-  def train_dataset(self,) -> ds_base.DatasetGenerator:
+  def train_dataset(self,) -> ds_base.ArrayBatchIterator:
     """Returns the train dataset."""
     def build_train_input():
       ds = tfds.load(name='mnist', split='train')
@@ -89,12 +89,12 @@ class Mnist(ds_base.DatasetWithTransform):
     train_input = utils.py_prefetch(build_train_input)
     return utils.double_buffer_on_gpu(train_input)
 
-  def eval_datasets(self,) -> Dict[str, ds_base.DatasetGenerator]:
+  def eval_datasets(self,) -> Dict[str, ds_base.ArrayBatchIterator]:
     """Returns the evaluation dataset."""
 
     def build_eval_dataset(
         eval_ds_transformer: ds_base.DatasetTransformer
-    ) -> ds_base.DatasetGenerator:
+    ) -> ds_base.ArrayBatchIterator:
       ds = tfds.load(name='mnist', split='test')
       ds = ds.map(ds_utils.change_ds_dict_to_enn_batch)
       ds = ds_utils.add_data_index_to_dataset(ds)

@@ -113,8 +113,8 @@ class OverrideTrainDataset(ds_base.DatasetWithTransform):
   def eval_input_shape(self) -> Sequence[int]:
     return self.original_dataset.eval_input_shape
 
-  def train_dataset(self) -> ds_base.DatasetGenerator:
+  def train_dataset(self) -> ds_base.ArrayBatchIterator:
     return self.new_dataset.train_dataset()
 
-  def eval_datasets(self) -> Dict[str, ds_base.DatasetGenerator]:
+  def eval_datasets(self) -> Dict[str, ds_base.ArrayBatchIterator]:
     return self.original_dataset.eval_datasets()
