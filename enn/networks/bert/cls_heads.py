@@ -22,6 +22,7 @@ from enn import base as enn_base
 from enn import networks
 from enn.networks import epinet
 import haiku as hk
+import jax
 import jax.numpy as jnp
 
 
@@ -136,9 +137,9 @@ class CommonOutputLayer(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.DeviceArray,
+      inputs: jax.Array,
       is_training: bool = True,
-  ) -> jnp.DeviceArray:
+  ) -> jax.Array:
     """Compute the classification logits.
 
     Args:

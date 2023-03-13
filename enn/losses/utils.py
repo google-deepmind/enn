@@ -40,7 +40,7 @@ _SingleLoss = losses_base.SingleLossFn[base.Input, base.Output, base.Data]
 
 def l2_weights_with_predicate(
     params: hk.Params,
-    predicate: Optional[PredicateFn] = None) -> jnp.DeviceArray:
+    predicate: Optional[PredicateFn] = None) -> jax.Array:
   """Sum of squares of parameter weights that passes predicate_fn."""
   if predicate is not None:
     params = hk.data_structures.filter(predicate, params)

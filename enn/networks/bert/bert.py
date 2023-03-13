@@ -117,11 +117,11 @@ class BERT(hk.Module):
 
   def _bert_layer(
       self,
-      layer_input: jnp.DeviceArray,
+      layer_input: jax.Array,
       layer_index: int,
-      input_mask: jnp.DeviceArray,
+      input_mask: jax.Array,
       is_training: bool,
-  ) -> jnp.DeviceArray:
+  ) -> jax.Array:
     """Forward pass of a single layer."""
 
     *batch_dims, seq_length, hidden_size = layer_input.shape
@@ -218,9 +218,9 @@ class BERT(hk.Module):
 
   def __call__(
       self,
-      input_ids: jnp.DeviceArray,
-      token_type_ids: tp.Optional[jnp.DeviceArray] = None,
-      input_mask: tp.Optional[jnp.DeviceArray] = None,
+      input_ids: jax.Array,
+      token_type_ids: tp.Optional[jax.Array] = None,
+      input_mask: tp.Optional[jax.Array] = None,
       is_training: bool = True,
   ) -> networks.OutputWithPrior:
     """Forward pass of the BERT model."""

@@ -72,7 +72,7 @@ class WeightFn(typing_extensions.Protocol):
       self,
       rng_key: chex.PRNGKey,
       indices: Optional[Sequence[int]] = None,
-  ) -> jnp.DeviceArray:
+  ) -> jax.Array:
     ...
 
 
