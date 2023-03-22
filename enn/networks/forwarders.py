@@ -24,8 +24,15 @@ import jax
 import typing_extensions
 
 
+# TODO(author2): clarify the expected shapes/conventions for EnnBatchFwd
 class EnnBatchFwd(typing_extensions.Protocol[base.Input]):
-  """Creates a sampler for *multiple* logits samples from ENN."""
+  """Creates a sampler for *multiple* logits samples from ENN.
+
+  In most of our code applications this should output something with shape:
+    [num_enn_samples, num_batch, num_class]
+  However, we are not currently careful/clear about shape expectations, and
+  intend to improve on this.
+  """
 
   def __call__(
       self,
