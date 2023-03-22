@@ -239,7 +239,6 @@ def load(
   else:
     rng_process = tf.cast(rngs[1], tf.int64)
     ds = _preprocess_with_per_example_rng(ds, rng=rng_process)
-    ds = _preprocess_with_per_example_rng(ds, rng=rng_process)
 
   # TODO(author2): This transform needs to come after processing.
   ds = ds_transform(ds)
