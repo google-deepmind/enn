@@ -14,7 +14,7 @@
 # limitations under the License.
 # ============================================================================
 """Utility functions."""
-# TODO(jafarnia): move this file to enn.datasets.
+# TODO(author7): move this file to enn.datasets.
 import dataclasses
 from typing import Optional
 
