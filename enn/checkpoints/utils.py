@@ -145,7 +145,7 @@ def load_checkpoint_as_logit_fn(
     logits = enn_sampler(inputs, jax.random.PRNGKey(seed))
     ave_logits = average_logits(logits)
     # Wrap the output with prior
-    return networks.OutputWithPrior(ave_logits)
+    return networks.OutputWithPrior(ave_logits)  # pytype: disable=bad-return-type  # numpy-scalars
 
   return jax.jit(forward_fn)
 
@@ -190,7 +190,7 @@ def make_epinet_sampler_from_checkpoint(
     indices = jax.vmap(epinet.indexer)(keys)
 
     def index_fwd(index: base.Index) -> chex.Array:
-      return epinet.apply(epi_params, epi_state, inputs, index, hidden)
+      return epinet.apply(epi_params, epi_state, inputs, index, hidden)  # pytype: disable=bad-return-type  # numpy-scalars
 
     enn_out, unused_epi_state = jax.lax.map(index_fwd, indices)
     enn_logits = networks.parse_net_output(enn_out)

@@ -237,4 +237,4 @@ class EnsembleMLP(hk.Module):
       out = layer(out)
       if i < num_layers - 1:
         out = self.activation(out)
-    return out
+    return out  # pytype: disable=bad-return-type  # numpy-scalars

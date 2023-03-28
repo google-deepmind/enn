@@ -40,7 +40,7 @@ def make_priority_fn_ctor(
         batch: datasets.ArrayBatch,
         key: chex.PRNGKey,
     ) -> base.PriorityOutput:
-      logits = enn_batch_fwd(params, state, batch.x)
+      logits = enn_batch_fwd(params, state, batch.x)  # pytype: disable=wrong-arg-types  # numpy-scalars
       # Make sure labels have shape [num_data, 1] as expected by priority.
       labels = batch.y
       if labels.ndim == 1:
@@ -49,7 +49,7 @@ def make_priority_fn_ctor(
       return values, {}
     return priority_fn
 
-  return make_priority_fn
+  return make_priority_fn  # pytype: disable=bad-return-type  # numpy-scalars
 
 
 def uniform_per_example(

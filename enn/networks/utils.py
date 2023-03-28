@@ -223,6 +223,6 @@ def make_centered_enn(
   def centered_apply(params: hk.Params, state: hk.State, x: chex.Array,
                      z: base.Index) -> networks_base.Output:
     normalized_x = (x - x_mean) / (x_std + 1e-9)
-    return enn.apply(params, state, normalized_x, z)
+    return enn.apply(params, state, normalized_x, z)  # pytype: disable=bad-return-type  # numpy-scalars
 
-  return networks_base.EnnArray(centered_apply, enn.init, enn.indexer)
+  return networks_base.EnnArray(centered_apply, enn.init, enn.indexer)  # pytype: disable=wrong-arg-types  # numpy-scalars

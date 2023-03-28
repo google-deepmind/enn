@@ -175,7 +175,7 @@ class RegressionPriorLoss(losses_base.LossFnArray):
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
       loss += distill_mean_regression(batched_out, distill_out)
       loss += distill_var_regression(batched_out, distill_out)
-    return loss, (state, {})
+    return loss, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
 
 
 @dataclasses.dataclass
@@ -208,4 +208,4 @@ class ClassificationPriorLoss(losses_base.LossFnArray):
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)
       loss += distill_mean_classification(batched_out, distill_out)
       loss += distill_var_classification(batched_out, distill_out)
-    return loss, (state, {})
+    return loss, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars

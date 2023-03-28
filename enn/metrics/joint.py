@@ -58,7 +58,7 @@ def make_nll_polyadic_calculator(
     # Averaging over ENN samples
     batched_ll = jax.vmap(joint_ll_repeat, in_axes=[0, None, None])
     lls = batched_ll(logits, labels, key)
-    return -1 * metrics_base.average_sampled_log_likelihood(lls)
+    return -1 * metrics_base.average_sampled_log_likelihood(lls)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
   def polyadic_nll(logits: chex.Array, labels: chex.Array) -> float:
     """Returns polyadic NLL based on repeated inputs.
@@ -137,7 +137,7 @@ def calculate_joint_ll(logits: chex.Array, labels: chex.Array) -> float:
 
   batched_ll = jax.vmap(marginal.categorical_log_likelihood, in_axes=[0, None])
   sampled_ll = batched_ll(class_probs, labels)
-  return metrics_base.average_sampled_log_likelihood(sampled_ll)
+  return metrics_base.average_sampled_log_likelihood(sampled_ll)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
 
 def reshape_to_smaller_batches(

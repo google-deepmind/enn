@@ -90,7 +90,7 @@ def _add_data_index(
     data_index: int, batch: ds_base.ArrayBatch
 ) -> ds_base.ArrayBatch:
   """Adds data_index into the batch."""
-  return ds_base.ArrayBatch(x=batch.x, y=batch.y, data_index=data_index)
+  return ds_base.ArrayBatch(x=batch.x, y=batch.y, data_index=data_index)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
 
 class OverrideTrainDataset(ds_base.DatasetWithTransform):

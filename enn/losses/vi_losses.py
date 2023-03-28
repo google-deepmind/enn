@@ -154,7 +154,7 @@ def get_sample_based_model_prior_kl_fn(
                         index: base.Index) -> float:
     """Compute the KL distance between model and prior densities using samples."""
     del index
-    latent = out.extra['hyper_index']
+    latent = out.extra['hyper_index']  # pytype: disable=attribute-error  # numpy-scalars
 
     # Calculate prior
     log_priors_sum = sum_log_scale_mixture_normal(latent, sigma_1,
