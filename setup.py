@@ -15,21 +15,25 @@
 # ============================================================================
 """Install script for setuptools."""
 
-import imp   # pylint: disable=deprecated-module
+import imp  # pylint: disable=deprecated-module
 
 import setuptools
 
 # Additional requirements for testing.
+# Discussion on `pytype==2021.8.11`: pytype latest version raises some issues
+# tracked in https://github.com/google/pytype/issues/1359. This version is
+# borrowed from https://github.com/deepmind/acme/blob/master/setup.py#L71
 testing_require = [
-    'mock',
     'pytest-xdist',
-    'pytype==2021.8.11',
+    'pytype==2021.8.11',  # to be compatible with dm-acme
 ]
 
 setuptools.setup(
     name='enn',
-    description=('Epistemic neural networks. '
-                 'A library for probabilistic inference via neural networks.'),
+    description=(
+        'Epistemic neural networks. '
+        'A library for probabilistic inference via neural networks.'
+    ),
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/deepmind/enn',
@@ -39,30 +43,30 @@ setuptools.setup(
     version=imp.load_source('_metadata', 'enn/_metadata.py').__version__,
     keywords='probabilistic-inference python machine-learning',
     packages=setuptools.find_packages(),
+    # Discussion on pinning versions: As of 2023-03-31, `dm-acme==0.4.0` is the
+    # latest version that supports Python 3.7, 3.8, and 3.9. However, this
+    # version works only with `tensorflow==2.8.0`, `tensorflow-datasets==4.6.0`,
+    # and `tensorflow_probability==0.15.0` as specified in
+    # https://github.com/deepmind/acme/blob/master/setup.py#L39.
+    # Moreover, our library does not require loading `tensorflow_probability`,
+    # it is just loaded to pin to the specific version required by dm-acme.
     install_requires=[
         'absl-py',
         'chex',
-        'dm-acme==0.4.0',
+        'dill',
+        'dm-acme==0.4.0',  # latest acme version works with Python 3.7, 3.8, 3.9
         'dm-haiku',
-        'dataclasses',  # Back-port for Python 3.6.
         'jax',
-        'jaxlib',
         'jaxline',
-        'matplotlib',
-        'neural-tangents',
         'numpy',
         'optax',
         'pandas',
         'rlax',
         'plotnine',
-        'scipy',
-        'scikit-image',
         'scikit-learn',
-        'six',
-        'tensorflow==2.8.0',
-        'tensorflow-datasets==4.4.0',
-        'tensorflow_probability==0.15.0',
-        'termcolor',
+        'tensorflow==2.8.0',  # to be compatible with dm-acme
+        'tensorflow-datasets==4.6.0',  # to be compatible with dm-acme
+        'tensorflow_probability==0.15.0',  # to be compatible with dm-acme
         'typing-extensions',
     ],
     extras_require={

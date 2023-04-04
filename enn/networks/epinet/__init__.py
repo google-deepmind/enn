@@ -21,6 +21,10 @@ from enn.networks.epinet.base import EpinetApplyWithState
 from enn.networks.epinet.base import EpinetInitWithState
 from enn.networks.epinet.base import EpinetWithState
 
+# last_layer
+from enn.networks.epinet.last_layer import MLPEpinetWithPrior
+from enn.networks.epinet.last_layer import parse_base_hidden
+
 # ResNet
 from enn.networks.epinet.mlp import make_mlp_epinet
 
