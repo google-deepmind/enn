@@ -35,7 +35,10 @@ class IndexersTest(parameterized.TestCase):
   def test_index_forward(self, indexer: base.EpistemicIndexer):
     key = jax.random.PRNGKey(777)
     jit_indexer = jax.jit(lambda x: indexer(x))  # pylint: disable=unnecessary-lambda
-    assert np.allclose(indexer(key), jit_indexer(key))
+    if isinstance(indexer, indexers.PrngIndexer):
+      assert np.all(indexer(key) == jit_indexer(key))
+    else:
+      assert np.allclose(indexer(key), jit_indexer(key))
 
 
 if __name__ == '__main__':
