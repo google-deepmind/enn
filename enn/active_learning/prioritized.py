@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-class PrioritizedBatcher(base.ActiveLearner):
+class PrioritizedBatcher(base.ActiveLearner[datasets.ArrayBatch]):
   """Prioritizes bathces based on a priority fn."""
 
   def __init__(
