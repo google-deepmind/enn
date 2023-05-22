@@ -26,7 +26,7 @@ import jax
 import jax.numpy as jnp
 from jaxline import utils
 import numpy as np
-import tensorflow.compat.v2 as tf
+import tensorflow.compat.v2 as tf  # pytype: disable=import-error
 import tensorflow_datasets as tfds
 
 

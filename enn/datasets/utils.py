@@ -21,7 +21,7 @@ from typing import Dict, Sequence
 import chex
 from enn.datasets import base as ds_base
 import jax
-import tensorflow.compat.v2 as tf
+import tensorflow.compat.v2 as tf  # pytype: disable=import-error
 
 
 def change_ds_dict_to_enn_batch(

@@ -23,7 +23,7 @@ import dataclasses
 from typing import Callable, Optional
 
 from enn.datasets import base as ds_base
-import tensorflow.compat.v2 as tf
+import tensorflow.compat.v2 as tf  # pytype: disable=import-error
 
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE

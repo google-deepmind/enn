@@ -20,7 +20,7 @@ from typing import Dict, Tuple
 
 from enn.datasets import base
 import numpy as np
-import tensorflow.compat.v2 as tf
+import tensorflow.compat.v2 as tf  # pytype: disable=import-error
 
 
 def get_dataset_transform_from_type(

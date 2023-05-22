@@ -25,7 +25,7 @@ from enn.datasets import utils as ds_utils
 import jax
 from jaxline import utils
 import numpy as np
-import tensorflow.compat.v2 as tf
+import tensorflow.compat.v2 as tf  # pytype: disable=import-error
 import tensorflow_datasets as tfds
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
