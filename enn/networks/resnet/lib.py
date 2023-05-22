@@ -79,7 +79,7 @@ class ResBlockV1(ResBlock):
     else:
       self.shortcut = lambda x: x
 
-  def __call__(self,  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
+  def __call__(self,
                inputs: chex.Array,
                is_training: bool,
                test_local_stats: bool) -> chex.Array:
@@ -128,7 +128,7 @@ class ResBlockV2(ResBlock):
     self.conv_shortcut = conv_ctor(
         output_channels, stride=stride, kernel_shape=1, name='conv_shortcut')
 
-  def __call__(self,  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
+  def __call__(self,
                inputs: chex.Array,
                is_training: bool,
                test_local_stats: bool) -> chex.Array:
