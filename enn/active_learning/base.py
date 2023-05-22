@@ -19,13 +19,13 @@ import abc
 import typing as tp
 
 import chex
+from enn import base as enn_base
 from enn import networks
-from enn.datasets import base as ds_base
 import haiku as hk
 import typing_extensions
 
 
-class ActiveLearner(abc.ABC):
+class ActiveLearner(abc.ABC, tp.Generic[enn_base.Data]):
   """Samples a batch from a pool of data for learning.
 
   An active learner selects an "acquisition batch" with acquisition_size
@@ -38,9 +38,9 @@ class ActiveLearner(abc.ABC):
       self,
       params: hk.Params,
       state: hk.State,
-      batch: ds_base.ArrayBatch,
+      batch: enn_base.Data,
       key: chex.PRNGKey,
-  ) -> ds_base.ArrayBatch:
+  ) -> enn_base.Data:
     """Samples a batch from a pool of data for learning."""
 
   @property
@@ -57,13 +57,13 @@ class ActiveLearner(abc.ABC):
 PriorityOutput = tp.Tuple[chex.Array, tp.Dict[str, chex.Array]]
 
 
-class PriorityFn(typing_extensions.Protocol):
+class PriorityFn(typing_extensions.Protocol[enn_base.Data]):
 
   def __call__(
       self,
       params: hk.Params,
       state: hk.State,
-      batch: ds_base.ArrayBatch,
+      batch: enn_base.Data,
       key: chex.PRNGKey,
   ) -> PriorityOutput:
     """Assigns a priority score to a batch."""
