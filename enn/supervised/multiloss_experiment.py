@@ -20,10 +20,10 @@ import dataclasses
 import functools
 from typing import Callable, Dict, NamedTuple, Optional, Sequence, Tuple
 
-from acme.utils import loggers
 import chex
 from enn import base
 from enn import datasets
+from enn import loggers
 from enn import losses
 from enn import networks
 from enn.supervised import base as supervised_base
@@ -95,7 +95,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
     def forward(params: hk.Params, state: hk.State, inputs: chex.Array,
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
-      out, state = self.enn.apply(params, state, inputs, index)
+      out, _ = self.enn.apply(params, state, inputs, index)
       return out
     self._forward = jax.jit(forward)
 

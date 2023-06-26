@@ -19,8 +19,8 @@ import abc
 import typing as tp
 
 import chex
-from enn import networks
 from enn.datasets import base as ds_base
+from enn.networks import forwarders
 import haiku as hk
 import typing_extensions
 
@@ -73,7 +73,7 @@ class PriorityFnCtor(typing_extensions.Protocol):
 
   def __call__(
       self,
-      enn_batch_fwd: networks.EnnBatchFwd[chex.Array],
+      enn_batch_fwd: forwarders.EnnBatchFwd[chex.Array],
   ) -> PriorityFn:
     """Constructs a priority function base on an enn_batch_fwd."""
 

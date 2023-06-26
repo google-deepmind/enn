@@ -20,7 +20,7 @@ import typing as tp
 
 import chex
 from enn import base as enn_base
-from enn import networks
+from enn.networks import base as networks_base
 import numpy as np
 
 
@@ -33,8 +33,8 @@ class BertInput(tp.NamedTuple):
 
 
 # Enn modules specialized to work with BertInput.
-BertEnn = enn_base.EpistemicNetwork[BertInput, networks.OutputWithPrior]
-BertApply = enn_base.ApplyFn[BertInput, networks.OutputWithPrior]
+BertEnn = enn_base.EpistemicNetwork[BertInput, networks_base.OutputWithPrior]
+BertApply = enn_base.ApplyFn[BertInput, networks_base.OutputWithPrior]
 BertInit = enn_base.InitFn[BertInput]
 
 

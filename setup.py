@@ -25,7 +25,7 @@ import setuptools
 # borrowed from https://github.com/deepmind/acme/blob/master/setup.py#L71
 testing_require = [
     'pytest-xdist',
-    'pytype==2021.8.11',  # to be compatible with dm-acme
+    'pytype',  # to be compatible with dm-acme
 ]
 
 setuptools.setup(
@@ -54,7 +54,6 @@ setuptools.setup(
         'absl-py',
         'chex',
         'dill',
-        'dm-acme==0.4.0',  # latest acme version works with Python 3.7, 3.8, 3.9
         'dm-haiku',
         'jax',
         'jaxline',
@@ -64,9 +63,9 @@ setuptools.setup(
         'rlax',
         'plotnine',
         'scikit-learn',
-        'tensorflow==2.8.0',  # to be compatible with dm-acme
-        'tensorflow-datasets==4.6.0',  # to be compatible with dm-acme
-        'tensorflow_probability==0.15.0',  # to be compatible with dm-acme
+        'tensorflow',  # to be compatible with dm-acme
+        'tensorflow-datasets',  # to be compatible with dm-acme
+        'tensorflow_probability',  # to be compatible with dm-acme
         'typing-extensions',
     ],
     extras_require={

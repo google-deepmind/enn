@@ -19,7 +19,8 @@ import typing as tp
 
 import chex
 from enn import base as enn_base
-from enn import networks
+from enn.networks import base as networks_base
+from enn.networks import indexers
 from enn.networks.bert import base
 import haiku as hk
 import jax
@@ -37,7 +38,7 @@ def make_bert_enn(
 ) -> base.BertEnn:
   """Makes the BERT model as an ENN with state."""
 
-  def net_fn(inputs: base.BertInput) -> networks.OutputWithPrior:
+  def net_fn(inputs: base.BertInput) -> networks_base.OutputWithPrior:
     """Forwards the network (no index)."""
     hidden_drop = bert_config.hidden_dropout_prob if is_training else 0.
     att_drop = bert_config.attention_probs_dropout_prob if is_training else 0.
@@ -69,7 +70,7 @@ def make_bert_enn(
       state: hk.State,
       inputs: base.BertInput,
       index: enn_base.Index,  # BERT operates with an RNG-key index.
-  ) -> tp.Tuple[networks.OutputWithPrior, hk.State]:
+  ) -> tp.Tuple[networks_base.OutputWithPrior, hk.State]:
     key = index
     return transformed.apply(params, state, key, inputs)
   def init(rng_key: chex.PRNGKey,
@@ -78,7 +79,7 @@ def make_bert_enn(
     del index  # rng_key is duplicated in this case.
     return transformed.init(rng_key, inputs)
 
-  return base.BertEnn(apply, init, networks.PrngIndexer())
+  return base.BertEnn(apply, init, indexers.PrngIndexer())
 
 
 class BERT(hk.Module):
@@ -222,7 +223,7 @@ class BERT(hk.Module):
       token_type_ids: tp.Optional[jax.Array] = None,
       input_mask: tp.Optional[jax.Array] = None,
       is_training: bool = True,
-  ) -> networks.OutputWithPrior:
+  ) -> networks_base.OutputWithPrior:
     """Forward pass of the BERT model."""
 
     # Prepare size, fill out missing inputs.
@@ -307,5 +308,5 @@ class BERT(hk.Module):
     extra['log_probs'] = log_probs
     extra['pooled_output'] = pooled_output
 
-    return networks.OutputWithPrior(
+    return networks_base.OutputWithPrior(
         train=pooled_output, prior=jnp.zeros_like(pooled_output), extra=extra)

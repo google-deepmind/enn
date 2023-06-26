@@ -71,7 +71,7 @@ We have tested `ENN` on Python 3.7. To install the dependencies:
 3.  Test that you can load `ENN` by training a simple ensemble ENN.
 
     ```python
-    from acme.utils.loggers.terminal import TerminalLogger
+    from enn.loggers import TerminalLogger
 
     from enn import losses
     from enn import networks

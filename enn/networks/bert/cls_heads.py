@@ -19,8 +19,11 @@ from typing import Optional, Sequence, Tuple
 
 import chex
 from enn import base as enn_base
-from enn import networks
+from enn.networks import base as networks_base
+from enn.networks import dropout
+from enn.networks import einsum_mlp
 from enn.networks import epinet
+from enn.networks import indexers
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -42,7 +45,7 @@ class AgentConfig:
 def make_head_enn(
     agent: str,
     num_classes: int,
-    agent_config: Optional[AgentConfig] = None) -> networks.EnnArray:
+    agent_config: Optional[AgentConfig] = None) -> networks_base.EnnArray:
   """Returns a last layer (head) enn."""
   if agent_config is None:
     agent_config = AgentConfig()
@@ -58,12 +61,12 @@ def make_head_enn(
                                   prior_scale=agent_config.prior_scale,
                                   stop_gradient=True)
   elif agent == 'ensemble':
-    return networks.make_einsum_ensemble_mlp_enn(
+    return einsum_mlp.make_einsum_ensemble_mlp_enn(
         output_sizes=output_sizes,
         num_ensemble=agent_config.num_ensemble,
     )
   elif agent == 'dropout':
-    return networks.MLPDropoutENN(
+    return dropout.MLPDropoutENN(
         output_sizes=output_sizes,
         dropout_rate=agent_config.dropout_rate,
         dropout_input=False,
@@ -74,10 +77,10 @@ def make_head_enn(
 
 def make_baseline_head_enn(
     num_classes: int, is_training: bool
-) -> networks.EnnArray:
+) -> networks_base.EnnArray:
   """Makes an enn of the baseline classifier head."""
 
-  def net_fn(inputs: chex.Array) -> networks.OutputWithPrior:
+  def net_fn(inputs: chex.Array) -> networks_base.OutputWithPrior:
     """Forwards the network."""
     classification_layer = CommonOutputLayer(
         num_classes=num_classes,
@@ -87,7 +90,7 @@ def make_baseline_head_enn(
     outputs = classification_layer(inputs, is_training=is_training)
 
     # Wrap in ENN output layer
-    return networks.OutputWithPrior(outputs, prior=jnp.zeros_like(outputs))
+    return networks_base.OutputWithPrior(outputs, prior=jnp.zeros_like(outputs))
 
   # Transformed has the rng input, which we need to change --> index.
   transformed = hk.transform_with_state(net_fn)
@@ -96,7 +99,7 @@ def make_baseline_head_enn(
       state: hk.State,
       inputs: chex.Array,
       index: enn_base.Index,
-  ) -> Tuple[networks.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
     return transformed.apply(params, state, index, inputs)
   def init(rng_key: chex.PRNGKey,
            inputs: chex.Array,
@@ -104,7 +107,7 @@ def make_baseline_head_enn(
     del index  # rng_key is duplicated in this case.
     return transformed.init(rng_key, inputs)
 
-  return networks.EnnArray(apply, init, networks.PrngIndexer())
+  return networks_base.EnnArray(apply, init, indexers.PrngIndexer())
 
 
 class CommonOutputLayer(hk.Module):

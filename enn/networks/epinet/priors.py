@@ -22,7 +22,10 @@ from typing import Optional, Sequence, Tuple
 
 import chex
 from enn import base
-from enn import networks
+from enn.networks import base as networks_base
+from enn.networks import einsum_mlp
+from enn.networks import ensembles
+from enn.networks import priors
 from enn.networks.epinet import base as epinet_base
 import haiku as hk
 import jax
@@ -31,7 +34,7 @@ import jax.numpy as jnp
 
 def combine_epinet_and_prior(
     epinet: epinet_base.EpinetWithState,
-    prior_fn: networks.PriorFn,
+    prior_fn: priors.PriorFn,
     prior_scale: float = 1,
 ) -> epinet_base.EpinetWithState:
   """Combines epinet and prior_fn to give a new epinet."""
@@ -41,10 +44,10 @@ def combine_epinet_and_prior(
       inputs: chex.Array,  # ENN inputs = x
       index: base.Index,  # ENN index = z
       hidden: chex.Array,  # Base net hiddens = phi(x)
-  ) -> Tuple[networks.OutputWithPrior, hk.State]:
+  ) -> Tuple[networks_base.OutputWithPrior, hk.State]:
     epi_out, epi_state = epinet.apply(params, state, inputs, index, hidden)
     prior_out = prior_fn(inputs, index)
-    combined_out = networks.OutputWithPrior(
+    combined_out = networks_base.OutputWithPrior(
         train=epi_out.train,
         prior=epi_out.prior + prior_out * prior_scale,
         extra=epi_out.extra
@@ -58,7 +61,7 @@ def make_imagenet_mlp_prior(
     num_ensemble: int = 1,
     hidden_sizes: Sequence[int] = (50, 50),
     num_classes: int = 1000,
-    seed: int = 23) -> networks.PriorFn:
+    seed: int = 23) -> priors.PriorFn:
   """Combining a few mlps as prior function."""
   # Note that this returns a callable function and no parameters are exposed.
   rng = hk.PRNGSequence(seed)
@@ -69,7 +72,7 @@ def make_imagenet_mlp_prior(
     if jax.local_devices()[0].platform == 'tpu':
       x = jnp.transpose(x, (3, 0, 1, 2))  # HWCN -> NHWC
     x = hk.avg_pool(x, window_shape=10, strides=5, padding='VALID')
-    model = networks.EnsembleMLP(output_sizes, num_ensemble)
+    model = einsum_mlp.EnsembleMLP(output_sizes, num_ensemble)
     return model(x)
   transformed = hk.without_apply_rng(hk.transform(net_fn))
 
@@ -88,7 +91,7 @@ def make_imagenet_conv_prior(
     output_channels: Sequence[int] = (4, 8, 8),
     kernel_shapes: Sequence[int] = (10, 10, 3),
     strides: Sequence[int] = (5, 5, 2),
-) -> networks.PriorFn:
+) -> priors.PriorFn:
   """Combining a few conv nets as prior function."""
   # Note that this returns a callable function and no parameters are exposed.
   rng = hk.PRNGSequence(seed)
@@ -111,7 +114,7 @@ def make_imagenet_conv_prior(
     return hk.nets.MLP([num_classes], name='prior')(x)
 
   transformed = hk.without_apply_rng(hk.transform(conv_net))
-  ensemble = networks.Ensemble(model=transformed, num_ensemble=num_ensemble)
+  ensemble = ensembles.Ensemble(model=transformed, num_ensemble=num_ensemble)
 
   dummy_index = ensemble.indexer(next(rng))
   dummy_input = jnp.ones(shape=(1, 224, 224, 3))
@@ -133,7 +136,7 @@ def make_cifar_conv_prior(
     seed: int = 23,
     output_channels: Sequence[int] = (4, 8, 4),
     kernel_shapes: Optional[Sequence[int]] = None,
-) -> networks.PriorFn:
+) -> priors.PriorFn:
   """Combining a few conv nets as prior function."""
   rng = hk.PRNGSequence(seed)
 
@@ -152,7 +155,7 @@ def make_cifar_conv_prior(
     return hk.nets.MLP([num_classes], name='prior')(x)
 
   transformed = hk.without_apply_rng(hk.transform(conv_net))
-  ensemble = networks.Ensemble(model=transformed, num_ensemble=num_ensemble)
+  ensemble = ensembles.Ensemble(model=transformed, num_ensemble=num_ensemble)
 
   dummy_index = ensemble.indexer(next(rng))
   dummy_input = jnp.ones(shape=(4, 32, 32, 3))

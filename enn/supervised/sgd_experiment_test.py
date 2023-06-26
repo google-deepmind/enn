@@ -23,7 +23,7 @@ from absl.testing import parameterized
 from enn import losses
 from enn import networks
 from enn import utils
-from enn.supervised.sgd_experiment import Experiment
+from enn.supervised import sgd_experiment
 import jax
 import optax
 
@@ -52,16 +52,21 @@ class ExperimentTest(parameterized.TestCase):
     else:
       raise ValueError(f'num_outputs should be >= 1. It is {num_outputs}.')
     loss_fn = losses.average_single_index_loss(
-        single_loss, num_index_samples=10)
+        single_loss, num_index_samples=10
+    )
 
-    experiment = Experiment(enn, loss_fn, optimizer, dataset, seed)
+    experiment = sgd_experiment.Experiment(
+        enn, loss_fn, optimizer, dataset, seed
+    )
     init_key, loss_key = jax.random.split(jax.random.PRNGKey(seed), 2)
     initial_loss = experiment.loss(next(dataset), init_key)
     experiment.train(50)
     final_loss = experiment.loss(next(dataset), loss_key)
     self.assertGreater(
-        initial_loss, final_loss,
-        f'final loss {final_loss} is greater than initial loss {initial_loss}')
+        initial_loss,
+        final_loss,
+        f'final loss {final_loss} is greater than initial loss {initial_loss}',
+    )
 
 
 if __name__ == '__main__':

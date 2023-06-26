@@ -19,10 +19,10 @@ import dataclasses
 from typing import Callable, Optional, Tuple
 
 from enn import datasets
-from enn import networks
+from enn.networks import base
 import haiku as hk
 
-EnnCtor = Callable[[], networks.EnnArray]
+EnnCtor = Callable[[], base.EnnArray]
 ParamsStateLoadFn = Callable[[], Tuple[hk.Params, hk.State]]
 
 

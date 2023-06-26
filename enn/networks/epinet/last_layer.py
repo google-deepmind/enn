@@ -19,7 +19,9 @@ from typing import Optional, Sequence
 
 import chex
 from enn import base
-from enn import networks
+from enn.networks import base as networks_base
+from enn.networks import indexers
+from enn.networks import mlp
 from enn.networks.epinet import base as epinet_base
 import haiku as hk
 import jax.numpy as jnp
@@ -41,11 +43,11 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
 
     def epinet_fn(inputs: chex.Array,
                   index: base.Index,
-                  hidden: chex.Array) -> networks.OutputWithPrior:
+                  hidden: chex.Array) -> networks_base.OutputWithPrior:
       # Creating networks
-      train_epinet = networks.ProjectedMLP(
+      train_epinet = mlp.ProjectedMLP(
           epinet_hiddens, num_classes, index_dim, name='train_epinet')
-      prior_epinet = networks.ProjectedMLP(
+      prior_epinet = mlp.ProjectedMLP(
           prior_epinet_hiddens, num_classes, index_dim, name='prior_epinet')
 
       if drop_inputs:
@@ -57,23 +59,23 @@ class MLPEpinetWithPrior(epinet_base.EpinetWithState):
       # Wiring networks: add linear epinet (+ prior) from final output layer.
       epi_train = train_epinet(epi_inputs, index)
       epi_prior = prior_epinet(epi_inputs, index)
-      return networks.OutputWithPrior(
+      return networks_base.OutputWithPrior(
           train=epi_train,
           prior=prior_scale * epi_prior,
       )
 
     # Form ENN from haiku transformed.
     transformed = hk.without_apply_rng(hk.transform_with_state(epinet_fn))
-    indexer = networks.GaussianIndexer(index_dim)
+    indexer = indexers.GaussianIndexer(index_dim)
     super().__init__(transformed.apply, transformed.init, indexer)
 
 
 def parse_base_hidden(
-    base_out: networks.Output,
+    base_out: networks_base.Output,
     hidden_name: str = 'final_out',
 ) -> chex.Array:
   """Parses the final hidden layer from the base network output."""
   # TODO(author2): improve type checking on base_out
-  assert isinstance(base_out, networks.OutputWithPrior)
+  assert isinstance(base_out, networks_base.OutputWithPrior)
   assert hidden_name in base_out.extra
   return base_out.extra[hidden_name]

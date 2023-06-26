@@ -15,6 +15,7 @@
 # ============================================================================
 
 """Exposing the public methods of the networks."""
+from enn.networks import epinet
 # Base
 from enn.networks.base import ApplyArray
 from enn.networks.base import ApplyNoState

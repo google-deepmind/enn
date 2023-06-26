@@ -37,7 +37,7 @@ class ForwardFn(Protocol):
     """Forwards a ResNet block with appropriate defaults."""
 
 
-class ResBlock(abc.ABC, hk.Module, ForwardFn):
+class ResBlock(abc.ABC, hk.Module):
   """ResNet Block."""
 
   @abc.abstractmethod

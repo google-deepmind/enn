@@ -19,8 +19,8 @@ import typing as tp
 
 import chex
 from enn import datasets
-from enn import networks
 from enn.active_learning import base
+from enn.networks import forwarders
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -31,7 +31,7 @@ def make_priority_fn_ctor(
   """Makes a priority function constructor from a per example priority."""
 
   def make_priority_fn(
-      enn_batch_fwd: networks.EnnBatchFwd[datasets.ArrayBatch],
+      enn_batch_fwd: forwarders.EnnBatchFwd[datasets.ArrayBatch],
   ) -> base.PriorityFn:
     """Makes a priority function."""
     def priority_fn(

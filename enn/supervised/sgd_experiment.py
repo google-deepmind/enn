@@ -19,10 +19,10 @@
 import functools
 from typing import Dict, NamedTuple, Optional, Tuple
 
-from acme.utils import loggers
 import chex
 from enn import base
 from enn import datasets
+from enn import loggers
 from enn import losses
 from enn import metrics
 from enn import networks
