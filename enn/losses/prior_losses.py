@@ -149,7 +149,9 @@ def distill_var_classification(
 class RegressionPriorLoss(losses_base.LossFnArray):
   """Regress fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
-  input_generator: FakeInputGenerator = MatchingGaussianData()
+  input_generator: FakeInputGenerator = dataclasses.field(
+      default_factory=MatchingGaussianData
+  )
   scale: float = 1.
   distill_index: bool = False
 
@@ -182,7 +184,9 @@ class RegressionPriorLoss(losses_base.LossFnArray):
 class ClassificationPriorLoss(losses_base.LossFnArray):
   """Penalize fake data back to prior, and distill mean/var to mean_index."""
   num_index_sample: int
-  input_generator: FakeInputGenerator = MatchingGaussianData()
+  input_generator: FakeInputGenerator = dataclasses.field(
+      default_factory=MatchingGaussianData
+  )
   scale: float = 1.
   distill_index: bool = False
 
