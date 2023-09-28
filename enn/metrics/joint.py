@@ -45,7 +45,7 @@ def make_nll_polyadic_calculator(
 
     # Sample with replacement from the anchor points and sum for joint ll
     selected = jax.random.randint(key, shape=[tau], minval=0, maxval=kappa)
-    return jnp.sum(log_probs[selected])
+    return jnp.sum(log_probs[selected])  # pytype: disable=bad-return-type  # jnp-type
 
   def enn_nll(logits: chex.Array,
               labels: chex.Array,
@@ -90,7 +90,7 @@ def make_nll_polyadic_calculator(
         logits, labels, batch_size=kappa)
     keys = jax.random.split(jax.random.PRNGKey(seed), batched_logits.shape[0])
     nlls = jax.vmap(enn_nll, in_axes=0)(batched_logits, batched_labels, keys)
-    return jnp.mean(nlls)
+    return jnp.mean(nlls)  # pytype: disable=bad-return-type  # jnp-type
 
   return jax.jit(polyadic_nll)
 
@@ -110,7 +110,7 @@ def make_nll_joint_calculator(tau: int = 10) -> metrics_base.MetricCalculator:
     lls = jax.vmap(calculate_joint_ll)(
         batched_logits, batched_labels)
     chex.assert_shape(lls, (num_batches,))
-    return -1 * jnp.mean(lls)
+    return -1 * jnp.mean(lls)  # pytype: disable=bad-return-type  # jnp-type
 
   return calculate_nll_joint
 

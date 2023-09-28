@@ -60,7 +60,7 @@ def make_einsum_ensemble_mlp_enn(
             z: base.Index) -> networks_base.OutputWithPrior:
     net_out = transformed.apply(params, x)
     one_hot_index = jax.nn.one_hot(z, num_ensemble)
-    return jnp.dot(net_out, one_hot_index)
+    return jnp.dot(net_out, one_hot_index)  # pytype: disable=bad-return-type  # jnp-type
 
   def init(key: chex.PRNGKey, x: chex.Array,
            z: base.Index) -> hk.Params:

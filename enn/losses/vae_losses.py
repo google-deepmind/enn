@@ -46,7 +46,7 @@ def binary_log_likelihood(x: chex.Array,
       x * output - jnp.logaddexp(0.0, output), axis=-1)
 
   chex.assert_shape(log_likelihood, (x.shape[0],))
-  return jnp.mean(log_likelihood)
+  return jnp.mean(log_likelihood)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def gaussian_log_likelihood(x: chex.Array, mean: chex.Array,
@@ -75,7 +75,7 @@ def gaussian_log_likelihood(x: chex.Array, mean: chex.Array,
   log_likelihood = jnp.sum(log_likelihoods, axis=-1)
 
   chex.assert_shape(log_likelihood, (x.shape[0],))
-  return jnp.mean(log_likelihood)
+  return jnp.mean(log_likelihood)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def latent_kl_divergence(mean: chex.Array,
@@ -95,7 +95,7 @@ def latent_kl_divergence(mean: chex.Array,
   kl = - 0.5 * jnp.sum(
       1. + log_var - jnp.square(mean) - jnp.exp(log_var), axis=-1)
   chex.assert_shape(kl, (mean.shape[0],))
-  return jnp.mean(kl)
+  return jnp.mean(kl)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def latent_kl_fn(net_out: networks.OutputWithPrior) -> float:

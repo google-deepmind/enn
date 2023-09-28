@@ -266,4 +266,4 @@ def _map_stats_to_ece(ece_stats: Dict[str, chex.Array]) -> float:
   accs = jnp.nan_to_num(ece_stats['correct_sums'] / counts)
   confs = jnp.nan_to_num(ece_stats['prob_sums'] / counts)
   total_count = jnp.sum(counts)
-  return jnp.sum(counts/ total_count * jnp.abs(accs - confs))
+  return jnp.sum(counts/ total_count * jnp.abs(accs - confs))  # pytype: disable=bad-return-type  # jnp-type

@@ -56,7 +56,7 @@ def calculate_accuracy(logits: chex.Array, labels: chex.Array) -> float:
   predictions = jnp.argmax(mean_class_prob, axis=1)[:, None]
   chex.assert_shape(predictions, [num_data, 1])
 
-  return jnp.mean(predictions == labels)
+  return jnp.mean(predictions == labels)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def categorical_log_likelihood(probs: chex.Array, labels: chex.Array) -> float:
@@ -64,4 +64,4 @@ def categorical_log_likelihood(probs: chex.Array, labels: chex.Array) -> float:
   num_data, unused_num_classes = probs.shape
   assert len(labels) == num_data
   assigned_probs = probs[jnp.arange(num_data), jnp.squeeze(labels)]
-  return jnp.sum(jnp.log(assigned_probs))
+  return jnp.sum(jnp.log(assigned_probs))  # pytype: disable=bad-return-type  # jnp-type
