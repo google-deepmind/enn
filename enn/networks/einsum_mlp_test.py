@@ -23,7 +23,7 @@ from absl.testing import parameterized
 from enn import supervised
 from enn.networks import einsum_mlp
 
-from jax.config import config
+from jax import config
 config.update('jax_numpy_rank_promotion', 'raise')
 
 
