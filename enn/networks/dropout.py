@@ -51,7 +51,7 @@ def generate_masks(key: chex.PRNGKey, input_size: int,
   # TODO(author3): Use jnp.cumsum instead of cummulative_sum
   masks = jnp.split(masks, cummulative_sum(num_nodes_layers))
 
-  return masks
+  return list(masks)
 
 
 class MLPDropoutENN(networks_base.EnnArray):
