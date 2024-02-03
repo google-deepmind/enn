@@ -41,6 +41,7 @@ from enn.networks.dropout import MLPDropoutENN
 # Einsum MLP
 from enn.networks.einsum_mlp import EnsembleMLP
 from enn.networks.einsum_mlp import make_einsum_ensemble_mlp_enn
+from enn.networks.einsum_mlp import make_ensemble_mlp_regularized_towards_prior
 from enn.networks.einsum_mlp import make_ensemble_mlp_with_prior_enn
 from enn.networks.einsum_mlp import make_ensemble_prior
 # Ensemble
