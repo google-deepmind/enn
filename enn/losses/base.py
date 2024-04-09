@@ -90,11 +90,6 @@ def average_single_index_loss(
                              new_state, state)
     mean_metrics = jax.tree_util.tree_map(batch_mean, metrics)
 
-    # TODO(author2): Adding a logging method for keeping track of state counter.
-    # This piece of code is only used for debugging/metrics.
-    if len(new_state) > 0:  # pylint:disable=g-explicit-length-test
-      first_state_layer = new_state[list(new_state.keys())[0]]
-      mean_metrics['state_counter'] = jnp.mean(first_state_layer['counter'])
     return mean_loss, (new_state, mean_metrics)
 
   return loss_fn
