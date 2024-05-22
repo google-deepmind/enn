@@ -114,7 +114,7 @@ def sum_log_scale_mixture_normal(
 
 def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
   """Compute un-normalized log probability of a normal RV."""
-  latent, _ = jax.tree_flatten(latent)
+  latent, _ = jax.tree.flatten(latent)
   latent = jax.tree_util.tree_map(lambda x: x.flatten(), latent)
   latent = jnp.concatenate(latent)
   latent_dim = len(latent)
@@ -165,9 +165,9 @@ def get_sample_based_model_prior_kl_fn(
     # We have used 'w' in params as rho (used with softplus to calculate sigma)
     # and 'b' in params as mu for the Gaussian density.
     rhos, mus = hk.data_structures.partition(predicate, params)
-    mus, _ = jax.tree_flatten(mus)
+    mus, _ = jax.tree.flatten(mus)
     mus = jnp.concatenate(mus, axis=0)
-    rhos, _ = jax.tree_flatten(rhos)
+    rhos, _ = jax.tree.flatten(rhos)
     rhos = jnp.concatenate(rhos, axis=0)
     chex.assert_equal_shape([rhos, mus])
     # We use softplus to convert rho to sigma.
@@ -220,9 +220,9 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     del out, index  # Here we compute the log prob from params directly.
     predicate = lambda module_name, name, value: name == 'w'
     weights, biases = hk.data_structures.partition(predicate, params)
-    biases, _ = jax.tree_flatten(biases)
+    biases, _ = jax.tree.flatten(biases)
     biases = jnp.concatenate(biases, axis=0)
-    weights, _ = jax.tree_flatten(weights)
+    weights, _ = jax.tree.flatten(weights)
     weights = jnp.concatenate(weights, axis=0)
     scales = jnp.log(1 + jnp.exp(weights))
     chex.assert_equal_shape([scales, biases])
@@ -273,9 +273,9 @@ def get_analytical_linear_model_prior_kl_fn(
     del out, index  # Here we compute the log prob from params directly.
     predicate = lambda module_name, name, value: name == 'w'
     weights, biases = hk.data_structures.partition(predicate, params)
-    biases, _ = jax.tree_flatten(biases)
+    biases, _ = jax.tree.flatten(biases)
     biases = jnp.concatenate(biases, axis=0)
-    weights, _ = jax.tree_flatten(weights)
+    weights, _ = jax.tree.flatten(weights)
     weights = jnp.concatenate(weights, axis=1)
     chex.assert_equal_shape_suffix([weights, biases], 1)
     weights_sq = weights @ weights.T

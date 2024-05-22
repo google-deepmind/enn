@@ -79,4 +79,4 @@ _T = tp.TypeVar('_T')
 
 def get_at_index(t: _T, idx: chex.Array) -> _T:
   """Gets values at the indices specified by idx array."""
-  return jax.tree_map(lambda x: x[idx], t)
+  return jax.tree.map(lambda x: x[idx], t)

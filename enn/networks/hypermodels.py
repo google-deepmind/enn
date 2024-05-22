@@ -113,7 +113,7 @@ def hypermodel_module(
   base_shapes_flat = jax.tree_util.tree_map(len, base_params_flat)
 
   # base params as 1D array. It can be used to initialize the hyper network
-  base_params_array = jnp.concatenate(jax.tree_flatten(base_params_flat)[0])
+  base_params_array = jnp.concatenate(jax.tree.flatten(base_params_flat)[0])
 
   def scale_fn(module_name, name, value):
     """Scales weight by 1/sqrt(fan_in) and leaves biases unchanged.
@@ -136,11 +136,11 @@ def hypermodel_module(
 
     if diagonal_linear_hyper:
       # index must be the same size as the total number of base params.
-      chex.assert_shape(index, (np.sum(jax.tree_leaves(base_shapes_flat)),))
+      chex.assert_shape(index, (np.sum(jax.tree.leaves(base_shapes_flat)),))
       hyper_index = DiagonalLinear(b_init_value=base_params_array)(index)
       flat_output = jnp.split(
-          hyper_index, np.cumsum(jax.tree_leaves(base_shapes_flat))[:-1])
-      flat_output = jax.tree_unflatten(jax.tree_structure(base_shapes),
+          hyper_index, np.cumsum(jax.tree.leaves(base_shapes_flat))[:-1])
+      flat_output = jax.tree.unflatten(jax.tree.structure(base_shapes),
                                        flat_output)
     else:
       # Apply the hyper_torso to the epistemic index

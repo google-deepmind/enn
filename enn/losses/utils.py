@@ -44,7 +44,7 @@ def l2_weights_with_predicate(
   """Sum of squares of parameter weights that passes predicate_fn."""
   if predicate is not None:
     params = hk.data_structures.filter(predicate, params)
-  return sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
+  return sum(jnp.sum(jnp.square(p)) for p in jax.tree.leaves(params))
 
 
 def add_data_noise(
