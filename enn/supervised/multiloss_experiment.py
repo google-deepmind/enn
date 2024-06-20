@@ -111,7 +111,9 @@ class MultilossExperiment(supervised_base.BaseExperiment):
           state.params, state.network_state, batch, key)
       loss, (network_state, metrics) = loss_output
       metrics.update({'loss': loss})
-      updates, new_opt_state = optimizer.update(grads, state.opt_state)
+      updates, new_opt_state = optimizer.update(
+          updates=grads, state=state.opt_state, params=state.params
+      )
       new_params = optax.apply_updates(state.params, updates)
       new_state = TrainingState(
           params=new_params,
