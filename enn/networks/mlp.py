@@ -63,7 +63,7 @@ class ExposedMLP(hk.Module):
     exposed_features = [inputs]
     for i, layer_feature in enumerate(layers_features):
       # Add this layer feature if the expose flag for this layer is True
-      if self.expose_layers[i]:
+      if self.expose_layers[i]:  # pyrefly: ignore[unsupported-operation]
         exposed_features.append(layer_feature)
 
     exposed_features = jnp.concatenate(exposed_features, axis=1)
@@ -73,7 +73,7 @@ class ExposedMLP(hk.Module):
     return networks_base.OutputWithPrior(
         train=out,
         prior=jnp.zeros_like(out),
-        extra=extra
+        extra=extra  # pyrefly: ignore[bad-argument-type]
     )
 
 

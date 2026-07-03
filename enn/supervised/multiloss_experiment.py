@@ -96,7 +96,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
       out, _ = self.enn.apply(params, state, inputs, index)
-      return out
+      return out  # pyrefly: ignore[bad-return]
     self._forward = jax.jit(forward)
 
     # Define the SGD step on the loss
@@ -116,7 +116,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
       )
       new_params = optax.apply_updates(state.params, updates)
       new_state = TrainingState(
-          params=new_params,
+          params=new_params,  # pyrefly: ignore[bad-argument-type]
           network_state=network_state,
           opt_state=new_opt_state,
       )
@@ -164,7 +164,7 @@ class MultilossExperiment(supervised_base.BaseExperiment):
                 next(dataset),
                 next(self.rng),
             )
-            metrics.update({
+            metrics.update({  # pyrefly: ignore[no-matching-overload]
                 'dataset': name,
                 'step': self.step,
                 'sgd': False,

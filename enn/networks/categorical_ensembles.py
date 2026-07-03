@@ -46,7 +46,7 @@ class CategoricalRegressionMLP(hk.Module):
     super().__init__(name='categorical_regression_mlp')
     self.dim_out = output_sizes[-1]
     self.atoms = jnp.array(atoms)
-    self.output_sizes = list(output_sizes[:-1]) + [self.dim_out * len(atoms)]
+    self.output_sizes = list(output_sizes[:-1]) + [self.dim_out * len(atoms)]  # pyrefly: ignore[bad-argument-type]
 
   def __call__(self, inputs: chex.Array) -> chex.Array:
     """Apply MLP and wrap outputs appropriately."""

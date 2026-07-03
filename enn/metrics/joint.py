@@ -175,7 +175,7 @@ def reshape_to_smaller_batches(
 
   # 1.1. Discard extra data if needed.
   logits = logits[:, :num_data, :]
-  labels = labels[:num_data, :]
+  labels = labels[:num_data, :]  # pyrefly: ignore[bad-index]
   chex.assert_shape(logits, [num_enn_samples, num_data, num_classes])
   chex.assert_shape(labels, [num_data, 1])
 

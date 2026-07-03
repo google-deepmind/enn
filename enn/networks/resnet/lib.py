@@ -265,56 +265,56 @@ def _make_resnet_blocks(config: ResNetConfig) -> Sequence[ResBlock]:
 
 class CanonicalResNets(enum.Enum):
   """Canonical ResNet configs."""
-  RESNET_18: ResNetConfig = ResNetConfig(
+  RESNET_18: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(16, 32, 64),
       blocks_per_group=(2, 2, 2),
       strides_per_group=(1, 2, 2),
       resnet_block_version='V1',
   )
-  RESNET_32: ResNetConfig = ResNetConfig(
+  RESNET_32: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(16, 32, 64),
       blocks_per_group=(5, 5, 5),
       strides_per_group=(1, 2, 2),
       resnet_block_version='V1',
   )
-  RESNET_44: ResNetConfig = ResNetConfig(
+  RESNET_44: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(16, 32, 64),
       blocks_per_group=(7, 7, 7),
       strides_per_group=(1, 2, 2),
       resnet_block_version='V1',
   )
-  RESNET_56: ResNetConfig = ResNetConfig(
+  RESNET_56: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(16, 32, 64),
       blocks_per_group=(9, 9, 9),
       strides_per_group=(1, 2, 2),
       resnet_block_version='V1',
   )
-  RESNET_110: ResNetConfig = ResNetConfig(
+  RESNET_110: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(16, 32, 64),
       blocks_per_group=(18, 18, 18),
       strides_per_group=(1, 2, 2),
       resnet_block_version='V1',
   )
 
-  RESNET_50: ResNetConfig = ResNetConfig(
+  RESNET_50: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(256, 512, 1024, 2048),
       blocks_per_group=(3, 4, 6, 3),
       strides_per_group=(1, 2, 2, 2),
       resnet_block_version='V2',
   )
-  RESNET_101: ResNetConfig = ResNetConfig(
+  RESNET_101: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(256, 512, 1024, 2048),
       blocks_per_group=(3, 4, 23, 3),
       strides_per_group=(1, 2, 2, 2),
       resnet_block_version='V2',
   )
-  RESNET_152: ResNetConfig = ResNetConfig(
+  RESNET_152: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(256, 512, 1024, 2048),
       blocks_per_group=(3, 8, 36, 3),
       strides_per_group=(1, 2, 2, 2),
       resnet_block_version='V2',
   )
-  RESNET_200: ResNetConfig = ResNetConfig(
+  RESNET_200: ResNetConfig = ResNetConfig(  # pyrefly: ignore[invalid-annotation]
       channels_per_group=(256, 512, 1024, 2048),
       blocks_per_group=(3, 24, 36, 3),
       strides_per_group=(1, 2, 2, 2),

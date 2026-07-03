@@ -127,5 +127,5 @@ def bert_large() -> BertConfig:
 
 class BertConfigs(enum.Enum):
   """Configs for BERT models."""
-  BERT_SMALL: BertConfig = bert_small()  # ~110M params
-  BERT_LARGE: BertConfig = bert_large()  # ~340M params
+  BERT_SMALL: BertConfig = bert_small()  # ~110M params  # pyrefly: ignore[invalid-annotation]
+  BERT_LARGE: BertConfig = bert_large()  # ~340M params  # pyrefly: ignore[invalid-annotation]

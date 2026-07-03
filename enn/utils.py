@@ -53,11 +53,11 @@ def _clean_batch_data(data: ds_base.ArrayBatch) -> ds_base.ArrayBatch:
 
   # Data index to identify each instance
   if data.data_index is None:
-    data = dataclasses.replace(data, data_index=np.arange(len(data.y))[:, None])
+    data = dataclasses.replace(data, data_index=np.arange(len(data.y))[:, None])  # pyrefly: ignore[bad-argument-type]
 
   # Weights to say how much each data.point is work
   if data.weights is None:
-    data = dataclasses.replace(data, weights=np.ones(len(data.y))[:, None])
+    data = dataclasses.replace(data, weights=np.ones(len(data.y))[:, None])  # pyrefly: ignore[bad-argument-type]
   return data
 
 
@@ -66,11 +66,11 @@ def make_batch_iterator(data: ds_base.ArrayBatch,
                         seed: int = 0) -> ds_base.ArrayBatchIterator:
   """Converts toy-like training data to batch_iterator for sgd training."""
   data = _clean_batch_data(data)
-  n_data = len(data.y)
+  n_data = len(data.y)  # pyrefly: ignore[bad-argument-type]
   if not batch_size:
     batch_size = n_data
 
-  ds = tf.data.Dataset.from_tensor_slices(data).cache()
+  ds = tf.data.Dataset.from_tensor_slices(data).cache()  # pyrefly: ignore[bad-argument-type]
   ds = ds.shuffle(min(n_data, 50 * batch_size), seed=seed)
   ds = ds.repeat().batch(batch_size)
 

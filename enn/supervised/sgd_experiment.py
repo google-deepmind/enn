@@ -103,7 +103,7 @@ class Experiment(supervised_base.BaseExperiment):
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
       out, unused_state = self.enn.apply(params, state, inputs, index)
-      return out
+      return out  # pyrefly: ignore[bad-return]
     self._forward = jax.jit(forward)
 
     # Batched forward at multiple random indices
@@ -123,7 +123,7 @@ class Experiment(supervised_base.BaseExperiment):
       updates, new_opt_state = optimizer.update(grads, training_state.opt_state)
       new_params = optax.apply_updates(training_state.params, updates)
       new_state = TrainingState(
-          params=new_params,
+          params=new_params,  # pyrefly: ignore[bad-argument-type]
           network_state=network_state,
           opt_state=new_opt_state,
       )
@@ -166,7 +166,7 @@ class Experiment(supervised_base.BaseExperiment):
 
       # Periodically evaluate the other datasets.
       if self._should_eval and self.step % self._eval_log_freq == 0:
-        for name, dataset in self._eval_datasets.items():
+        for name, dataset in self._eval_datasets.items():  # pyrefly: ignore[missing-attribute]
           # Evaluation happens on a single batch
           eval_batch = next(dataset)
           eval_metrics = {'dataset': name, 'step': self.step, 'sgd': False}
@@ -178,7 +178,7 @@ class Experiment(supervised_base.BaseExperiment):
               jax.random.split(next(self.rng), self._eval_enn_samples),
           )
           logits = networks.parse_net_output(net_out)
-          for metric_name, metric_calc in self._eval_metrics.items():
+          for metric_name, metric_calc in self._eval_metrics.items():  # pyrefly: ignore[missing-attribute]
             eval_metrics.update({
                 metric_name: metric_calc(logits, eval_batch.y),
             })

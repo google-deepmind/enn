@@ -124,7 +124,7 @@ def make_imagenet_conv_prior(
 
   def prior_fn(x: chex.Array, z: chex.Array) -> chex.Array:
     out = [ensemble.apply(params, x, index) for index in range(num_ensemble)]
-    out = jnp.stack(out, axis=-1)
+    out = jnp.stack(out, axis=-1)  # pyrefly: ignore[bad-argument-type]
     return jnp.dot(out, z)
 
   return jax.jit(prior_fn)
@@ -141,14 +141,14 @@ def make_cifar_conv_prior(
   rng = hk.PRNGSequence(seed)
 
   if kernel_shapes is None:
-    kernel_shapes = [[5, 5]] * len(output_channels)
-  assert len(output_channels) == len(kernel_shapes)
+    kernel_shapes = [[5, 5]] * len(output_channels)  # pyrefly: ignore[bad-assignment]
+  assert len(output_channels) == len(kernel_shapes)  # pyrefly: ignore[bad-argument-type]
 
   def conv_net(x):
     x = jax.image.resize(x, [x.shape[0], 32, 32, 3], method='bilinear')
     for i, channels in enumerate(output_channels):
       x = hk.Conv2D(output_channels=channels,
-                    kernel_shape=kernel_shapes[i],
+                    kernel_shape=kernel_shapes[i],  # pyrefly: ignore[unsupported-operation]
                     stride=2, name='prior_conv')(x)
       x = jax.nn.relu(x)
     x = hk.Flatten()(x)
@@ -163,7 +163,7 @@ def make_cifar_conv_prior(
 
   def prior_fn(x: chex.Array, z: chex.Array) -> chex.Array:
     out = [ensemble.apply(params, x, index) for index in range(num_ensemble)]
-    out = jnp.stack(out, axis=-1)
+    out = jnp.stack(out, axis=-1)  # pyrefly: ignore[bad-argument-type]
     return jnp.dot(out, z)
 
   return jax.jit(prior_fn)

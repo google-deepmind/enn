@@ -48,7 +48,7 @@ class BootstrapNoise(data_noise_base.DataNoise):
                index: base.Index) -> datasets.ArrayBatch:
     """Apply bootstrap reweighting to a batch of data."""
     boot_fn = make_boot_fn(self.enn, self.distribution, self.seed)
-    boot_weights = boot_fn(data.data_index, index)
+    boot_weights = boot_fn(data.data_index, index)  # pyrefly: ignore[bad-argument-type]
     return dataclasses.replace(data, weights=boot_weights)
 
 
@@ -110,7 +110,7 @@ def make_boot_fn(enn: _ENN,
     if distribution not in DISTRIBUTIONS:
       raise ValueError(f'dist={distribution} not implemented for ensemble.')
     weight_fn = DISTRIBUTIONS[distribution]
-    return _make_ensemble_bootstrap_fn(weight_fn, seed)
+    return _make_ensemble_bootstrap_fn(weight_fn, seed)  # pyrefly: ignore[bad-argument-type]
 
   # Bootstrapping for Gaussian with unit index
   elif isinstance(indexer, networks.GaussianWithUnitIndexer):
@@ -130,7 +130,7 @@ def make_boot_fn(enn: _ENN,
       return _make_gaussian_index_bernoulli_bootstrap(index_dim, seed)
     elif distribution == 'exponential':
       return _make_gaussian_index_exponential_bootstrap(
-          index_dim, seed, 1/jnp.sqrt(index_dim))
+          index_dim, seed, 1/jnp.sqrt(index_dim))  # pyrefly: ignore[bad-argument-type]
     else:
       raise ValueError(
           f'dist={distribution} not implemented for GaussianIndexer.')
@@ -151,7 +151,7 @@ def make_boot_fn(enn: _ENN,
     if distribution not in DISTRIBUTIONS:
       raise ValueError(f'dist={distribution} not implemented for gauss_enn.')
     weight_fn = DISTRIBUTIONS[distribution]
-    return _make_prng_bootstrap_fn(weight_fn)
+    return _make_prng_bootstrap_fn(weight_fn)  # pyrefly: ignore[bad-argument-type]
 
   else:
     raise ValueError(
@@ -193,7 +193,7 @@ def _make_ensemble_bootstrap_fn(
     """Assumes integer index for ensemble weights."""
     chex.assert_shape(data_index, (None, 1))
     if not index.shape:  # If it's a single integer -> repeat for batch
-      index = jnp.repeat(index, len(data_index))
+      index = jnp.repeat(index, len(data_index))  # pyrefly: ignore[bad-argument-type]
     data_keys = _make_key(data_index, seed)
     rng_keys = fold_in(data_keys, index)
     return weight_fn(rng_keys)[:, None]

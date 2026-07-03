@@ -135,4 +135,4 @@ def combine_base_epinet_as_enn(
     else:
       return {**params, **base_params_init}, {**state, **base_state_init}
 
-  return networks_base.EnnArray(apply, init, epinet.indexer)
+  return networks_base.EnnArray(apply, init, epinet.indexer)  # pyrefly: ignore[bad-argument-type]

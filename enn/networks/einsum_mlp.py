@@ -70,8 +70,8 @@ def make_einsum_ensemble_mlp_enn(
   indexer = indexers.EnsembleIndexer(num_ensemble)
 
   # TODO(author3): Change apply and init fns above to work with state.
-  apply = network_utils.wrap_apply_no_state_as_apply(apply)
-  init = network_utils.wrap_init_no_state_as_init(init)
+  apply = network_utils.wrap_apply_no_state_as_apply(apply)  # pyrefly: ignore[bad-argument-type]
+  init = network_utils.wrap_init_no_state_as_init(init)  # pyrefly: ignore[bad-argument-type]
   return networks_base.EnnArray(apply, init, indexer)
 
 
@@ -111,10 +111,10 @@ def make_ensemble_mlp_with_prior_enn(
     ensemble_train, state = enn.apply(params, state, x, z)
     ensemble_prior, _ = enn.apply(prior_params, prior_state, x, z)
     output = networks_base.OutputWithPrior(
-        train=ensemble_train, prior=ensemble_prior * prior_scale)
+        train=ensemble_train, prior=ensemble_prior * prior_scale)  # pyrefly: ignore[bad-argument-type, unsupported-operation]
     return output, state
 
-  return networks_base.EnnArray(apply_with_prior, enn.init, enn.indexer)
+  return networks_base.EnnArray(apply_with_prior, enn.init, enn.indexer)  # pyrefly: ignore[bad-argument-type]
 
 
 # TODO(author3): Come up with a better name and use ensembles.py instead.

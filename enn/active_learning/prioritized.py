@@ -51,7 +51,7 @@ class PrioritizedBatcher(base.ActiveLearner):
       key: chex.PRNGKey,
   ) -> datasets.ArrayBatch:
     """Acquires data. This is the function per device (can get pmaped)."""
-    pool_size = len(batch.y)
+    pool_size = len(batch.y)  # pyrefly: ignore[bad-argument-type]
 
     candidate_scores, unused_metrics = self._priority_fn(
         params, state, batch, key)

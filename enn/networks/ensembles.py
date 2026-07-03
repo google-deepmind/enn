@@ -52,7 +52,7 @@ class Ensemble(networks_base.EnnNoState):
       return model.apply(sub_params, inputs)
 
     indexer = indexers.EnsembleIndexer(num_ensemble)
-    super().__init__(apply, init, indexer)
+    super().__init__(apply, init, indexer)  # pyrefly: ignore[bad-argument-type]
 
 
 class EnsembleWithState(networks_base.EnnArray):
@@ -86,7 +86,7 @@ class EnsembleWithState(networks_base.EnnArray):
       return out, new_states
 
     indexer = indexers.EnsembleIndexer(num_ensemble)
-    super().__init__(apply, init, indexer)
+    super().__init__(apply, init, indexer)  # pyrefly: ignore[bad-argument-type]
 
 
 def make_mlp_ensemble_prior_fns(

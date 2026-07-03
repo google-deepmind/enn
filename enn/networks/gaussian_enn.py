@@ -89,8 +89,8 @@ class GaussianNoiseEnn(networks_base.EnnArray):
     init = lambda rng, x, z: transformed.init(rng, x)
 
     # TODO(author3): Change apply and init fns above to work with state.
-    apply = network_utils.wrap_apply_no_state_as_apply(apply)
-    init = network_utils.wrap_init_no_state_as_init(init)
+    apply = network_utils.wrap_apply_no_state_as_apply(apply)  # pyrefly: ignore[bad-argument-type]
+    init = network_utils.wrap_init_no_state_as_init(init)  # pyrefly: ignore[bad-argument-type]
 
     super().__init__(apply, init, indexer=indexers.PrngIndexer(),)
 

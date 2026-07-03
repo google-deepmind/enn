@@ -88,9 +88,9 @@ class DatasetWithTransform(Dataset):
 
 
 class OodVariant(enum.Enum):
-  WHOLE: str = 'eval'
-  IN_DISTRIBUTION: str = 'eval_in_dist'
-  OUT_DISTRIBUTION: str = 'eval_out_dist'
+  WHOLE: str = 'eval'  # pyrefly: ignore[invalid-annotation]
+  IN_DISTRIBUTION: str = 'eval_in_dist'  # pyrefly: ignore[invalid-annotation]
+  OUT_DISTRIBUTION: str = 'eval_out_dist'  # pyrefly: ignore[invalid-annotation]
 
   @classmethod
   def valid_values(cls) -> tp.List[str]:

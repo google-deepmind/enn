@@ -37,7 +37,7 @@ class SingleLossFn(te.Protocol[base.Input, base.Output, base.Data,]):
 
   def __call__(
       self,
-      apply: base.ApplyFn[base.Input, base.Output],
+      apply: base.ApplyFn[base.Input, base.Output],  # pyrefly: ignore[invalid-type-var]
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -64,10 +64,10 @@ def average_single_index_loss(
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetwork[base.Input, base.Output],
+  def loss_fn(enn: base.EpistemicNetwork[base.Input, base.Output],  # pyrefly: ignore[invalid-type-var]
               params: hk.Params,
               state: hk.State,
-              batch: base.Data,
+              batch: base.Data,  # pyrefly: ignore[invalid-type-var]
               key: chex.PRNGKey) -> base.LossOutput:
     # Apply the loss in parallel over num_index_samples different indices.
     # This is the key logic to this loss function.
@@ -92,7 +92,7 @@ def average_single_index_loss(
 
     return mean_loss, (new_state, mean_metrics)
 
-  return loss_fn
+  return loss_fn  # pyrefly: ignore[bad-return]
 
 
 # Loss modules specialized to work only with Array inputs and Batch data.

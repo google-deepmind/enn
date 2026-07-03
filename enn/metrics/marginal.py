@@ -24,7 +24,7 @@ import jax.numpy as jnp
 
 def make_nll_marginal_calculator() -> metrics_base.MetricCalculator:
   """Returns a MetricCalculator for marginal negative log likelihood (nll)."""
-  return lambda x, y: -1 * calculate_marginal_ll(x, y)
+  return lambda x, y: -1 * calculate_marginal_ll(x, y)  # pyrefly: ignore[bad-return]
 
 
 def make_accuracy_calculator() -> metrics_base.MetricCalculator:
@@ -62,6 +62,6 @@ def calculate_accuracy(logits: chex.Array, labels: chex.Array) -> float:
 def categorical_log_likelihood(probs: chex.Array, labels: chex.Array) -> float:
   """Computes joint log likelihood based on probs and labels."""
   num_data, unused_num_classes = probs.shape
-  assert len(labels) == num_data
-  assigned_probs = probs[jnp.arange(num_data), jnp.squeeze(labels)]
+  assert len(labels) == num_data  # pyrefly: ignore[bad-argument-type]
+  assigned_probs = probs[jnp.arange(num_data), jnp.squeeze(labels)]  # pyrefly: ignore[bad-index]
   return jnp.sum(jnp.log(assigned_probs))  # pytype: disable=bad-return-type  # jnp-type

@@ -230,7 +230,7 @@ def make_ucb_per_example(
     chex.assert_shape(ucb_value, (data_size,))
     return ucb_value
 
-  return compute_ucb
+  return compute_ucb  # pyrefly: ignore[bad-return]
 
 
 def make_scaled_mean_per_example(
@@ -257,7 +257,7 @@ def make_scaled_mean_per_example(
     chex.assert_shape(mean_values, (data_size,))
     return mean_values
 
-  return compute_scaled_mean
+  return compute_scaled_mean  # pyrefly: ignore[bad-return]
 
 
 def make_scaled_std_per_example(
@@ -284,7 +284,7 @@ def make_scaled_std_per_example(
     chex.assert_shape(std_values, (data_size,))
     return std_values
 
-  return compute_scaled_std
+  return compute_scaled_std  # pyrefly: ignore[bad-return]
 
 
 _PerExamplePriorities = {
@@ -303,7 +303,7 @@ _PerExamplePriorities = {
 
 
 _PriorityFnCtors = {
-    key: make_priority_fn_ctor(value)
+    key: make_priority_fn_ctor(value)  # pyrefly: ignore[bad-argument-type]
     for key, value in _PerExamplePriorities.items()
 }
 
@@ -327,4 +327,4 @@ def get_implemented_per_example_priorities() -> tp.Sequence[str]:
 def get_per_example_priority(name: str) -> base.PerExamplePriority:
   """Returns a per example priority function for the priority specified by `name`."""
   assert name in get_implemented_per_example_priorities()
-  return _PerExamplePriorities[name]
+  return _PerExamplePriorities[name]  # pyrefly: ignore[bad-return]

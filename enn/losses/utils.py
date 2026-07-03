@@ -44,7 +44,7 @@ def l2_weights_with_predicate(
   """Sum of squares of parameter weights that passes predicate_fn."""
   if predicate is not None:
     params = hk.data_structures.filter(predicate, params)
-  return sum(jnp.sum(jnp.square(p)) for p in jax.tree.leaves(params))
+  return sum(jnp.sum(jnp.square(p)) for p in jax.tree.leaves(params))  # pyrefly: ignore[bad-return]
 
 
 def add_data_noise(
@@ -54,7 +54,7 @@ def add_data_noise(
   """Applies a DataNoise function to each batch of data."""
 
   def noisy_loss(
-      apply: base.ApplyFn[base.Input, base.Output],
+      apply: base.ApplyFn[base.Input, base.Output],  # pyrefly: ignore[invalid-type-var]
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -72,7 +72,7 @@ def add_l2_weight_decay(
 ) -> _LossFn:
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
-    scale = jnp.sqrt(scale)
+    scale = jnp.sqrt(scale)  # pyrefly: ignore[bad-argument-type, bad-assignment]
     scale_fn = lambda ps: jax.tree_util.tree_map(lambda p: scale * p, ps)
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
@@ -82,7 +82,7 @@ def add_l2_weight_decay(
       params: hk.Params, state: hk.State, batch: base.Data,
       key: chex.PRNGKey) -> base.LossOutput:
     loss, (state, metrics) = loss_fn(enn, params, state, batch, key)
-    decay = l2_weights_with_predicate(scale_fn(params), predicate)
+    decay = l2_weights_with_predicate(scale_fn(params), predicate)  # pyrefly: ignore[not-callable]
     total_loss = loss +  decay
     metrics['decay'] = decay
     metrics['raw_loss'] = loss
@@ -100,10 +100,10 @@ def combine_single_index_losses_as_metric(
       apply: base.ApplyFn[base.Input, base.Output],
       params: hk.Params, state: hk.State, batch: base.Data,
       index: base.Index) -> base.LossOutput:
-    loss, (state, metrics) = train_loss(apply, params, state, batch, index)
+    loss, (state, metrics) = train_loss(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
     for name, loss_fn in extra_losses.items():
       extra_loss, (unused_state,
-                   extra_metrics) = loss_fn(apply, params, state, batch, index)
+                   extra_metrics) = loss_fn(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
       metrics[f'{name}:loss'] = extra_loss
       for key, value in extra_metrics.items():
         metrics[f'{name}:{key}'] = value
@@ -126,7 +126,7 @@ def combine_losses_as_metric(
       extra_loss, (unused_state,
                    extra_metrics) = loss_fn(enn, params, state, batch, key)
       metrics[f'{name}:loss'] = extra_loss
-      for key, value in extra_metrics.items():
+      for key, value in extra_metrics.items():  # pyrefly: ignore[bad-assignment]
         metrics[f'{name}:{key}'] = value
     return loss, (state, metrics)
 
@@ -171,7 +171,7 @@ def combine_losses(losses: Sequence[Union[_LossConfig, _LossFn]]) -> _LossFn:
       for name, value in metrics.items():
         combined_metrics[f'{loss_config.name}:{name}'] = value
       combined_loss += loss_config.weight * loss
-    return combined_loss, (state, combined_metrics)
+    return combined_loss, (state, combined_metrics)  # pyrefly: ignore[bad-return]
 
   return loss_fn
 
@@ -196,11 +196,11 @@ def wrap_loss_no_state_as_loss(
       batch: datasets.ArrayBatch,
       key: chex.PRNGKey
   ) -> base.LossOutput:
-    enn = networks.wrap_enn_as_enn_no_state(enn)
-    loss, metrics = loss_fn(enn, params, batch, key)
+    enn = networks.wrap_enn_as_enn_no_state(enn)  # pyrefly: ignore[bad-assignment]
+    loss, metrics = loss_fn(enn, params, batch, key)  # pyrefly: ignore[bad-argument-type]
     return loss, (constant_state, metrics)
 
-  return new_loss
+  return new_loss  # pyrefly: ignore[bad-return]
 
 
 def wrap_single_loss_no_state_as_single_loss(
@@ -223,10 +223,10 @@ def wrap_single_loss_no_state_as_single_loss(
       output, unused_state = apply(params, constant_state, x, z)
       return output
 
-    loss, metrics = single_loss(apply_no_state, params, batch, index)
+    loss, metrics = single_loss(apply_no_state, params, batch, index)  # pyrefly: ignore[bad-argument-type]
     return loss, (constant_state, metrics)
 
-  return new_loss
+  return new_loss  # pyrefly: ignore[bad-return]
 
 
 def add_data_noise_no_state(
@@ -251,7 +251,7 @@ def add_l2_weight_decay_no_state(
 ) -> losses_base.LossFnNoState:
   """Adds scale * l2 weight decay to an existing loss function."""
   try:  # Scale is numeric.
-    scale = jnp.sqrt(scale)
+    scale = jnp.sqrt(scale)  # pyrefly: ignore[bad-argument-type, bad-assignment]
     scale_fn = lambda ps: jax.tree_util.tree_map(lambda p: scale * p, ps)
   except TypeError:
     scale_fn = scale  # Assuming scale is a Callable.
@@ -261,7 +261,7 @@ def add_l2_weight_decay_no_state(
                batch: datasets.ArrayBatch,
                key: chex.PRNGKey) -> losses_base.LossOutputNoState:
     loss, metrics = loss_fn(enn, params, batch, key)
-    decay = l2_weights_with_predicate(scale_fn(params), predicate)
+    decay = l2_weights_with_predicate(scale_fn(params), predicate)  # pyrefly: ignore[not-callable]
     total_loss = loss +  decay
     metrics['decay'] = decay
     metrics['raw_loss'] = loss
@@ -303,7 +303,7 @@ def combine_losses_no_state_as_metric(
     for name, loss_fn in extra_losses.items():
       extra_loss, extra_metrics = loss_fn(enn, params, batch, key)
       metrics[f'{name}:loss'] = extra_loss
-      for key, value in extra_metrics.items():
+      for key, value in extra_metrics.items():  # pyrefly: ignore[bad-assignment]
         metrics[f'{name}:{key}'] = value
     return loss, metrics
 
@@ -340,6 +340,6 @@ def combine_losses_no_state(
       for name, value in metrics.items():
         combined_metrics[f'{loss_config.name}:{name}'] = value
       combined_loss += loss_config.weight * loss
-    return combined_loss, combined_metrics
+    return combined_loss, combined_metrics  # pyrefly: ignore[bad-return]
 
   return loss_fn

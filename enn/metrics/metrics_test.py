@@ -137,7 +137,7 @@ class MetricsTest(parameterized.TestCase):
 
     # Check that ece results by our calculator and tfp calculator are the same.
     self.assertAlmostEqual(
-        our_ece_value, tfp_ece_value,
+        our_ece_value, tfp_ece_value,  # pyrefly: ignore[unbound-name]
         msg=f'our_ece_value={our_ece_value} not close enough to tfp_ece_value',
         delta=5e-2,
     )

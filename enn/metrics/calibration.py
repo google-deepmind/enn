@@ -77,7 +77,7 @@ class ExpectedCalibrationError(metrics_base.AggregateMetricCalculator):
     return metrics_base.MetricsState(
         value=0,
         count=0,
-        extra=init_ece_stats,
+        extra=init_ece_stats,  # pyrefly: ignore[bad-argument-type]
     )
 
   def __call__(

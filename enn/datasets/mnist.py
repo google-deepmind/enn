@@ -48,7 +48,7 @@ class Mnist(ds_base.DatasetWithTransform):
   normalization_mode: str = 'standard'
   train_ds_transformer: ds_base.DatasetTransformer = lambda x: x
   eval_ds_transformers: Dict[
-      str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT
+      str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT  # pyrefly: ignore[bad-assignment]
   # Whether to add a leading axis of number of devices to the batches. If true,
   # data batches have shape (number_devices, batch_size / number_devices, ...);
   # otherwise, they have shape of (batch_size, ...).

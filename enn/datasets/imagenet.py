@@ -59,7 +59,7 @@ class Imagenet(ds_base.DatasetWithTransform):
   num_train: int = Split.TRAIN_AND_VALID.num_examples
   train_ds_transformer: ds_base.DatasetTransformer = lambda x: x
   eval_ds_transformers: Dict[
-      str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT
+      str, ds_base.DatasetTransformer] = ds_base.EVAL_TRANSFORMERS_DEFAULT  # pyrefly: ignore[bad-assignment]
   # Whether to add a leading axis of number of devices to the batches. If true,
   # data batches have shape (number_devices, batch_size / number_devices, ...);
   # otherwise, they have shape of (batch_size, ...).
@@ -171,7 +171,7 @@ def load(
     yield from it.repeat(batch, end - start)
     return
 
-  total_batch_size = np.prod(batch_dims)
+  total_batch_size = np.prod(batch_dims)  # pyrefly: ignore[bad-assignment]
 
   tfds_split = tfds.core.ReadInstruction(
       _to_tfds_split(split), from_=start, to=end, unit='abs')
@@ -200,7 +200,7 @@ def load(
       # Only cache if we are reading a subset of the dataset.
       ds = ds.cache()
     ds = ds.repeat()
-    seed_shuffle = tf.cast(rngs[0][0], tf.int64) if seed is not None else 0
+    seed_shuffle = tf.cast(rngs[0][0], tf.int64) if seed is not None else 0  # pyrefly: ignore[unbound-name]
     ds = ds.shuffle(buffer_size=10 * total_batch_size, seed=seed_shuffle)
 
   else:
@@ -276,10 +276,10 @@ def _to_tfds_split(split: Split) -> tfds.Split:
   # competition, so it has been typical at DeepMind to consider the VALID
   # split the TEST split and to reserve 10k images from TRAIN for VALID.
   if split in (Split.TRAIN, Split.TRAIN_AND_VALID, Split.VALID):
-    return tfds.Split.TRAIN
+    return tfds.Split.TRAIN  # pyrefly: ignore[missing-attribute]
   else:
     assert split == Split.TEST
-    return tfds.Split.VALIDATION
+    return tfds.Split.VALIDATION  # pyrefly: ignore[missing-attribute]
 
 
 def _shard(split: Split,

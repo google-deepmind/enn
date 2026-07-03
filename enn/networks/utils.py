@@ -72,16 +72,16 @@ def wrap_net_fn_as_enn(
   def apply(
       params: hk.Params,
       state: hk.State,
-      inputs: base.Input,
+      inputs: base.Input,  # pyrefly: ignore[invalid-type-var]
       index: base.Index,
-  ) -> Tuple[base.Output, hk.State]:
+  ) -> Tuple[base.Output, hk.State]:  # pyrefly: ignore[invalid-type-var]
     del index
     return transformed.apply(params, state, inputs)
 
-  return base.EpistemicNetwork[base.Input, base.Output](
+  return base.EpistemicNetwork[base.Input, base.Output](  # pyrefly: ignore[bad-return]
       apply=apply,
-      init=lambda k, x, z: transformed.init(k, x),
-      indexer=lambda k: k,
+      init=lambda k, x, z: transformed.init(k, x),  # pyrefly: ignore[bad-argument-type]
+      indexer=lambda k: k,  # pyrefly: ignore[bad-argument-type]
   )
 
 
@@ -89,8 +89,8 @@ def wrap_transformed_as_enn_no_state(
     transformed: hk.Transformed) -> networks_base.EnnNoState:
   """Wraps a simple transformed function y = f(x) as an ENN."""
   return networks_base.EnnNoState(
-      apply=lambda params, x, z: transformed.apply(params, x),
-      init=lambda key, x, z: transformed.init(key, x),
+      apply=lambda params, x, z: transformed.apply(params, x),  # pyrefly: ignore[bad-argument-type]
+      init=lambda key, x, z: transformed.init(key, x),  # pyrefly: ignore[bad-argument-type]
       indexer=lambda key: key,
   )
 
@@ -100,9 +100,9 @@ def wrap_transformed_as_enn(
 ) -> networks_base.EnnArray:
   """Wraps a simple transformed function y = f(x) as an ENN."""
   apply = lambda params, x, z: transformed.apply(params, x)
-  apply = wrap_apply_no_state_as_apply(apply)
+  apply = wrap_apply_no_state_as_apply(apply)  # pyrefly: ignore[bad-argument-type]
   init = lambda key, x, z: transformed.init(key, x)
-  init = wrap_init_no_state_as_init(init)
+  init = wrap_init_no_state_as_init(init)  # pyrefly: ignore[bad-argument-type]
   return networks_base.EnnArray(
       apply=apply,
       init=init,
@@ -140,8 +140,8 @@ def wrap_enn_as_enn_no_state(
     return output
 
   return networks_base.EnnNoState(
-      apply=apply,
-      init=init,
+      apply=apply,  # pyrefly: ignore[bad-argument-type]
+      init=init,  # pyrefly: ignore[bad-argument-type]
       indexer=enn.indexer,
   )
 
@@ -156,7 +156,7 @@ def wrap_apply_no_state_as_apply(
       index: base.Index,
   ) -> Tuple[networks_base.Output, hk.State]:
     return (apply(params, inputs, index), {})
-  return new_apply
+  return new_apply  # pyrefly: ignore[bad-return]
 
 
 def wrap_init_no_state_as_init(
@@ -169,7 +169,7 @@ def wrap_init_no_state_as_init(
       index: base.Index,
   ) -> Tuple[hk.Params, hk.State]:
     return (init(key, inputs, index), {})
-  return new_init
+  return new_init  # pyrefly: ignore[bad-return]
 
 
 def scale_enn_output(
@@ -210,7 +210,7 @@ def make_centered_enn_no_state(
     normalized_x = (x - x_mean) / (x_std + 1e-9)
     return enn.apply(params, normalized_x, z)
 
-  return networks_base.EnnNoState(centered_apply, enn.init, enn.indexer)
+  return networks_base.EnnNoState(centered_apply, enn.init, enn.indexer)  # pyrefly: ignore[bad-argument-type]
 
 
 def make_centered_enn(

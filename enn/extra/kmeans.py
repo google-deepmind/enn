@@ -43,7 +43,7 @@ class KMeansCluster:
     # Initialize centroids randomly
     random_idx = jax.random.choice(
         self.key, x.shape[0], [self.num_centroids], replace=False)
-    initial_centroids = x[random_idx, :]
+    initial_centroids = x[random_idx, :]  # pyrefly: ignore[bad-index]
     initial_state = _TrainingState(initial_centroids, iter=0)
 
     # Perfom KMeans via jax.lax.while_loop
@@ -91,7 +91,7 @@ def kmeans_iteration(x: chex.Array, state: _TrainingState) -> _TrainingState:
   chex.assert_shape(one_hot_centroids, [num_x, num_centroids])
 
   # Take mean over classes for new centroids.
-  masked_x = x[:, None, :] * one_hot_centroids[:, :, None]
+  masked_x = x[:, None, :] * one_hot_centroids[:, :, None]  # pyrefly: ignore[bad-index]
   chex.assert_shape(masked_x, [num_x, num_centroids, dim_x])
   sum_per_centroid = jnp.sum(masked_x, axis=0)
   count_per_centroid = jnp.sum(one_hot_centroids, axis=0)

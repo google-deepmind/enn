@@ -45,7 +45,7 @@ def get_awgn_loglike_fn(
 
   def log_likelihood_fn(out: networks.Output, batch: datasets.ArrayBatch):
     chex.assert_shape(batch.y, (None, 1))
-    err_sq = jnp.mean(jnp.square(networks.parse_net_output(out) - batch.y))
+    err_sq = jnp.mean(jnp.square(networks.parse_net_output(out) - batch.y))  # pyrefly: ignore[unsupported-operation]
     return -0.5 * err_sq / sigma_w**2
 
   return log_likelihood_fn
@@ -68,7 +68,7 @@ def get_categorical_loglike_fn(
   def log_likelihood_fn(out: networks.Output, batch: datasets.ArrayBatch):
     chex.assert_shape(batch.y, (None, 1))
     logits = networks.parse_net_output(out)
-    labels = jax.nn.one_hot(batch.y[:, 0], num_classes)
+    labels = jax.nn.one_hot(batch.y[:, 0], num_classes)  # pyrefly: ignore[bad-index]
     return jnp.mean(
         jnp.sum(labels * jax.nn.log_softmax(logits), axis=1))
 
@@ -114,7 +114,7 @@ def sum_log_scale_mixture_normal(
 
 def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
   """Compute un-normalized log probability of a normal RV."""
-  latent, _ = jax.tree.flatten(latent)
+  latent, _ = jax.tree.flatten(latent)  # pyrefly: ignore[bad-assignment]
   latent = jax.tree_util.tree_map(lambda x: x.flatten(), latent)
   latent = jnp.concatenate(latent)
   latent_dim = len(latent)

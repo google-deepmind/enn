@@ -44,9 +44,9 @@ class L2Loss(losses_base.SingleLossFnArray):
     net_out, state = apply(params, state, batch.x, index)
     net_out = networks.parse_net_output(net_out)
     chex.assert_equal_shape([net_out, batch.y])
-    sq_loss = jnp.square(networks.parse_net_output(net_out) - batch.y)
+    sq_loss = jnp.square(networks.parse_net_output(net_out) - batch.y)  # pyrefly: ignore[unsupported-operation]
     if batch.weights is None:
-      batch_weights = jnp.ones_like(batch.data_index)
+      batch_weights = jnp.ones_like(batch.data_index)  # pyrefly: ignore[bad-argument-type]
     else:
       batch_weights = batch.weights
     chex.assert_equal_shape([batch_weights, sq_loss])
@@ -71,7 +71,7 @@ class XentLoss(losses_base.SingleLossFnArray):
       batch: datasets.ArrayBatch,
       index: base.Index,
   ) -> base.LossOutput:
-    return self._loss(apply, params, state, batch, index)
+    return self._loss(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
 
 
 def xent_loss_with_custom_labels(
@@ -90,7 +90,7 @@ def xent_loss_with_custom_labels(
     chex.assert_shape(batch.y, (None, 1))
     net_out, state = apply(params, state, batch.x, index)
     logits = networks.parse_net_output(net_out)
-    labels = labeller(batch.y[:, 0])
+    labels = labeller(batch.y[:, 0])  # pyrefly: ignore[bad-index]
 
     softmax_xent = -jnp.sum(
         labels * jax.nn.log_softmax(logits), axis=1, keepdims=True)
@@ -103,7 +103,7 @@ def xent_loss_with_custom_labels(
 
     loss = jnp.mean(batch_weights * softmax_xent)
     return loss, (state, {'loss': loss})
-  return single_loss
+  return single_loss  # pyrefly: ignore[bad-return]
 
 
 @dataclasses.dataclass
@@ -120,7 +120,7 @@ class AccuracyErrorLoss(losses_base.SingleLossFnArray):
     net_out, state = apply(params, state, batch.x, index)
     logits = networks.parse_net_output(net_out)
     preds = jnp.argmax(logits, axis=1)
-    correct = (preds == batch.y[:, 0])
+    correct = (preds == batch.y[:, 0])  # pyrefly: ignore[bad-index]
     accuracy = jnp.mean(correct)
     return 1 - accuracy, (state, {'accuracy': accuracy})
 
@@ -177,8 +177,8 @@ class VaeLoss(losses_base.SingleLossFnArray):
       index: base.Index,
   ) -> base.LossOutput:
     net_out, state = apply(params, state, batch.x, index)
-    kl_term = self.latent_kl_fn(net_out)
-    log_likelihood = self.log_likelihood_fn(net_out, batch)
+    kl_term = self.latent_kl_fn(net_out)  # pyrefly: ignore[bad-argument-type]
+    log_likelihood = self.log_likelihood_fn(net_out, batch)  # pyrefly: ignore[bad-argument-type]
     return kl_term - log_likelihood, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
 
 
@@ -202,7 +202,7 @@ def wrap_single_loss_as_single_loss_no_state(
       index: base.Index,
   ) -> losses_base.LossOutputNoState:
     apply_with_state = networks.wrap_apply_no_state_as_apply(apply)
-    loss, (unused_state, metrics) = single_loss(apply_with_state, params,
+    loss, (unused_state, metrics) = single_loss(apply_with_state, params,  # pyrefly: ignore[bad-argument-type]
                                                 constant_state, batch, index)
     return loss, metrics
 

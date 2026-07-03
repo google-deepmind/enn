@@ -34,10 +34,10 @@ def transform_to_2hot(target: chex.Array,
   """Converts a scalar target to a 2-hot encoding of the nearest support."""
   target = jnp.clip(target, support.min(), support.max())
   high_idx = jnp.sum(support < target)
-  num_bins = len(support)
+  num_bins = len(support)  # pyrefly: ignore[bad-argument-type]
 
-  low_value = support[high_idx - 1]
-  high_value = support[high_idx]
+  low_value = support[high_idx - 1]  # pyrefly: ignore[bad-index]
+  high_value = support[high_idx]  # pyrefly: ignore[bad-index]
   prob = (target - high_value) / (low_value - high_value)
 
   lower_one_hot = prob * rlax.one_hot(high_idx - 1, num_bins)
@@ -63,7 +63,7 @@ class Cat2HotRegression(losses_base.SingleLossFnArray):
     assert isinstance(net_out, networks.CatOutputWithPrior)
 
     # Form the target values in real space
-    target_val = batch.y - net_out.prior
+    target_val = batch.y - net_out.prior  # pyrefly: ignore[unsupported-operation]
 
     # Convert values to 2-hot target probabilities
     probs = jax.vmap(transform_to_2hot, in_axes=[0, None])(
@@ -71,7 +71,7 @@ class Cat2HotRegression(losses_base.SingleLossFnArray):
     probs = jnp.expand_dims(probs, 1)
     xent_loss = -jnp.sum(probs * jax.nn.log_softmax(net_out.train), axis=-1)
     if batch.weights is None:
-      batch_weights = jnp.ones_like(batch.data_index)
+      batch_weights = jnp.ones_like(batch.data_index)  # pyrefly: ignore[bad-argument-type]
     else:
       batch_weights = batch.weights
     chex.assert_equal_shape([batch_weights, xent_loss])

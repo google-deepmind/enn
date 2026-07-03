@@ -35,7 +35,7 @@ def combine_naive_enn(
     base_enn: enn_base.EpistemicNetwork[enn_base.Input, BaseOutput],
     parse_base_network: tp.Callable[
         [BaseOutput], HeadInput
-    ] = utils.parse_net_output,
+    ] = utils.parse_net_output,  # pyrefly: ignore[bad-function-definition]
 ) -> enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output]:
   """Combines a base enn and a head enn naively without optimization.
 
@@ -101,7 +101,7 @@ def combine_naive_enn(
     return (params, state)
 
   return enn_base.EpistemicNetwork[enn_base.Input, networks_base.Output](
-      apply, init, base_enn.indexer
+      apply, init, base_enn.indexer  # pyrefly: ignore[bad-argument-type]
   )
 
 
@@ -112,7 +112,7 @@ def make_optimized_forward(
     key: chex.PRNGKey,
     parse_base_network: tp.Callable[
         [BaseOutput], HeadInput
-    ] = utils.parse_net_output,
+    ] = utils.parse_net_output,  # pyrefly: ignore[bad-function-definition]
 ) -> forwarders.EnnBatchFwd[enn_base.Input]:
   """Combines base enn and head enn for multiple ENN samples.
 

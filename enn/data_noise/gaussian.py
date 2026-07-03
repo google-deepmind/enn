@@ -43,7 +43,7 @@ class GaussianTargetNoise(data_noise_base.DataNoise):
     """Apply Gaussian noise to the target y."""
     chex.assert_shape(data.y, (None, 1))  # Only implemented for 1D now.
     noise_fn = make_noise_fn(self.enn, self.noise_std, self.seed)
-    y_noise = noise_fn(data.data_index, index)
+    y_noise = noise_fn(data.data_index, index)  # pyrefly: ignore[bad-argument-type]
     return dataclasses.replace(data, y=data.y + y_noise)
 
 
@@ -94,7 +94,7 @@ def _make_ensemble_gaussian_noise(noise_std: float, seed: int) -> NoiseFn:
     """Assumes integer index for ensemble."""
     chex.assert_shape(data_index, (None, 1))
     if not index.shape:  # If it's a single integer -> repeat for batch
-      index = jnp.repeat(index, len(data_index))
+      index = jnp.repeat(index, len(data_index))  # pyrefly: ignore[bad-argument-type]
     data_keys = _make_key(data_index, seed)
     batch_keys = batch_fold_in(data_keys, index)
     samples = batch_normal(batch_keys)[:, None]

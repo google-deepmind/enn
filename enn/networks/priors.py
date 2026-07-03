@@ -136,13 +136,13 @@ def make_random_feat_gp(
   bias = 2 * jnp.pi * jax.random.uniform(
       bias_key, shape=[1, num_feat, output_dim])
   alpha = jax.random.normal(alpha_key, shape=[num_feat]) / jnp.sqrt(num_feat)
-  gamma = _parse_gamma(gamma, num_feat, gamma_key)
+  gamma = _parse_gamma(gamma, num_feat, gamma_key)  # pyrefly: ignore[bad-assignment]
 
   def gp_instance(inputs: chex.Array) -> chex.Array:
     """Assumes one batch dimension and flattens input to match that."""
     flat_inputs = jax.vmap(jnp.ravel)(inputs)
     input_embedding = jnp.einsum('bi,kio->bko', flat_inputs, weights)
-    random_feats = jnp.cos(gamma * input_embedding + bias)
+    random_feats = jnp.cos(gamma * input_embedding + bias)  # pyrefly: ignore[unsupported-operation]
     return scale * jnp.einsum('bko,k->bo', random_feats, alpha)
 
   return gp_instance
