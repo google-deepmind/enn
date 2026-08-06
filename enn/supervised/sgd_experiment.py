@@ -160,7 +160,7 @@ class Experiment(supervised_base.BaseExperiment):
 
       # Periodically log this performance as dataset=train.
       if self.step % self._train_log_freq == 0:
-        loss_metrics.update(
+        loss_metrics.update(  # pyrefly: ignore[no-matching-overload]
             {'dataset': 'train', 'step': self.step, 'sgd': True})
         self.logger.write(loss_metrics)
 

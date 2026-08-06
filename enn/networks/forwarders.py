@@ -58,4 +58,4 @@ def make_batch_fwd(
     net_out, unused_state = batch_apply(params, state, x, indices)
     return utils.parse_net_output(net_out)
 
-  return jax.jit(forward)
+  return jax.jit(forward)  # pyrefly: ignore[bad-return]

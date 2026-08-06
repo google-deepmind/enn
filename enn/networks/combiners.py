@@ -145,4 +145,4 @@ def make_optimized_forward(
 
     return jax.vmap(sample_logits)(enn_keys)
 
-  return jax.jit(enn_batch_fwd)
+  return jax.jit(enn_batch_fwd)  # pyrefly: ignore[bad-return]
