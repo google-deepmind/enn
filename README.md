@@ -33,7 +33,7 @@ If you want to use our `enn` library, we highly recommend you start by familiari
 We outline the key high-level interfaces for our code in [base.py](enn/base.py):
 
 - `EpistemicNetwork`: a convenient pairing of Haiku transformed + index sampler.
-  - `apply`: haiku-style apply function taking `params, x, z -> f_params(x,z)``
+  - `apply`: haiku-style apply function taking `params, x, z -> f_params(x,z)`
   - `init`: haiku-style init function taking `key, x, z -> params_init`
   - `indexer`: generates a sample from the reference index distribution taking `key -> z`.
 - `LossFn`: Given an ENN, parameters, and data: how to compute a loss.
@@ -73,6 +73,7 @@ We have tested `ENN` on Python 3.7. To install the dependencies:
     ```python
     from enn.loggers import TerminalLogger
 
+    from enn import data_noise
     from enn import losses
     from enn import networks
     from enn import supervised
@@ -89,11 +90,15 @@ We have tested `ENN` on Python 3.7. To install the dependencies:
     enn = networks.MLPEnsembleMatchedPrior(
         output_sizes=[50, 50, 1],
         num_ensemble=10,
+        dummy_input=next(dataset).x,
     )
 
-    # Loss
+    # Loss (L2 loss with bootstrap reweighting of the data)
     loss_fn = losses.average_single_index_loss(
-        single_loss=losses.L2LossWithBootstrap(),
+        single_loss=losses.add_data_noise(
+            single_loss=losses.L2Loss(),
+            noise_fn=data_noise.BootstrapNoise(enn, 'poisson'),
+        ),
         num_index_samples=10
     )
 
@@ -103,7 +108,7 @@ We have tested `ENN` on Python 3.7. To install the dependencies:
     # Train the experiment
     experiment = supervised.Experiment(
         enn, loss_fn, optimizer, dataset, seed=0, logger=logger)
-    experiment.train(FLAGS.num_batch)
+    experiment.train(100)
     ```
 
 4. **Optional**: run the tests by executing `./test.sh` from ENN root directory.
