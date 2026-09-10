@@ -57,7 +57,7 @@ def make_nll_polyadic_calculator(
 
     # Averaging over ENN samples
     batched_ll = jax.vmap(joint_ll_repeat, in_axes=[0, None, None])
-    lls = batched_ll(logits, labels, key)
+    lls = batched_ll(logits, labels, key)  # pyrefly: ignore[bad-argument-type]
     return -1 * metrics_base.average_sampled_log_likelihood(lls)  # pytype: disable=wrong-arg-types  # numpy-scalars
 
   def polyadic_nll(logits: chex.Array, labels: chex.Array) -> float:

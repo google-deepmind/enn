@@ -74,7 +74,7 @@ def average_single_index_loss(
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
     loss, (new_state, metrics) = batched_loss(
-        enn.apply, params, state, batch, batched_indexer(key))
+        enn.apply, params, state, batch, batched_indexer(key))  # pyrefly: ignore[bad-argument-type]
 
     # Take the mean over the synthetic index batch dimension
     batch_mean = lambda x: jnp.mean(x, axis=0)
