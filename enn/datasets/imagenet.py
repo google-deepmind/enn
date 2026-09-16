@@ -130,7 +130,7 @@ def load(
     is_training: bool,
     total_batch_size: int,
     data_parallelism: bool,
-    dtype: jnp.dtype = jnp.float32,
+    dtype: jnp.dtype = jnp.float32,  # pyrefly: ignore[bad-function-definition]
     transpose: bool = False,
     fake_data: bool = False,
     image_size: Tuple[int, int] = (224, 224),
