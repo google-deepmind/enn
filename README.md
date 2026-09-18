@@ -26,7 +26,7 @@ This library provides interfaces and tools for the design and training of ENNs.
 
 ## Technical overview
 
-> The `enn` library provides a lightweight interface for ENNs implemented on top of [JAX](https://github.com/google/jax) and [Haiku](https://github.com/deepmind/dm-haiku).
+> The `enn` library provides a lightweight interface for ENNs implemented on top of [JAX](https://github.com/jax-ml/jax) and [Haiku](https://github.com/deepmind/dm-haiku).
 If you want to use our `enn` library, we highly recommend you start by familiarizing yourself with these libraries first.
 
 
