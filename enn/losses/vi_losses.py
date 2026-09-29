@@ -116,7 +116,7 @@ def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
   """Compute un-normalized log probability of a normal RV."""
   latent, _ = jax.tree.flatten(latent)  # pyrefly: ignore[bad-assignment]
   latent = jax.tree_util.tree_map(lambda x: x.flatten(), latent)
-  latent = jnp.concatenate(latent)
+  latent = jnp.concatenate(latent)  # pyrefly: ignore[bad-argument-type]
   latent_dim = len(latent)
   latent_l2_sq = jnp.sum(jnp.square(latent - mu))
   return -0.5 * (latent_dim * jnp.log(2 * jnp.pi * sigma**2)
