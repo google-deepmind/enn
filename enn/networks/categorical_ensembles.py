@@ -52,7 +52,7 @@ class CategoricalRegressionMLP(hk.Module):
     """Apply MLP and wrap outputs appropriately."""
     out = hk.Flatten()(inputs)
     out = hk.nets.MLP(self.output_sizes)(out)
-    return CatOutputWithPrior(  # pytype: disable=bad-return-type  # numpy-scalars
+    return CatOutputWithPrior(  # pyrefly: ignore[bad-return]
         train=jnp.reshape(out, [-1, self.dim_out, len(self.atoms)]),
         extra={'atoms': self.atoms},
     )

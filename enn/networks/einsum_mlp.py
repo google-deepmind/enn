@@ -51,7 +51,7 @@ def make_einsum_ensemble_mlp_enn(
   def ensemble_forward(x: chex.Array) -> networks_base.OutputWithPrior:
     """Forwards the entire ensemble at given input x."""
     model = EnsembleMLP(output_sizes, num_ensemble, nonzero_bias, activation)
-    return model(x)  # pytype: disable=bad-return-type  # jax-ndarray
+    return model(x)
 
   transformed = hk.without_apply_rng(hk.transform(ensemble_forward))
 
@@ -60,7 +60,7 @@ def make_einsum_ensemble_mlp_enn(
             z: base.Index) -> networks_base.OutputWithPrior:
     net_out = transformed.apply(params, x)
     one_hot_index = jax.nn.one_hot(z, num_ensemble)
-    return jnp.dot(net_out, one_hot_index)  # pytype: disable=bad-return-type  # jnp-type
+    return jnp.dot(net_out, one_hot_index)  # pyrefly: ignore[bad-return]
 
   def init(key: chex.PRNGKey, x: chex.Array,
            z: base.Index) -> hk.Params:
@@ -237,4 +237,4 @@ class EnsembleMLP(hk.Module):
       out = layer(out)
       if i < num_layers - 1:
         out = self.activation(out)
-    return out  # pytype: disable=bad-return-type  # numpy-scalars
+    return out

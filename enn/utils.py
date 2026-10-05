@@ -70,7 +70,7 @@ def make_batch_iterator(data: ds_base.ArrayBatch,
   if not batch_size:
     batch_size = n_data
 
-  ds = tf.data.Dataset.from_tensor_slices(data).cache()  # pyrefly: ignore[bad-argument-type]
+  ds = tf.data.Dataset.from_tensor_slices(data).cache()
   ds = ds.shuffle(min(n_data, 50 * batch_size), seed=seed)
   ds = ds.repeat().batch(batch_size)
 

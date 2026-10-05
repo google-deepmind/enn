@@ -100,10 +100,10 @@ def combine_single_index_losses_as_metric(
       apply: base.ApplyFn[base.Input, base.Output],
       params: hk.Params, state: hk.State, batch: base.Data,
       index: base.Index) -> base.LossOutput:
-    loss, (state, metrics) = train_loss(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
+    loss, (state, metrics) = train_loss(apply, params, state, batch, index)
     for name, loss_fn in extra_losses.items():
       extra_loss, (unused_state,
-                   extra_metrics) = loss_fn(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
+                   extra_metrics) = loss_fn(apply, params, state, batch, index)
       metrics[f'{name}:loss'] = extra_loss
       for key, value in extra_metrics.items():
         metrics[f'{name}:{key}'] = value

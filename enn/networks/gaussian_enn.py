@@ -79,7 +79,7 @@ class GaussianNoiseEnn(networks_base.EnnArray):
 
     def net_fn(inputs: chex.Array) -> chex.Array:
       with hke.custom_getter(enn_getter), hke.custom_creator(enn_creator):
-        output = module_ctor()(inputs)  # pytype: disable=not-callable
+        output = module_ctor()(inputs)  # pyrefly: ignore[not-callable]
         return output
 
     # TODO(author2): Note that the GaussianENN requires a rng_key in place of an

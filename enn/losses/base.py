@@ -37,7 +37,7 @@ class SingleLossFn(te.Protocol[base.Input, base.Output, base.Data,]):
 
   def __call__(
       self,
-      apply: base.ApplyFn[base.Input, base.Output],  # pyrefly: ignore[invalid-type-var]
+      apply: base.ApplyFn[base.Input, base.Output],
       params: hk.Params,
       state: hk.State,
       batch: base.Data,
@@ -64,17 +64,17 @@ def average_single_index_loss(
     LossFn that comprises the mean of both the loss and the metrics.
   """
 
-  def loss_fn(enn: base.EpistemicNetwork[base.Input, base.Output],  # pyrefly: ignore[invalid-type-var]
+  def loss_fn(enn: base.EpistemicNetwork[base.Input, base.Output],
               params: hk.Params,
               state: hk.State,
-              batch: base.Data,  # pyrefly: ignore[invalid-type-var]
+              batch: base.Data,
               key: chex.PRNGKey) -> base.LossOutput:
     # Apply the loss in parallel over num_index_samples different indices.
     # This is the key logic to this loss function.
     batched_indexer = utils.make_batch_indexer(enn.indexer, num_index_samples)
     batched_loss = jax.vmap(single_loss, in_axes=[None, None, None, None, 0])
     loss, (new_state, metrics) = batched_loss(
-        enn.apply, params, state, batch, batched_indexer(key))  # pyrefly: ignore[bad-argument-type]
+        enn.apply, params, state, batch, batched_indexer(key))
 
     # Take the mean over the synthetic index batch dimension
     batch_mean = lambda x: jnp.mean(x, axis=0)
@@ -92,7 +92,7 @@ def average_single_index_loss(
 
     return mean_loss, (new_state, mean_metrics)
 
-  return loss_fn  # pyrefly: ignore[bad-return]
+  return loss_fn
 
 
 # Loss modules specialized to work only with Array inputs and Batch data.

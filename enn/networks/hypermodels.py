@@ -68,7 +68,6 @@ class MLPHypermodel(networks_base.EnnArray):
     super().__init__(enn.apply, enn.init, enn.indexer)
 
 
-# pytype: disable=bad-return-type
 def hypermodel_module(
     transformed_base: hk.Transformed,
     dummy_input: chex.Array,
@@ -177,14 +176,13 @@ def hypermodel_module(
           prior=jnp.zeros_like(out),
           extra={
               'hyper_net_out': generated_params,
-              'base_net_params': generated_params_scaled,
+              'base_net_params': generated_params_scaled,  # pyrefly: ignore[bad-assignment]
               'hyper_index': hyper_index
           })
     return out
 
   enn_module = hk.to_module(hyper_fn)
-  return enn_module
-# pytype: enable=bad-return-type
+  return enn_module  # pyrefly: ignore[bad-return]
 
 
 class MLPHypermodelWithHypermodelPrior(networks_base.EnnArray):

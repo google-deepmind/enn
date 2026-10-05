@@ -109,7 +109,7 @@ def sum_log_scale_mixture_normal(
           loc=[mu_1, mu_2],  # One for each component.
           scale=[sigma_1, sigma_2]))
   log_probs = bimix_gauss.log_prob(x)
-  return jnp.sum(log_probs)  # pytype: disable=bad-return-type  # jnp-type
+  return jnp.sum(log_probs)  # pyrefly: ignore[bad-return]
 
 
 def normal_log_prob(latent: chex.Array, sigma: float = 1, mu: float = 0):
@@ -154,7 +154,7 @@ def get_sample_based_model_prior_kl_fn(
                         index: base.Index) -> float:
     """Compute the KL distance between model and prior densities using samples."""
     del index
-    latent = out.extra['hyper_index']  # pytype: disable=attribute-error  # numpy-scalars
+    latent = out.extra['hyper_index']  # pyrefly: ignore[missing-attribute]
 
     # Calculate prior
     log_priors_sum = sum_log_scale_mixture_normal(latent, sigma_1,
@@ -177,7 +177,7 @@ def get_sample_based_model_prior_kl_fn(
     log_var_posteriors = log_normal_prob_vectorized(latent, mus, sigmas)
     log_var_posteriors_sum = jnp.sum(log_var_posteriors)
 
-    return (log_var_posteriors_sum - log_priors_sum) / num_samples  # pytype: disable=bad-return-type  # jnp-type
+    return (log_var_posteriors_sum - log_priors_sum) / num_samples  # pyrefly: ignore[bad-return]
 
   return model_prior_kl_fn
 
@@ -226,7 +226,7 @@ def get_analytical_diagonal_linear_model_prior_kl_fn(
     weights = jnp.concatenate(weights, axis=0)
     scales = jnp.log(1 + jnp.exp(weights))
     chex.assert_equal_shape([scales, biases])
-    return 0.5  / num_samples * (  # pytype: disable=bad-return-type  # jnp-type
+    return 0.5  / num_samples * (  # pyrefly: ignore[bad-return]
         jnp.sum(jnp.square(scales)) / (sigma_0 ** 2)
         + jnp.sum(jnp.square(biases)) / (sigma_0 ** 2)
         - len(biases)
@@ -292,7 +292,7 @@ def get_analytical_linear_model_prior_kl_fn(
     weights_biases = weights @ biases
     chex.assert_equal(len(weights_biases), index_dim)
     proj_biases_norm = weights_biases @ w_sq_inv @ weights_biases.T
-    return 0.5  / num_samples * (sigma_u_trace - index_dim - sigma_u_log_det  # pytype: disable=bad-return-type  # jnp-type
+    return 0.5  / num_samples * (sigma_u_trace - index_dim - sigma_u_log_det
                                  + proj_biases_norm / sigma_0**2)
 
   return model_prior_kl_fn

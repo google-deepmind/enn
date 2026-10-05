@@ -72,13 +72,13 @@ def wrap_net_fn_as_enn(
   def apply(
       params: hk.Params,
       state: hk.State,
-      inputs: base.Input,  # pyrefly: ignore[invalid-type-var]
+      inputs: base.Input,
       index: base.Index,
-  ) -> Tuple[base.Output, hk.State]:  # pyrefly: ignore[invalid-type-var]
+  ) -> Tuple[base.Output, hk.State]:
     del index
     return transformed.apply(params, state, inputs)
 
-  return base.EpistemicNetwork[base.Input, base.Output](  # pyrefly: ignore[bad-return]
+  return base.EpistemicNetwork[base.Input, base.Output](
       apply=apply,
       init=lambda k, x, z: transformed.init(k, x),  # pyrefly: ignore[bad-argument-type]
       indexer=lambda k: k,  # pyrefly: ignore[bad-argument-type]
@@ -223,6 +223,6 @@ def make_centered_enn(
   def centered_apply(params: hk.Params, state: hk.State, x: chex.Array,
                      z: base.Index) -> networks_base.Output:
     normalized_x = (x - x_mean) / (x_std + 1e-9)
-    return enn.apply(params, state, normalized_x, z)  # pytype: disable=bad-return-type  # numpy-scalars
+    return enn.apply(params, state, normalized_x, z)  # pyrefly: ignore[bad-return]
 
-  return networks_base.EnnArray(centered_apply, enn.init, enn.indexer)  # pytype: disable=wrong-arg-types  # numpy-scalars
+  return networks_base.EnnArray(centered_apply, enn.init, enn.indexer)  # pyrefly: ignore[bad-argument-type]

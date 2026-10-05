@@ -45,7 +45,7 @@ def make_nll_polyadic_calculator(
 
     # Sample with replacement from the anchor points and sum for joint ll
     selected = jax.random.randint(key, shape=[tau], minval=0, maxval=kappa)
-    return jnp.sum(log_probs[selected])  # pytype: disable=bad-return-type  # jnp-type
+    return jnp.sum(log_probs[selected])  # pyrefly: ignore[bad-return]
 
   def enn_nll(logits: chex.Array,
               labels: chex.Array,
@@ -58,7 +58,7 @@ def make_nll_polyadic_calculator(
     # Averaging over ENN samples
     batched_ll = jax.vmap(joint_ll_repeat, in_axes=[0, None, None])
     lls = batched_ll(logits, labels, key)  # pyrefly: ignore[bad-argument-type]
-    return -1 * metrics_base.average_sampled_log_likelihood(lls)  # pytype: disable=wrong-arg-types  # numpy-scalars
+    return -1 * metrics_base.average_sampled_log_likelihood(lls)  # pyrefly: ignore[bad-argument-type]
 
   def polyadic_nll(logits: chex.Array, labels: chex.Array) -> float:
     """Returns polyadic NLL based on repeated inputs.
@@ -90,7 +90,7 @@ def make_nll_polyadic_calculator(
         logits, labels, batch_size=kappa)
     keys = jax.random.split(jax.random.PRNGKey(seed), batched_logits.shape[0])
     nlls = jax.vmap(enn_nll, in_axes=0)(batched_logits, batched_labels, keys)
-    return jnp.mean(nlls)  # pytype: disable=bad-return-type  # jnp-type
+    return jnp.mean(nlls)  # pyrefly: ignore[bad-return]
 
   return jax.jit(polyadic_nll)
 
@@ -110,7 +110,7 @@ def make_nll_joint_calculator(tau: int = 10) -> metrics_base.MetricCalculator:
     lls = jax.vmap(calculate_joint_ll)(
         batched_logits, batched_labels)
     chex.assert_shape(lls, (num_batches,))
-    return -1 * jnp.mean(lls)  # pytype: disable=bad-return-type  # jnp-type
+    return -1 * jnp.mean(lls)  # pyrefly: ignore[bad-return]
 
   return calculate_nll_joint
 
@@ -137,7 +137,7 @@ def calculate_joint_ll(logits: chex.Array, labels: chex.Array) -> float:
 
   batched_ll = jax.vmap(marginal.categorical_log_likelihood, in_axes=[0, None])
   sampled_ll = batched_ll(class_probs, labels)
-  return metrics_base.average_sampled_log_likelihood(sampled_ll)  # pytype: disable=wrong-arg-types  # numpy-scalars
+  return metrics_base.average_sampled_log_likelihood(sampled_ll)  # pyrefly: ignore[bad-argument-type]
 
 
 def reshape_to_smaller_batches(

@@ -71,7 +71,7 @@ class XentLoss(losses_base.SingleLossFnArray):
       batch: datasets.ArrayBatch,
       index: base.Index,
   ) -> base.LossOutput:
-    return self._loss(apply, params, state, batch, index)  # pyrefly: ignore[bad-argument-type]
+    return self._loss(apply, params, state, batch, index)
 
 
 def xent_loss_with_custom_labels(
@@ -103,7 +103,7 @@ def xent_loss_with_custom_labels(
 
     loss = jnp.mean(batch_weights * softmax_xent)
     return loss, (state, {'loss': loss})
-  return single_loss  # pyrefly: ignore[bad-return]
+  return single_loss
 
 
 @dataclasses.dataclass
@@ -158,7 +158,7 @@ class ElboLoss(losses_base.SingleLossFnArray):
     chex.assert_equal_shape([log_likelihood, model_prior_kl])
     if self.temperature and self.input_dim:
       model_prior_kl *= jnp.sqrt(self.temperature) * self.input_dim
-    return model_prior_kl - log_likelihood, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
+    return model_prior_kl - log_likelihood, (state, {})  # pyrefly: ignore[bad-return]
 
 
 @dataclasses.dataclass
@@ -179,7 +179,7 @@ class VaeLoss(losses_base.SingleLossFnArray):
     net_out, state = apply(params, state, batch.x, index)
     kl_term = self.latent_kl_fn(net_out)  # pyrefly: ignore[bad-argument-type]
     log_likelihood = self.log_likelihood_fn(net_out, batch)  # pyrefly: ignore[bad-argument-type]
-    return kl_term - log_likelihood, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
+    return kl_term - log_likelihood, (state, {})  # pyrefly: ignore[bad-return]
 
 
 ################################################################################
@@ -202,7 +202,7 @@ def wrap_single_loss_as_single_loss_no_state(
       index: base.Index,
   ) -> losses_base.LossOutputNoState:
     apply_with_state = networks.wrap_apply_no_state_as_apply(apply)
-    loss, (unused_state, metrics) = single_loss(apply_with_state, params,  # pyrefly: ignore[bad-argument-type]
+    loss, (unused_state, metrics) = single_loss(apply_with_state, params,
                                                 constant_state, batch, index)
     return loss, metrics
 

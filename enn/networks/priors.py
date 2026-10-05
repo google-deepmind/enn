@@ -207,6 +207,6 @@ class NetworkWithAdditivePrior(hk.Module):
 
   def __call__(self, *args, **kwargs) -> chex.Array:
     logging.warning(WARN)
-    prior = jax.lax.stop_gradient(self.prior_net(*args, **kwargs))  # pytype:disable=not-callable
-    net_out = self.net(*args, **kwargs)  # pytype:disable=not-callable
+    prior = jax.lax.stop_gradient(self.prior_net(*args, **kwargs))  # pyrefly: ignore[not-callable]
+    net_out = self.net(*args, **kwargs)  # pyrefly: ignore[not-callable]
     return net_out + prior * self.prior_scale

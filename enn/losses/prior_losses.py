@@ -177,7 +177,7 @@ class RegressionPriorLoss(losses_base.LossFnArray):
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)  # pyrefly: ignore[bad-argument-type, missing-argument]
       loss += distill_mean_regression(batched_out, distill_out)  # pyrefly: ignore[bad-argument-type]
       loss += distill_var_regression(batched_out, distill_out)  # pyrefly: ignore[bad-argument-type]
-    return loss, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
+    return loss, (state, {})
 
 
 @dataclasses.dataclass
@@ -212,4 +212,4 @@ class ClassificationPriorLoss(losses_base.LossFnArray):
       distill_out = enn.apply(params, fake_x, enn.indexer.mean_index)  # pyrefly: ignore[bad-argument-type, missing-argument]
       loss += distill_mean_classification(batched_out, distill_out)  # pyrefly: ignore[bad-argument-type]
       loss += distill_var_classification(batched_out, distill_out)  # pyrefly: ignore[bad-argument-type]
-    return loss, (state, {})  # pytype: disable=bad-return-type  # numpy-scalars
+    return loss, (state, {})
