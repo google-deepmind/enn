@@ -19,7 +19,6 @@ from typing import Tuple
 
 import chex
 from enn.metrics import base as metrics_base
-from enn.metrics import marginal
 import jax
 import jax.numpy as jnp
 
@@ -39,9 +38,8 @@ def make_nll_polyadic_calculator(
     chex.assert_shape(labels, [kappa, 1])
 
     # Compute log-likehood at the kappa anchor points
-    probs = jax.nn.softmax(logits)
-    assigned_probs = probs[jnp.arange(kappa), jnp.squeeze(labels)]
-    log_probs = jnp.log(assigned_probs)
+    log_class_probs = jax.nn.log_softmax(logits)
+    log_probs = log_class_probs[jnp.arange(kappa), jnp.squeeze(labels, axis=-1)]
 
     # Sample with replacement from the anchor points and sum for joint ll
     selected = jax.random.randint(key, shape=[tau], minval=0, maxval=kappa)
@@ -132,11 +130,11 @@ def calculate_joint_ll(logits: chex.Array, labels: chex.Array) -> float:
   num_enn_samples, tau, num_classes = logits.shape
   chex.assert_shape(labels, (tau, 1))
 
-  class_probs = jax.nn.softmax(logits)
-  chex.assert_shape(class_probs, (num_enn_samples, tau, num_classes))
+  class_log_probs = jax.nn.log_softmax(logits)
+  chex.assert_shape(class_log_probs, (num_enn_samples, tau, num_classes))
 
-  batched_ll = jax.vmap(marginal.categorical_log_likelihood, in_axes=[0, None])
-  sampled_ll = batched_ll(class_probs, labels)
+  assigned_ll = class_log_probs[:, jnp.arange(tau), jnp.squeeze(labels, axis=-1)]
+  sampled_ll = jnp.sum(assigned_ll, axis=-1)
   return metrics_base.average_sampled_log_likelihood(sampled_ll)  # pyrefly: ignore[bad-argument-type]
 
 

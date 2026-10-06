@@ -34,13 +34,15 @@ def make_accuracy_calculator() -> metrics_base.MetricCalculator:
 
 def calculate_marginal_ll(logits: chex.Array, labels: chex.Array) -> float:
   """Computes marginal log likelihood (ll) aggregated over enn samples."""
-  unused_num_enn_samples, num_data, num_classes = logits.shape
+  num_enn_samples, num_data, num_classes = logits.shape
   chex.assert_shape(labels, (num_data, 1))
 
-  probs = jnp.mean(jax.nn.softmax(logits), axis=0)
-  chex.assert_shape(probs, [num_data, num_classes])
-
-  return categorical_log_likelihood(probs, labels) / num_data
+  log_probs = jax.nn.log_softmax(logits)
+  chex.assert_shape(log_probs, [num_enn_samples, num_data, num_classes])
+  assigned_ll = log_probs[:, jnp.arange(num_data), jnp.squeeze(labels, axis=-1)]
+  marginal_ll = jax.scipy.special.logsumexp(assigned_ll, axis=0)
+  marginal_ll -= jnp.log(num_enn_samples)
+  return jnp.mean(marginal_ll)
 
 
 def calculate_accuracy(logits: chex.Array, labels: chex.Array) -> float:
